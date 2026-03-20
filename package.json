@@ -22,14 +22,20 @@
     ],
     "asar": true,
     "win": {
-      "target": ["nsis"],
-      "artifactName": "Fellowship-Overlay-Setup-${version}.${ext}"
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Fellowship-Overlay-Setup-${version}.${ext}",
+      "icon": "icons/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "icons/icon.ico",
+      "uninstallerIcon": "icons/icon.ico",
+      "installerHeaderIcon": "icons/icon.ico"
     }
   }
 }

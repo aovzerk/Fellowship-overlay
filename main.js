@@ -49,11 +49,29 @@ try {
 }
 `;
 
-function getTrayIcon() {
+function getAppIconPath() {
   const iconCandidates = [
+    path.join(__dirname, 'icons', 'icon.ico'),
+    path.join(__dirname, 'icon.ico'),
     path.join(__dirname, 'tray.png'),
     path.join(__dirname, 'icons_trink', 'empty.png'),
   ];
+
+  for (const iconPath of iconCandidates) {
+    if (fs.existsSync(iconPath)) {
+      return iconPath;
+    }
+  }
+
+  return null;
+}
+
+function getTrayIcon() {
+  const iconCandidates = [
+    getAppIconPath(),
+    path.join(__dirname, 'tray.png'),
+    path.join(__dirname, 'icons_trink', 'empty.png'),
+  ].filter(Boolean);
 
   for (const iconPath of iconCandidates) {
     if (fs.existsSync(iconPath)) {
@@ -344,6 +362,8 @@ function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
+  const appIcon = getAppIconPath();
+
   win = new BrowserWindow({
     width,
     height,
@@ -354,6 +374,7 @@ function createWindow() {
     skipTaskbar: true,
     fullscreenable: false,
     hasShadow: false,
+    icon: appIcon || undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
