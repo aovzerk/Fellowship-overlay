@@ -1,5 +1,3 @@
-// Renderer process.
-// Handles DOM rendering, overlay interaction, local settings, and cooldown visualization.
 const playersContainer = document.getElementById("playersContainer");
 const pickFileBtn = document.getElementById("pickFileBtn");
 const reloadBtn = document.getElementById("reloadBtn");
@@ -18,7 +16,6 @@ const overlayRoot = document.getElementById("overlay-root");
 const skillsModal = document.getElementById("skillsModal");
 const skillsCatalogEl = document.getElementById("skillsCatalog");
 
-// LocalStorage keys for user preferences and saved layout.
 const STORAGE_KEY = "overlay-player-positions-v2";
 const SKILL_SELECTIONS_KEY = "overlay-skill-selections-v1";
 const CARD_SCALE_KEY = "overlay-card-scale-v1";
@@ -34,7 +31,6 @@ let skillCatalog = { classes: [] };
 let selectedSkillsByClass = loadSkillSelections();
 let cardScale = loadCardScale();
 
-// Format numeric values for compact readable UI output.
 function formatNumber(value) {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Number(value || 0));
 }
@@ -55,7 +51,6 @@ function escapeHtml(value) {
 }
 
 
-// Convert project-relative asset path into a renderer-friendly URL.
 function toAssetSrc(relPath) {
   const normalized = String(relPath || 'icons_trink/empty.png').replace(/^\.\//, '').replace(/^\/+/, '');
   return `../../${escapeHtml(normalized)}`;
@@ -72,7 +67,6 @@ function getPartySlotIndex(player, index = 0) {
   return index;
 }
 
-// Restore manually dragged card positions.
 function loadPositions() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -85,7 +79,6 @@ function savePositions(positions) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
 }
 
-// Restore selected tracked skills per class.
 function loadSkillSelections() {
   try {
     const raw = JSON.parse(localStorage.getItem(SKILL_SELECTIONS_KEY) || "{}");
@@ -113,7 +106,6 @@ function saveCardScale() {
   localStorage.setItem(CARD_SCALE_KEY, String(cardScale));
 }
 
-// Sync current card scale into CSS and header text.
 function updateCardScaleUi() {
   overlayRoot.style.setProperty('--card-scale', String(cardScale));
   if (cardSizeValueEl) cardSizeValueEl.textContent = `${Math.round(cardScale * 100)}%`;
@@ -143,7 +135,6 @@ function setHudActiveState(active, foregroundExe = null) {
   hudStatusEl.textContent = hudActive ? 'HUD active' : `HUD hidden${suffix}`;
 }
 
-// Derive layout metrics from the user-selected card scale.
 function getScaledMetrics() {
   const scale = Number(cardScale || 1);
   const iconSize = Math.round(60 * scale);
@@ -163,7 +154,6 @@ function applyCardLayout(card, iconCount = 0) {
   card.style.width = `${getCardWidthForIconCount(iconCount)}px`;
 }
 
-// Enable drag-and-drop card positioning while overlay is unlocked.
 function makeCardDraggable(card, dragHandle, _layoutKey, positions) {
   let dragging = false;
   let startMouseX = 0;
@@ -207,7 +197,6 @@ function makeCardDraggable(card, dragHandle, _layoutKey, positions) {
   });
 }
 
-// Create a new player card and place it on the screen.
 function createCard(player, slotIndex, positions) {
   const layoutKey = getPlayerLayoutKey(slotIndex);
   const pos = positions[layoutKey] || getDefaultPosition(slotIndex);
@@ -239,7 +228,6 @@ function createCard(player, slotIndex, positions) {
   return card;
 }
 
-// Rebuild ability/relic icon strip with circular cooldown state.
 function updateIconNodes(container, items) {
   const existing = new Map([...container.children].map((node) => [node.dataset.key, node]));
   const fragment = document.createDocumentFragment();
@@ -282,7 +270,6 @@ function updateIconNodes(container, items) {
   container.appendChild(fragment);
 }
 
-// Apply blue spirit glow depending on blue gem tier thresholds.
 function getSpiritHighlight(player, spiritSnapshot) {
   const currentSpirit = Number(spiritSnapshot?.current || 0);
   const blueStone = Number(player?.stones?.blue || 0);
@@ -303,7 +290,6 @@ function getSelectedSkillEntriesForClass(classId) {
   return (classEntry.abilities || []).filter((ability) => wanted.has(String(ability.id)));
 }
 
-// Green gem shortens selected skill cooldowns only.
 function getSkillCooldownModifier(player) {
   const greenStone = Number(player?.stones?.green || 0);
   if (greenStone >= 2640) return 0.88;
@@ -311,7 +297,6 @@ function getSkillCooldownModifier(player) {
   return 1;
 }
 
-// Build cooldown entries for user-selected skills of the current class.
 function buildTrackedSkillCooldowns(player) {
   const selectedSkills = getSelectedSkillEntriesForClass(player.classId);
   if (!selectedSkills.length) return [];
@@ -345,7 +330,6 @@ function buildTrackedSkillCooldowns(player) {
   });
 }
 
-// Refresh one existing card with latest combat log state.
 function updateCard(card, player) {
   const history = player.spiritHistory || [];
   const last = history[history.length - 1];
@@ -366,7 +350,6 @@ function updateCard(card, player) {
   updateIconNodes(card.querySelector('.relics-block'), displayIcons);
 }
 
-// Render current party and remove cards for players no longer present.
 function renderPlayers(players = []) {
   const positions = loadPositions();
   const activeIds = new Set(players.map((player) => player.id));
@@ -406,7 +389,6 @@ function renderPlayers(players = []) {
   });
 }
 
-// Recalculate remaining cooldowns every second for smooth UI updates.
 function tickCooldowns() {
   if (!latestData?.players?.length) return;
   const now = Date.now();
@@ -437,7 +419,6 @@ function buildAbilityOption(classId, ability, selected) {
   `;
 }
 
-// Draw the class/skill selection modal from the generated catalog.
 function renderSkillsModal() {
   const classes = skillCatalog.classes || [];
   if (!classes.length) {
@@ -471,7 +452,6 @@ function renderSkillsModal() {
   });
 }
 
-// Lazy-load skills only when needed by the renderer.
 async function ensureSkillCatalog() {
   if (skillCatalog.classes?.length) return;
   skillCatalog = await window.api.getSkillCatalog();
@@ -480,8 +460,7 @@ async function ensureSkillCatalog() {
 
 function openSkillsModal() {
   updateCardScaleUi();
-  // Safe to call multiple times; catalog is loaded once and then cached.
-  ensureSkillCatalog();
+ensureSkillCatalog();
   skillsModal.classList.remove('hidden');
 }
 
@@ -531,7 +510,6 @@ window.api.onHudState((payload) => {
   setHudActiveState(payload?.active, payload?.foregroundExe || null);
 });
 
-// Main data stream from Electron main process.
 window.api.onLogData((payload) => {
   if (!payload?.ok) {
     playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">Ошибка: ${escapeHtml(payload?.error || "unknown")}</div>`;

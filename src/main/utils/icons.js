@@ -1,9 +1,8 @@
-// Helpers for choosing application and tray icons.
 const fs = require('fs');
+const path = require('path');
 const { nativeImage } = require('electron');
 const { fromProjectRoot } = require('./project-paths');
 
-// Try a few common icon locations and return the first existing file.
 function getAppIconPath() {
   const iconCandidates = [
     fromProjectRoot('icons', 'icon.ico'),
@@ -21,7 +20,6 @@ function getAppIconPath() {
   return null;
 }
 
-// Build a small native image for the system tray.
 function getTrayIcon() {
   const iconCandidates = [
     getAppIconPath(),

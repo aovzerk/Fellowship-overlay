@@ -1,6 +1,3 @@
-// Main Electron process.
-// Responsible for creating the overlay window, tray integration,
-// file selection, log watching, keyboard shortcuts, and IPC bridge handlers.
 const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -10,7 +7,6 @@ const { getSkillCatalog } = require('./services/skill-catalog');
 const { getAppIconPath, getTrayIcon } = require('./utils/icons');
 const { fromProjectRoot } = require('./utils/project-paths');
 
-// Runtime state shared across the main process.
 let win = null;
 let currentFilePath = null;
 let currentWatcher = null;
@@ -21,12 +17,8 @@ let lastHudActive = null;
 let tray = null;
 let isQuitting = false;
 
-// Name of the game executable used for HUD visibility checks.
 const TARGET_GAME_EXE = 'fellowship-win64-shipping.exe';
 const FOREGROUND_POLL_INTERVAL_MS = 1000;
-
-// Tiny PowerShell helper that returns the executable name of the current
-// foreground window. This is used to detect when the game is active.
 const FOREGROUND_EXE_SCRIPT = String.raw`
 Add-Type @"
 using System;
@@ -60,20 +52,19 @@ try {
 }
 `;
 
-// Show and focus the overlay window.
+
 function showWindow() {
   if (!win) return;
   win.show();
   win.focus();
 }
 
-// Hide the window without quitting the app.
 function hideToTray() {
   if (!win) return;
   win.hide();
 }
 
-// Create tray icon and menu once.
+
 function createTray() {
   if (tray) return tray;
 
@@ -81,13 +72,11 @@ function createTray() {
   tray.setToolTip('Fellowship Overlay');
 
   const buildMenu = () => Menu.buildFromTemplate([
-    // Toggle current overlay visibility.
     { label: win?.isVisible() ? 'Скрыть оверлей' : 'Показать оверлей', click: () => {
       if (!win) return;
       if (win.isVisible()) hideToTray();
       else showWindow();
     } },
-    // Toggle drag/edit mode.
     { label: clickThroughEnabled ? 'Разблокировать оверлей' : 'Заблокировать оверлей', click: () => setClickThrough(!clickThroughEnabled) },
     { type: 'separator' },
     { label: 'Выбрать лог', click: () => chooseFile() },
@@ -109,7 +98,6 @@ function createTray() {
   return tray;
 }
 
-// Parse the selected combat log and push fresh data to the renderer.
 async function parseAndSend(filePath) {
   if (!win || !filePath) return;
 
@@ -130,7 +118,6 @@ async function parseAndSend(filePath) {
   }
 }
 
-// Stop file watcher and pending debounced reparses.
 function stopWatching() {
   if (reparseTimer) {
     clearTimeout(reparseTimer);
@@ -142,7 +129,6 @@ function stopWatching() {
   }
 }
 
-// Stop polling for foreground window changes.
 function stopForegroundPolling() {
   if (foregroundPollTimer) {
     clearInterval(foregroundPollTimer);
@@ -150,7 +136,6 @@ function stopForegroundPolling() {
   }
 }
 
-// Debounce log reparsing so bursts of fs.watch events do not overload the app.
 function scheduleParse(filePath, delay = 120) {
   clearTimeout(reparseTimer);
   reparseTimer = setTimeout(() => {
@@ -158,7 +143,6 @@ function scheduleParse(filePath, delay = 120) {
   }, delay);
 }
 
-// Watch the active log file and trigger reparsing on changes.
 function startWatching(filePath) {
   stopWatching();
 
@@ -186,7 +170,6 @@ function startWatching(filePath) {
   }
 }
 
-// Click-through mode lets the overlay ignore mouse input while staying visible.
 function setClickThrough(enabled) {
   clickThroughEnabled = !!enabled;
 
@@ -199,7 +182,6 @@ function setClickThrough(enabled) {
   });
 }
 
-// Send current HUD visibility state to renderer.
 function sendHudState(isActive, foregroundExe = null) {
   if (!win) return;
   win.webContents.send('hud-state', {
@@ -209,7 +191,6 @@ function sendHudState(isActive, foregroundExe = null) {
   });
 }
 
-// Resolve current foreground executable on Windows.
 function getForegroundProcessName() {
   return new Promise((resolve) => {
     if (process.platform !== 'win32') {
@@ -233,7 +214,6 @@ function getForegroundProcessName() {
   });
 }
 
-// Re-evaluate whether the overlay should be visible as HUD.
 async function refreshHudState() {
   const foregroundExe = await getForegroundProcessName();
   const isGameActive = true;
@@ -243,7 +223,6 @@ async function refreshHudState() {
   sendHudState(isGameActive, foregroundExe);
 }
 
-// Start periodic HUD checks.
 function startForegroundPolling() {
   stopForegroundPolling();
   refreshHudState();
@@ -252,7 +231,6 @@ function startForegroundPolling() {
   }, FOREGROUND_POLL_INTERVAL_MS);
 }
 
-// Ask the user to pick a combat log file and start watching it.
 async function chooseFile() {
   if (!win) return { canceled: true };
 
@@ -262,81 +240,63 @@ async function chooseFile() {
       { name: 'Log files', extensions: ['txt', 'log'] },
       { name: 'All files', extensions: ['*'] },
     ],
-    defaultPath: currentFilePath || fromProjectRoot(),
   });
 
-  if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
+  if (result.canceled || !result.filePaths.length) {
+    return { canceled: true };
+  }
 
   currentFilePath = result.filePaths[0];
-  startWatching(currentFilePath);
   await parseAndSend(currentFilePath);
+  startWatching(currentFilePath);
   return { canceled: false, filePath: currentFilePath };
 }
 
-// Create the transparent always-on-top overlay window.
 function createWindow() {
-  const { width } = screen.getPrimaryDisplay().workAreaSize;
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+
+  const appIcon = getAppIconPath();
 
   win = new BrowserWindow({
     width,
-    height: 900,
-    x: 0,
-    y: 0,
+    height,
     frame: false,
     transparent: true,
     resizable: false,
     alwaysOnTop: true,
     skipTaskbar: true,
+    fullscreenable: false,
     hasShadow: false,
-    icon: getAppIconPath() || undefined,
+    icon: appIcon || undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
-  win.loadFile(path.join(__dirname, '../renderer/index.html'));
-  setClickThrough(true);
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setIgnoreMouseEvents(true, { forward: true });
+  win.loadFile(fromProjectRoot('src', 'renderer', 'index.html'));
 
-  // Closing the window hides it to tray unless the app is exiting.
   win.on('close', (event) => {
-    if (isQuitting) return;
-    event.preventDefault();
-    hideToTray();
+    if (!isQuitting) {
+      event.preventDefault();
+      hideToTray();
+    }
   });
 
-  win.on('closed', () => {
-    win = null;
-  });
+  createTray();
+  setClickThrough(true);
+  startForegroundPolling();
 }
 
-// Register IPC calls used by the renderer UI.
-function registerIpc() {
-  ipcMain.handle('pick-log-file', () => chooseFile());
-  ipcMain.handle('reload-current-file', async () => {
-    if (currentFilePath) await parseAndSend(currentFilePath);
-    return { filePath: currentFilePath };
-  });
-  ipcMain.handle('toggle-overlay-lock', () => {
-    setClickThrough(!clickThroughEnabled);
-    return { clickThrough: clickThroughEnabled, locked: !clickThroughEnabled };
-  });
-  ipcMain.handle('get-current-file', () => ({ filePath: currentFilePath }));
-  ipcMain.handle('minimize-to-tray', () => {
-    hideToTray();
-    return { ok: true };
-  });
-  ipcMain.handle('quit-app', () => {
-    isQuitting = true;
-    app.quit();
-    return { ok: true };
-  });
-  ipcMain.handle('get-skill-catalog', () => getSkillCatalog());
-}
+app.whenReady().then(() => {
+  createWindow();
 
-// Global shortcuts for quick overlay control while the game is focused.
-function registerShortcuts() {
   globalShortcut.register('F8', () => {
     setClickThrough(!clickThroughEnabled);
   });
@@ -344,24 +304,33 @@ function registerShortcuts() {
   globalShortcut.register('F9', () => {
     chooseFile();
   });
-}
 
-app.whenReady().then(() => {
-  createWindow();
-  createTray();
-  registerIpc();
-  registerShortcuts();
-  startForegroundPolling();
-
-  app.on('activate', () => {
-    if (!win) createWindow();
-    else showWindow();
+  ipcMain.handle('pick-log-file', async () => chooseFile());
+  ipcMain.handle('reload-current-file', async () => {
+    if (currentFilePath) await parseAndSend(currentFilePath);
+    return { ok: !!currentFilePath };
   });
+  ipcMain.handle('toggle-overlay-lock', async () => {
+    setClickThrough(!clickThroughEnabled);
+    return { locked: !clickThroughEnabled };
+  });
+  ipcMain.handle('get-current-file', async () => ({ filePath: currentFilePath }));
+  ipcMain.handle('minimize-to-tray', async () => {
+    hideToTray();
+    return { ok: true };
+  });
+  ipcMain.handle('quit-app', async () => {
+    isQuitting = true;
+    app.quit();
+    return { ok: true };
+  });
+  ipcMain.handle('get-skill-catalog', async () => getSkillCatalog());
 });
 
-app.on('window-all-closed', (event) => {
-  // Prevent auto-exit on Windows/Linux because the app should live in tray.
-  event.preventDefault();
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
 
 app.on('before-quit', () => {
@@ -369,4 +338,12 @@ app.on('before-quit', () => {
   stopWatching();
   stopForegroundPolling();
   globalShortcut.unregisterAll();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  } else {
+    showWindow();
+  }
 });
