@@ -188,6 +188,22 @@ function updateRelicNodes(container, relics) {
   container.appendChild(fragment);
 }
 
+
+function getSpiritHighlight(player, spiritSnapshot) {
+  const currentSpirit = Number(spiritSnapshot?.current || 0);
+  const blueStone = Number(player?.stones?.blue || 0);
+
+  if (blueStone >= 2640 && currentSpirit >= 85) {
+    return 'spirit-glow-blue';
+  }
+
+  if (blueStone >= 960 && blueStone < 2640 && currentSpirit >= 95) {
+    return 'spirit-glow-blue';
+  }
+
+  return '';
+}
+
 function updateCard(card, player) {
   const history = player.spiritHistory || [];
   const last = history[history.length - 1];
@@ -197,7 +213,11 @@ function updateCard(card, player) {
   card.querySelector('.player-name').textContent = player.name || 'Unknown';
   card.querySelector('.player-class').textContent = `${player.className || 'Unknown'}${player.classId != null ? `` : ''}`;
   card.querySelector('.player-class').style.color = classColor;
-  card.querySelector('.spirit-total').textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
+  const spiritEl = card.querySelector('.spirit-total');
+  spiritEl.textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
+  spiritEl.classList.remove('spirit-glow-blue');
+  const spiritHighlightClass = getSpiritHighlight(player, last);
+  if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
   updateRelicNodes(card.querySelector('.relics-block'), player.relics || []);
 }
 

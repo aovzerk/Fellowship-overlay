@@ -251,10 +251,34 @@ function ensurePlayer(state, id, name) {
       abilities: new Map(),
       spiritHistory: [],
       relics: [],
+      stones: {
+        raw: [],
+        blue: 0,
+      },
     });
   }
 
   return state.players.get(key);
+}
+
+
+function parseStoneValues(raw) {
+  if (typeof raw !== "string" || !raw.startsWith("[") || !raw.endsWith("]")) {
+    return [];
+  }
+
+  return raw
+    .slice(1, -1)
+    .split(",")
+    .map((value) => toNumber(String(value).trim()) || 0);
+}
+
+function setPlayerStones(player, raw) {
+  const values = parseStoneValues(raw);
+  player.stones = {
+    raw: values,
+    blue: values[4] || 0,
+  };
 }
 
 function setPlayerClass(player, classId) {
@@ -513,6 +537,7 @@ function processLine(state, line) {
       if (isPlayerId(unitId)) {
         const player = ensurePlayer(state, unitId, name);
         setPlayerClass(player, classId);
+        setPlayerStones(player, parts[10]);
         setPlayerRelics(player, extractRelicsFromCombatantInfo(parts));
         if (state.collectingDungeonParty) state.dungeonPartyIds.add(unitId);
       }

@@ -377,3 +377,16 @@ button {
   height: 44px;
   flex: 0 0 44px;
 }
+
+.spirit-total {
+  transition: color 0.18s ease, text-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.spirit-total.spirit-glow-blue {
+  color: #4fd8ff;
+  text-shadow:
+    0 0 6px rgba(79, 216, 255, 0.95),
+    0 0 14px rgba(79, 216, 255, 0.72),
+    0 0 24px rgba(64, 156, 255, 0.48);
+  filter: brightness(1.12);
+}
