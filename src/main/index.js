@@ -1,8 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
-const { parseCombatLog } = require('./parser');
+const { parseCombatLog } = require('./services/parser');
+const { getSkillCatalog } = require('./services/skill-catalog');
+const { getAppIconPath, getTrayIcon } = require('./utils/icons');
+const { fromProjectRoot } = require('./utils/project-paths');
 
 let win = null;
 let currentFilePath = null;
@@ -49,41 +52,6 @@ try {
 }
 `;
 
-function getAppIconPath() {
-  const iconCandidates = [
-    path.join(__dirname, 'icons', 'icon.ico'),
-    path.join(__dirname, 'icon.ico'),
-    path.join(__dirname, 'tray.png'),
-    path.join(__dirname, 'icons_trink', 'empty.png'),
-  ];
-
-  for (const iconPath of iconCandidates) {
-    if (fs.existsSync(iconPath)) {
-      return iconPath;
-    }
-  }
-
-  return null;
-}
-
-function getTrayIcon() {
-  const iconCandidates = [
-    getAppIconPath(),
-    path.join(__dirname, 'tray.png'),
-    path.join(__dirname, 'icons_trink', 'empty.png'),
-  ].filter(Boolean);
-
-  for (const iconPath of iconCandidates) {
-    if (fs.existsSync(iconPath)) {
-      const image = nativeImage.createFromPath(iconPath);
-      if (!image.isEmpty()) {
-        return image.resize({ width: 16, height: 16 });
-      }
-    }
-  }
-
-  return nativeImage.createEmpty();
-}
 
 function showWindow() {
   if (!win) return;
@@ -96,80 +64,6 @@ function hideToTray() {
   win.hide();
 }
 
-function normalizeName(raw) {
-  return String(raw || '')
-    .replace(/^\d+[_-]?/, '')
-    .replace(/\.[^.]+$/, '')
-    .replace(/[-_]+/g, ' ')
-    .trim();
-}
-
-function getSkillCatalog() {
-  const skillsPath = path.join(__dirname, 'skills.json');
-  const heroesDir = path.join(__dirname, 'Heroes');
-
-  let skillData = {};
-  try {
-    skillData = JSON.parse(fs.readFileSync(skillsPath, 'utf8'));
-  } catch {
-    skillData = {};
-  }
-
-  const heroFolders = new Map();
-  try {
-    for (const entry of fs.readdirSync(heroesDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const match = entry.name.match(/^(\d+)[_-]?(.*)$/);
-      if (!match) continue;
-      heroFolders.set(String(Number(match[1])), {
-        dirName: entry.name,
-        className: normalizeName(match[2]) || `Class ${match[1]}`,
-        absPath: path.join(heroesDir, entry.name),
-      });
-    }
-  } catch {
-  }
-
-  const classes = Object.entries(skillData).map(([classId, abilities]) => {
-    const normalizedClassId = String(Number(classId));
-    const heroFolder = heroFolders.get(normalizedClassId);
-    const className = heroFolder?.className || `Class ${classId}`;
-    const abilityList = Object.entries(abilities || {})
-      .map(([abilityId, cooldown]) => {
-        const normalizedAbilityId = String(Number(abilityId));
-        let image = null;
-        let abilityName = `Skill ${abilityId}`;
-
-        if (heroFolder?.absPath) {
-          try {
-            const files = fs.readdirSync(heroFolder.absPath);
-            const match = files.find((file) => file.startsWith(`${normalizedAbilityId}_`));
-            if (match) {
-              abilityName = normalizeName(match);
-              image = path.posix.join('Heroes', heroFolder.dirName, match).replace(/\\/g, '/');
-            }
-          } catch {
-          }
-        }
-
-        return {
-          id: Number(abilityId),
-          cooldown: Number(cooldown) || 0,
-          name: abilityName,
-          icon: image,
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return {
-      id: Number(classId),
-      name: className,
-      abilities: abilityList,
-    };
-  }).sort((a, b) => a.name.localeCompare(b.name));
-
-  return { classes };
-}
 
 function createTray() {
   if (tray) return tray;
@@ -386,7 +280,7 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
-  win.loadFile(path.join(__dirname, 'index.html'));
+  win.loadFile(fromProjectRoot('src', 'renderer', 'index.html'));
 
   win.on('close', (event) => {
     if (!isQuitting) {

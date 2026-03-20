@@ -2,7 +2,7 @@
   "name": "fellowship-overlay",
   "version": "1.0.0",
   "description": "Fellowship overlay",
-  "main": "main.js",
+  "main": "src/main/index.js",
   "author": "AOV",
   "private": true,
   "scripts": {

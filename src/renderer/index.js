@@ -50,6 +50,12 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+
+function toAssetSrc(relPath) {
+  const normalized = String(relPath || 'icons_trink/empty.png').replace(/^\.\//, '').replace(/^\/+/, '');
+  return `../../${escapeHtml(normalized)}`;
+}
+
 function getPlayerLayoutKey(slotIndex = 0) {
   return `party-slot:${slotIndex}`;
 }
@@ -244,7 +250,7 @@ function updateIconNodes(container, items) {
     row.classList.toggle('cooldown', !item.isReady);
 
     const icon = row.querySelector('.relic-icon');
-    icon.src = `./${escapeHtml(item.icon || 'icons_trink/empty.png')}`;
+    icon.src = toAssetSrc(item.icon || 'icons_trink/empty.png');
     icon.alt = escapeHtml(item.name);
     row.title = item.name || '';
 
@@ -404,7 +410,7 @@ function buildAbilityOption(classId, ability, selected) {
   return `
     <label class="skill-option">
       <input type="checkbox" data-class-id="${classId}" data-ability-id="${ability.id}" ${checked} />
-      <img class="skill-option-icon" src="./${escapeHtml(ability.icon || 'icons_trink/empty.png')}" alt="${escapeHtml(ability.name)}" />
+      <img class="skill-option-icon" src="${toAssetSrc(ability.icon || 'icons_trink/empty.png')}" alt="${escapeHtml(ability.name)}" />
       <span class="skill-option-text">
         <span class="skill-option-name">${escapeHtml(ability.name)}</span>
         <span class="skill-option-cooldown">${escapeHtml(ability.cooldown)}s</span>

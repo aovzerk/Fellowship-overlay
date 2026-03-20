@@ -1,9 +1,9 @@
 
 const fs = require("fs");
-const path = require("path");
+const { fromProjectRoot } = require('../utils/project-paths');
 
 const RELIC_DATA = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "relics.json"), "utf8")
+  fs.readFileSync(fromProjectRoot("relics.json"), "utf8")
 );
 const RELICS = RELIC_DATA.relics || {};
 const RELIC_ITEM_MAPPING = RELIC_DATA.item_mapping || {};
