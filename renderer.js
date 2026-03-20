@@ -200,6 +200,9 @@ function getSpiritHighlight(player, spiritSnapshot) {
   if (blueStone >= 960 && blueStone < 2640 && currentSpirit >= 95) {
     return 'spirit-glow-blue';
   }
+  if (blueStone < 960 && currentSpirit >= 100) {
+    return 'spirit-glow-blue';
+  }
 
   return '';
 }
