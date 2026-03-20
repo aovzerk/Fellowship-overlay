@@ -127,19 +127,18 @@ function createCard(player, slotIndex, positions) {
   card.style.top = `${pos.y}px`;
   card.innerHTML = `
     <div class="player-header drag-handle">
-      <div>
+      <div class="player-title-block">
         <div class="player-name"></div>
         <div class="player-class"></div>
       </div>
-      <span class="spirit-total">-</span>
     </div>
-    <div class="spirit-row">
-      <div>Spirit</div>
-      <div class="bar-wrap"><div class="bar"></div></div>
-      <div class="spirit-percent">0%</div>
+    <div class="player-info-row">
+      <div class="spirit-inline">
+        <span class="spirit-label">Spirit</span>
+        <span class="spirit-total">-</span>
+      </div>
+      <div class="relics-block"></div>
     </div>
-    <div class="relics-block"></div>
-    <div class="meta"></div>
   `;
   makeCardDraggable(card, card.querySelector('.drag-handle'), layoutKey, positions);
   playersContainer.appendChild(card);
@@ -160,19 +159,27 @@ function updateRelicNodes(container, relics) {
       row.dataset.id = key;
       row.innerHTML = `
         <img class="relic-icon" alt="" />
-        <div class="relic-info">
-          <div class="relic-name"></div>
-          <div class="relic-timer"></div>
-        </div>
+        <div class="relic-cooldown-mask"></div>
+        <div class="relic-cooldown-hand"></div>
+        <div class="relic-timer"></div>
       `;
     }
     row.classList.toggle('ready', relic.isReady);
     row.classList.toggle('cooldown', !relic.isReady);
+
     const icon = row.querySelector('.relic-icon');
     icon.src = `./${escapeHtml(relic.icon || 'icons_trink/empty.png')}`;
     icon.alt = escapeHtml(relic.name);
-    row.querySelector('.relic-name').textContent = relic.name;
-    row.querySelector('.relic-timer').textContent = relic.isReady ? 'Ready' : formatDurationMs(relic.cooldownRemainingMs);
+    row.title = relic.name || '';
+
+    const baseCooldownMs = Math.max(0, Number(relic.baseCooldown || 0) * 1000);
+    const remainingMs = Math.max(0, Number(relic.cooldownRemainingMs || 0));
+    const progress = relic.isReady || !baseCooldownMs ? 1 : Math.max(0, Math.min(1, 1 - (remainingMs / baseCooldownMs)));
+    const angle = progress * 360;
+
+    row.style.setProperty('--cooldown-progress', `${angle}deg`);
+    row.querySelector('.relic-timer').textContent = relic.isReady ? '' : formatDurationMs(remainingMs);
+
     fragment.appendChild(row);
     existing.delete(key);
   }
@@ -184,7 +191,6 @@ function updateRelicNodes(container, relics) {
 function updateCard(card, player) {
   const history = player.spiritHistory || [];
   const last = history[history.length - 1];
-  const percent = last?.max ? Math.max(0, Math.min(100, (last.current / last.max) * 100)) : 0;
   const classColor = player.classColor || '#6b7280';
 
   card.dataset.playerId = player.id || '';
@@ -192,10 +198,6 @@ function updateCard(card, player) {
   card.querySelector('.player-class').textContent = `${player.className || 'Unknown'}${player.classId != null ? `` : ''}`;
   card.querySelector('.player-class').style.color = classColor;
   card.querySelector('.spirit-total').textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
-  card.querySelector('.bar').style.width = `${percent}%`;
-  card.querySelector('.bar').style.backgroundColor = classColor;
-  card.querySelector('.spirit-percent').textContent = `${formatNumber(percent)}%`;
-  card.querySelector('.meta').textContent = `Damage: ${formatNumber(player.damageDone)} | Heal: ${formatNumber(player.healingDone)} | Deaths: ${formatNumber(player.deaths)}`;
   updateRelicNodes(card.querySelector('.relics-block'), player.relics || []);
 }
 
