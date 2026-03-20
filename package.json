@@ -1,0 +1,35 @@
+{
+  "name": "fellowship-overlay",
+  "version": "1.0.0",
+  "description": "Fellowship overlay",
+  "main": "main.js",
+  "author": "AOV",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^36.9.5",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.aov.fellowshipoverlay",
+    "productName": "Fellowship Overlay",
+    "files": [
+      "**/*",
+      "!dist/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "Fellowship-Overlay-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

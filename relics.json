@@ -1,0 +1,84 @@
+{
+  "relics": {
+    "186": {
+      "name": "Sanctuary",
+      "base_cooldown": 180,
+      "icon": "icons_trink/Sanctuary.jpg"
+    },
+    "188": {
+      "name": "Restore Mana",
+      "base_cooldown": 120,
+      "icon": "icons_trink/Restore_Mana.jpg"
+    },
+    "1952": {
+      "name": "Obsidian Skin",
+      "base_cooldown": 60,
+      "icon": "icons_trink/Obsidian_Skin.jpg"
+    },
+    "1478": {
+      "name": "Chickenize",
+      "base_cooldown": 180,
+      "icon": "icons_trink/Chickenize.jpg"
+    },
+    "187": {
+      "name": "Major Dispel",
+      "base_cooldown": 120,
+      "icon": "icons_trink/Major_Dispel.jpg"
+    },
+    "185": {
+      "name": "Bloodrite Drums",
+      "base_cooldown": 90,
+      "icon": "icons_trink/Bloodrite_Drums.jpg"
+    },
+    "1486": {
+      "name": "Major Invisibility",
+      "base_cooldown": 360,
+      "icon": "icons_trink/Major_Invisibility.jpg"
+    },
+    "1504": {
+      "name": "Conjure Portal",
+      "base_cooldown": 120,
+      "icon": "icons_trink/Conjure_Portal.jpg"
+    },
+    "22": {
+      "name": "Revive",
+      "base_cooldown": 300,
+      "icon": "icons_trink/Revive.jpg"
+    },
+    "189": {
+      "name": "Rejuvenate",
+      "base_cooldown": 120,
+      "icon": "icons_trink/Rejuvenate.jpg"
+    }
+  },
+  "item_mapping": {
+    "4943": 188,
+    "310": 188,
+    "1487": 186,
+    "175": 186,
+    "176": 186,
+    "4944": 1952,
+    "4945": 1952,
+    "1494": 1478,
+    "1495": 1478,
+    "1496": 1478,
+    "177": 187,
+    "1488": 187,
+    "1489": 187,
+    "415": 185,
+    "416": 185,
+    "417": 185,
+    "1490": 1486,
+    "1491": 1486,
+    "1492": 1486,
+    "1497": 1504,
+    "1498": 1504,
+    "1499": 1504,
+    "110": 22,
+    "111": 22,
+    "112": 22,
+    "255": 189,
+    "256": 189,
+    "257": 189
+  }
+}

@@ -1,0 +1,206 @@
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  color: #fff;
+}
+
+#overlay-root {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.interactive {
+  pointer-events: auto;
+}
+
+.panel {
+  background: rgba(10, 10, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+#topbar {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  z-index: 50;
+}
+
+#filePath, #watchStatus {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+#filePath {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#watchStatus {
+  margin-left: auto;
+}
+
+button {
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+#playersContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.floating-card {
+  position: fixed;
+  width: 300px;
+  padding: 10px;
+  z-index: 10;
+}
+
+.player-card {
+  user-select: none;
+}
+
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.player-name {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.player-class, .meta, .relic-timer {
+  font-size: 12px;
+}
+
+.spirit-total, .relic-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.drag-handle {
+  cursor: move;
+}
+
+.spirit-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 52px;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.bar-wrap {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 999px;
+  background: #6b7280;
+}
+
+.meta {
+  opacity: 0.85;
+  margin-top: 8px;
+  line-height: 1.35;
+}
+
+.relics-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.relic-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.relic-chip.ready {
+  opacity: 0.85;
+}
+
+.relic-chip.cooldown {
+  opacity: 1;
+}
+
+.relic-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex: 0 0 24px;
+  background: rgba(255,255,255,0.08);
+}
+
+.relic-info {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.relic-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+#hudStatus {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+#overlay-root.hud-hidden #playersContainer,
+#overlay-root.hud-hidden #topbar {
+  opacity: 0;
+}
+
+#closeAppBtn {
+  min-width: 34px;
+  padding: 6px 10px;
+  font-weight: 700;
+}
+
+#closeAppBtn:hover {
+  background: rgba(255, 90, 90, 0.2);
+  border-color: rgba(255, 90, 90, 0.45);
+}

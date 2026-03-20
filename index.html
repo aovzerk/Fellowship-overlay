@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spirit Overlay</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="overlay-root">
+    <div id="topbar" class="panel interactive">
+      <button id="pickFileBtn">Выбрать лог</button>
+      <button id="reloadBtn">Обновить</button>
+      <button id="toggleLockBtn">Lock/Unlock</button>
+      <button id="minimizeToTrayBtn">В трей</button>
+      <button id="closeAppBtn" class="danger-btn" title="Закрыть приложение">✕</button>
+      <span id="filePath">Файл не выбран</span>
+      <span id="watchStatus">Нет слежения</span>
+      <span id="hudStatus">HUD active</span>
+    </div>
+
+    <div id="playersContainer"></div>
+  </div>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>
