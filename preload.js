@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   getCurrentFile: () => ipcRenderer.invoke('get-current-file'),
   minimizeToTray: () => ipcRenderer.invoke('minimize-to-tray'),
   quitApp: () => ipcRenderer.invoke('quit-app'),
+  getSkillCatalog: () => ipcRenderer.invoke('get-skill-catalog'),
 
   onLogData: (callback) => ipcRenderer.on('log-data', (_, payload) => callback(payload)),
   onWatchStatus: (callback) => ipcRenderer.on('watch-status', (_, payload) => callback(payload)),

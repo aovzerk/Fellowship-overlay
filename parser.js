@@ -72,18 +72,25 @@ function ensurePlayerRelic(player, relicLike) {
   return relic;
 }
 
+function getEquippedRelicByAnyId(player, rawId) {
+  if (!player?.relics?.length || rawId == null) return null;
+  const canonicalId = getCanonicalRelicId(rawId);
+  if (canonicalId == null) return null;
+  return player.relics.find((relic) => relic.id === canonicalId) || null;
+}
+
 function setPlayerRelics(player, relics) {
   if (!Array.isArray(relics) || !relics.length) return;
   for (const relic of relics) ensurePlayerRelic(player, relic);
 }
 
 function markRelicUse(player, abilityId, ts) {
-  const meta = getRelicMetaByAnyId(abilityId);
-  if (!meta) return;
-  const relic = ensurePlayerRelic(player, meta);
+  const relic = getEquippedRelicByAnyId(player, abilityId);
+  if (!relic) return;
+
   const tsMs = parseTs(ts);
   relic.lastUsedAt = ts;
-  relic.cooldownEndsAt = tsMs != null ? new Date(tsMs + meta.baseCooldown * 1000).toISOString() : null;
+  relic.cooldownEndsAt = tsMs != null ? new Date(tsMs + relic.baseCooldown * 1000).toISOString() : null;
 }
 
 function computeRelicCooldownState(player, nowMs) {
@@ -254,6 +261,7 @@ function ensurePlayer(state, id, name) {
       stones: {
         raw: [],
         blue: 0,
+        green: 0,
       },
     });
   }
@@ -277,7 +285,8 @@ function setPlayerStones(player, raw) {
   const values = parseStoneValues(raw);
   player.stones = {
     raw: values,
-    blue: values[4] || 0,
+    blue: values[2] || 0,
+    green: values[4] || 0,
   };
 }
 

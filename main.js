@@ -49,7 +49,6 @@ try {
 }
 `;
 
-
 function getTrayIcon() {
   const iconCandidates = [
     path.join(__dirname, 'tray.png'),
@@ -77,6 +76,81 @@ function showWindow() {
 function hideToTray() {
   if (!win) return;
   win.hide();
+}
+
+function normalizeName(raw) {
+  return String(raw || '')
+    .replace(/^\d+[_-]?/, '')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+}
+
+function getSkillCatalog() {
+  const skillsPath = path.join(__dirname, 'skills.json');
+  const heroesDir = path.join(__dirname, 'Heroes');
+
+  let skillData = {};
+  try {
+    skillData = JSON.parse(fs.readFileSync(skillsPath, 'utf8'));
+  } catch {
+    skillData = {};
+  }
+
+  const heroFolders = new Map();
+  try {
+    for (const entry of fs.readdirSync(heroesDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const match = entry.name.match(/^(\d+)[_-]?(.*)$/);
+      if (!match) continue;
+      heroFolders.set(String(Number(match[1])), {
+        dirName: entry.name,
+        className: normalizeName(match[2]) || `Class ${match[1]}`,
+        absPath: path.join(heroesDir, entry.name),
+      });
+    }
+  } catch {
+  }
+
+  const classes = Object.entries(skillData).map(([classId, abilities]) => {
+    const normalizedClassId = String(Number(classId));
+    const heroFolder = heroFolders.get(normalizedClassId);
+    const className = heroFolder?.className || `Class ${classId}`;
+    const abilityList = Object.entries(abilities || {})
+      .map(([abilityId, cooldown]) => {
+        const normalizedAbilityId = String(Number(abilityId));
+        let image = null;
+        let abilityName = `Skill ${abilityId}`;
+
+        if (heroFolder?.absPath) {
+          try {
+            const files = fs.readdirSync(heroFolder.absPath);
+            const match = files.find((file) => file.startsWith(`${normalizedAbilityId}_`));
+            if (match) {
+              abilityName = normalizeName(match);
+              image = path.posix.join('Heroes', heroFolder.dirName, match).replace(/\\/g, '/');
+            }
+          } catch {
+          }
+        }
+
+        return {
+          id: Number(abilityId),
+          cooldown: Number(cooldown) || 0,
+          name: abilityName,
+          icon: image,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      id: Number(classId),
+      name: className,
+      abilities: abilityList,
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
+  return { classes };
 }
 
 function createTray() {
@@ -230,7 +304,7 @@ function getForegroundProcessName() {
 
 async function refreshHudState() {
   const foregroundExe = await getForegroundProcessName();
-  const isGameActive = true; //String(foregroundExe || '').toLowerCase() === TARGET_GAME_EXE;
+  const isGameActive = true;
 
   if (lastHudActive === isGameActive) return;
   lastHudActive = isGameActive;
@@ -263,104 +337,98 @@ async function chooseFile() {
   currentFilePath = result.filePaths[0];
   await parseAndSend(currentFilePath);
   startWatching(currentFilePath);
-
-  return {
-    canceled: false,
-    filePath: currentFilePath,
-  };
+  return { canceled: false, filePath: currentFilePath };
 }
 
 function createWindow() {
-  const display = screen.getPrimaryDisplay();
-  const { x, y, width, height } = display.bounds;
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
 
   win = new BrowserWindow({
-    x,
-    y,
     width,
     height,
     frame: false,
     transparent: true,
+    resizable: false,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
-    movable: false,
-    hasShadow: false,
     fullscreenable: false,
-    backgroundColor: '#00000000',
+    hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'index.html'));
-  createTray();
 
   win.on('close', (event) => {
-    if (isQuitting) return;
-    event.preventDefault();
-    hideToTray();
+    if (!isQuitting) {
+      event.preventDefault();
+      hideToTray();
+    }
   });
 
-  win.on('show', () => {
-    tray?.setContextMenu(null);
-  });
-
+  createTray();
   setClickThrough(true);
   startForegroundPolling();
+}
+
+app.whenReady().then(() => {
+  createWindow();
 
   globalShortcut.register('F8', () => {
     setClickThrough(!clickThroughEnabled);
   });
 
-  globalShortcut.register('F9', async () => {
-    await chooseFile();
+  globalShortcut.register('F9', () => {
+    chooseFile();
   });
-}
 
-app.whenReady().then(createWindow);
+  ipcMain.handle('pick-log-file', async () => chooseFile());
+  ipcMain.handle('reload-current-file', async () => {
+    if (currentFilePath) await parseAndSend(currentFilePath);
+    return { ok: !!currentFilePath };
+  });
+  ipcMain.handle('toggle-overlay-lock', async () => {
+    setClickThrough(!clickThroughEnabled);
+    return { locked: !clickThroughEnabled };
+  });
+  ipcMain.handle('get-current-file', async () => ({ filePath: currentFilePath }));
+  ipcMain.handle('minimize-to-tray', async () => {
+    hideToTray();
+    return { ok: true };
+  });
+  ipcMain.handle('quit-app', async () => {
+    isQuitting = true;
+    app.quit();
+    return { ok: true };
+  });
+  ipcMain.handle('get-skill-catalog', async () => getSkillCatalog());
+});
 
-app.on('will-quit', () => {
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
   stopWatching();
   stopForegroundPolling();
   globalShortcut.unregisterAll();
 });
 
-app.on('window-all-closed', () => {
-  app.quit();
-});
-
-ipcMain.handle('pick-log-file', async () => chooseFile());
-
-ipcMain.handle('reload-current-file', async () => {
-  if (!currentFilePath) {
-    return { ok: false, error: 'Файл не выбран' };
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  } else {
+    showWindow();
   }
-
-  await parseAndSend(currentFilePath);
-  return { ok: true };
-});
-
-ipcMain.handle('toggle-overlay-lock', async () => {
-  setClickThrough(!clickThroughEnabled);
-  return { ok: true, locked: !clickThroughEnabled };
-});
-
-ipcMain.handle('get-current-file', async () => ({
-  filePath: currentFilePath,
-}));
-
-ipcMain.handle('minimize-to-tray', async () => {
-  hideToTray();
-  return { ok: true };
-});
-
-ipcMain.handle('quit-app', async () => {
-  isQuitting = true;
-  app.quit();
-  return { ok: true };
 });

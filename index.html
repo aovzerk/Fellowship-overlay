@@ -12,6 +12,12 @@
       <button id="pickFileBtn">Выбрать лог</button>
       <button id="reloadBtn">Обновить</button>
       <button id="toggleLockBtn">Lock/Unlock</button>
+      <button id="skillsBtn">Skills</button>
+      <div class="size-controls interactive" title="Card size">
+        <button id="cardSizeDownBtn" type="button">−</button>
+        <span id="cardSizeValue">100%</span>
+        <button id="cardSizeUpBtn" type="button">+</button>
+      </div>
       <button id="minimizeToTrayBtn">В трей</button>
       <button id="closeAppBtn" class="danger-btn" title="Закрыть приложение">✕</button>
       <span id="filePath">Файл не выбран</span>
@@ -20,6 +26,21 @@
     </div>
 
     <div id="playersContainer"></div>
+
+    <div id="skillsModal" class="modal-overlay hidden interactive">
+      <div class="panel modal-card">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">Tracked class skills</div>
+            <div class="modal-subtitle">Choose one or more abilities for each class</div>
+          </div>
+          <button id="closeSkillsModalBtn" class="danger-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="skillsCatalog"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="./renderer.js"></script>
