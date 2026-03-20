@@ -39,19 +39,6 @@ body {
   backdrop-filter: blur(6px);
 }
 
-#topbar {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  z-index: 1000;
-}
-
 button {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
@@ -115,14 +102,6 @@ button:hover {
   min-width: 44px;
   text-align: center;
   font-weight: 700;
-  opacity: 0.9;
-}
-
-#filePath, #watchStatus, #hudStatus {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   opacity: 0.9;
 }
 
@@ -344,4 +323,55 @@ button:hover {
 .empty-state {
   opacity: 0.7;
   padding: 16px 0;
+}
+
+
+.settings-modal-card {
+  width: min(760px, calc(100vw - 40px));
+}
+
+.settings-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-group {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+
+.settings-group-title {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-row + .settings-row,
+.settings-row + .settings-note,
+.settings-note + .settings-note,
+.settings-group .language-switcher + .size-controls {
+  margin-top: 10px;
+}
+
+.settings-row-inline {
+  margin-top: 10px;
+}
+
+.settings-note {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.9;
+  font-size: 12px;
 }

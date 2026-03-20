@@ -61,6 +61,7 @@ const I18N = {
     trayShow: 'Show overlay',
     trayUnlock: 'Unlock overlay',
     trayLock: 'Lock overlay',
+    traySettings: 'Settings',
     trayChooseLog: 'Select log',
     trayRefresh: 'Refresh',
     trayExit: 'Exit',
@@ -75,6 +76,7 @@ const I18N = {
     trayShow: 'Показать оверлей',
     trayUnlock: 'Разблокировать оверлей',
     trayLock: 'Заблокировать оверлей',
+    traySettings: 'Настройки',
     trayChooseLog: 'Выбрать лог',
     trayRefresh: 'Обновить',
     trayExit: 'Выход',
@@ -139,6 +141,18 @@ function hideToTray() {
   win.hide();
 }
 
+
+function openSettingsWindow() {
+  if (!win) return;
+  showWindow();
+  win.webContents.send('open-settings', {
+    filePath: currentFilePath,
+    watching: !!currentWatcher,
+    locked: !clickThroughEnabled,
+    language: getCurrentLanguage(),
+  });
+}
+
 function createTray() {
   if (tray) return tray;
 
@@ -155,12 +169,9 @@ function createTray() {
       },
     },
     {
-      label: clickThroughEnabled ? t('trayUnlock') : t('trayLock'),
-      click: () => setClickThrough(!clickThroughEnabled),
+      label: t('traySettings'),
+      click: () => openSettingsWindow(),
     },
-    { type: 'separator' },
-    { label: t('trayChooseLog'), click: () => chooseFile() },
-    { label: t('trayRefresh'), click: () => currentFilePath && parseAndSend(currentFilePath) },
     { type: 'separator' },
     { label: t('trayExit'), click: () => { isQuitting = true; app.quit(); } },
   ]);
@@ -410,6 +421,10 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('get-skill-catalog', async () => getSkillCatalog());
   ipcMain.handle('get-language', async () => ({ language: getCurrentLanguage() }));
+  ipcMain.handle('open-settings', async () => {
+    openSettingsWindow();
+    return { ok: true };
+  });
   ipcMain.handle('set-language', async (_, language) => {
     const nextLanguage = setCurrentLanguage(language);
     win?.webContents.send('language-changed', { language: nextLanguage });

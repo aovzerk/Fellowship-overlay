@@ -1,4 +1,11 @@
 const playersContainer = document.getElementById("playersContainer");
+const settingsModal = document.getElementById("settingsModal");
+const closeSettingsModalBtn = document.getElementById("closeSettingsModalBtn");
+const settingsModalTitle = document.getElementById("settingsModalTitle");
+const settingsModalSubtitle = document.getElementById("settingsModalSubtitle");
+const logSettingsTitle = document.getElementById("logSettingsTitle");
+const overlaySettingsTitle = document.getElementById("overlaySettingsTitle");
+const appearanceSettingsTitle = document.getElementById("appearanceSettingsTitle");
 const pickFileBtn = document.getElementById("pickFileBtn");
 const reloadBtn = document.getElementById("reloadBtn");
 const toggleLockBtn = document.getElementById("toggleLockBtn");
@@ -6,8 +13,6 @@ const skillsBtn = document.getElementById("skillsBtn");
 const cardSizeDownBtn = document.getElementById("cardSizeDownBtn");
 const cardSizeUpBtn = document.getElementById("cardSizeUpBtn");
 const cardSizeValueEl = document.getElementById("cardSizeValue");
-const minimizeToTrayBtn = document.getElementById("minimizeToTrayBtn");
-const closeAppBtn = document.getElementById("closeAppBtn");
 const closeSkillsModalBtn = document.getElementById("closeSkillsModalBtn");
 const languageSelect = document.getElementById("languageSelect");
 const languageLabel = document.getElementById("languageLabel");
@@ -34,7 +39,7 @@ let hudActive = true;
 let skillCatalog = { classes: [] };
 let selectedSkillsByClass = loadSkillSelections();
 let cardScale = loadCardScale();
-let currentLanguage = "ru";
+let currentLanguage = "en";
 let lastWatchStatusMessage = "";
 
 
@@ -48,14 +53,17 @@ const I18N = {
     skills: 'Skills',
     language: 'Язык',
     cardSizeTitle: 'Размер карточки',
-    minimizeToTray: 'В трей',
-    closeApp: 'Закрыть приложение',
     noFileSelected: 'Файл не выбран',
     noWatching: 'Нет слежения',
     hudActive: 'HUD active',
     hudHidden: 'HUD hidden',
     spirit: 'Spirit',
     trackedClassSkills: 'Отслеживаемые способности классов',
+    settings: 'Настройки',
+    settingsSubtitle: 'Общие настройки оверлея',
+    logSettings: 'Лог',
+    overlaySettings: 'Оверлей',
+    appearanceSettings: 'Внешний вид',
     chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
     skillsEmpty: 'skills.json не найден или пуст',
     unknown: 'Неизвестно',
@@ -70,14 +78,17 @@ const I18N = {
     skills: 'Skills',
     language: 'Language',
     cardSizeTitle: 'Card size',
-    minimizeToTray: 'To tray',
-    closeApp: 'Close application',
     noFileSelected: 'No file selected',
     noWatching: 'Not watching',
     hudActive: 'HUD active',
     hudHidden: 'HUD hidden',
     spirit: 'Spirit',
     trackedClassSkills: 'Tracked class skills',
+    settings: 'Settings',
+    settingsSubtitle: 'General overlay settings',
+    logSettings: 'Log',
+    overlaySettings: 'Overlay',
+    appearanceSettings: 'Appearance',
     chooseAbilities: 'Choose one or more abilities for each class',
     skillsEmpty: 'skills.json not found or empty',
     unknown: 'Unknown',
@@ -86,11 +97,16 @@ const I18N = {
 };
 
 function t(key) {
-  return I18N[currentLanguage]?.[key] || I18N.ru[key] || key;
+  return I18N[currentLanguage]?.[key] || I18N.en[key] || key;
 }
 
 function applyTranslations() {
   document.documentElement.lang = t('htmlLang');
+  settingsModalTitle.textContent = t('settings');
+  settingsModalSubtitle.textContent = t('settingsSubtitle');
+  logSettingsTitle.textContent = t('logSettings');
+  overlaySettingsTitle.textContent = t('overlaySettings');
+  appearanceSettingsTitle.textContent = t('appearanceSettings');
   pickFileBtn.textContent = t('pickLog');
   reloadBtn.textContent = t('reload');
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
@@ -99,9 +115,7 @@ function applyTranslations() {
   if (languageSelect) languageSelect.value = currentLanguage;
   const sizeControls = document.querySelector('.size-controls');
   if (sizeControls) sizeControls.title = t('cardSizeTitle');
-  minimizeToTrayBtn.textContent = t('minimizeToTray');
-  closeAppBtn.title = t('closeApp');
-  if (!filePathEl.textContent || filePathEl.textContent === I18N.ru.noFileSelected || filePathEl.textContent === I18N.en.noFileSelected) {
+  if (!filePathEl.textContent || filePathEl.textContent === I18N.en.noFileSelected || filePathEl.textContent === I18N.ru.noFileSelected) {
     filePathEl.textContent = t('noFileSelected');
   }
   watchStatusEl.textContent = lastWatchStatusMessage || t('noWatching');
@@ -542,6 +556,15 @@ function renderSkillsModal() {
   });
 }
 
+function openSettingsModal() {
+  updateCardScaleUi();
+  settingsModal.classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  settingsModal.classList.add('hidden');
+}
+
 async function ensureSkillCatalog() {
   if (skillCatalog.classes?.length) return;
   skillCatalog = await window.api.getSkillCatalog();
@@ -575,6 +598,7 @@ skillsBtn.addEventListener('click', openSkillsModal);
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
+closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
 languageSelect.addEventListener("change", async (event) => {
   const nextLanguage = event.currentTarget.value === "en" ? "en" : "ru";
   const result = await window.api.setLanguage(nextLanguage);
@@ -583,13 +607,8 @@ languageSelect.addEventListener("change", async (event) => {
 skillsModal.addEventListener('mousedown', (event) => {
   if (event.target === skillsModal) closeSkillsModal();
 });
-
-minimizeToTrayBtn.addEventListener("click", async () => {
-  await window.api.minimizeToTray();
-});
-
-closeAppBtn.addEventListener("click", async () => {
-  await window.api.quitApp();
+settingsModal.addEventListener('mousedown', (event) => {
+  if (event.target === settingsModal) closeSettingsModal();
 });
 
 window.api.onWatchStatus((payload) => {
@@ -600,6 +619,10 @@ window.api.onWatchStatus((payload) => {
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
   toggleLockBtn.textContent = overlayLocked ? t("unlockOverlay") : t("lockOverlay");
+});
+
+window.api.onOpenSettings(() => {
+  openSettingsModal();
 });
 
 window.api.onHudState((payload) => {
