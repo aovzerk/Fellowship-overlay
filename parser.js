@@ -262,6 +262,7 @@ function ensurePlayer(state, id, name) {
         raw: [],
         blue: 0,
         green: 0,
+        white: 0
       },
     });
   }
@@ -285,8 +286,9 @@ function setPlayerStones(player, raw) {
   const values = parseStoneValues(raw);
   player.stones = {
     raw: values,
-    blue: values[2] || 0,
-    green: values[4] || 0,
+    blue: values[4] || 0,
+    green: values[2] || 0,
+    white: values[1] || 0
   };
 }
 
