@@ -1,7 +1,11 @@
+// Combat log parser.
+// Converts raw Fellowship log lines into a renderer-friendly snapshot
+// containing party members, spirit history, equipped relics, and tracked abilities.
 
 const fs = require("fs");
 const { fromProjectRoot } = require('../utils/project-paths');
 
+// Static relic metadata used to map ability/item ids to display info.
 const RELIC_DATA = JSON.parse(
   fs.readFileSync(fromProjectRoot("relics.json"), "utf8")
 );
@@ -9,6 +13,7 @@ const RELICS = RELIC_DATA.relics || {};
 const RELIC_ITEM_MAPPING = RELIC_DATA.item_mapping || {};
 const parserCache = new Map();
 
+// Some log lines use item ids, others use canonical relic ids. Normalize both.
 function getCanonicalRelicId(rawId) {
   if (rawId == null) return null;
   const key = String(rawId);
@@ -28,6 +33,7 @@ function getRelicMetaByAnyId(rawId) {
   };
 }
 
+// COMBATANT_INFO contains nested tuples with equipped relic information.
 function extractRelicsFromCombatantInfo(parts) {
   const found = new Map();
   for (const part of parts) {
@@ -45,6 +51,7 @@ function parseTs(ts) {
   return Number.isFinite(ms) ? ms : null;
 }
 
+// Ensure a relic entry exists on a player and keep its metadata up to date.
 function ensurePlayerRelic(player, relicLike) {
   if (!player.relics) player.relics = [];
   const meta = getRelicMetaByAnyId(relicLike?.id ?? relicLike);
@@ -84,6 +91,7 @@ function setPlayerRelics(player, relics) {
   for (const relic of relics) ensurePlayerRelic(player, relic);
 }
 
+// Start a relic cooldown only if that relic is actually equipped by the player.
 function markRelicUse(player, abilityId, ts) {
   const relic = getEquippedRelicByAnyId(player, abilityId);
   if (!relic) return;
@@ -93,6 +101,7 @@ function markRelicUse(player, abilityId, ts) {
   relic.cooldownEndsAt = tsMs != null ? new Date(tsMs + relic.baseCooldown * 1000).toISOString() : null;
 }
 
+// Finalize cooldown state for UI rendering.
 function computeRelicCooldownState(player, nowMs) {
   const relics = (player.relics || []).map((relic) => {
     let remaining = 0;
@@ -113,6 +122,7 @@ function computeRelicCooldownState(player, nowMs) {
   return relics;
 }
 
+// Known class ids from the game log mapped to display name and UI color.
 const CLASS_INFO = {
   22: { name: "Helena", color: "#b46831" },
   13: { name: "Meiko", color: "#28e05c" },
@@ -134,6 +144,7 @@ function getClassInfo(classId) {
   return { id: classId, ...info };
 }
 
+// Split pipe-delimited log lines while preserving nested arrays/tuples.
 function splitLogLine(line) {
   const result = [];
   let current = "";
@@ -216,6 +227,7 @@ function isLikelyCombatAbility(ability) {
   return true;
 }
 
+// In-memory structure filled while walking through the log file.
 function createState() {
   return {
     dungeon: {
@@ -669,6 +681,7 @@ function getFileIdentity(stat) {
   return `${stat.dev || 0}:${stat.ino || 0}`;
 }
 
+// Read and parse the full log file into a snapshot used by the overlay.
 async function parseCombatLog(filePath) {
   const stat = await fs.promises.stat(filePath);
   const currentIdentity = getFileIdentity(stat);

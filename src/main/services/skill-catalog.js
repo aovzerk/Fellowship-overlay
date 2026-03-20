@@ -1,7 +1,11 @@
+// Builds a UI-friendly catalog of selectable class skills.
+// Data comes from skills.json + hero folders with ability icons.
 const fs = require('fs');
 const path = require('path');
 const { fromProjectRoot } = require('../utils/project-paths');
 
+// Convert folder/file names like `22_Helena` or `984_shields-up.jpg`
+// into readable labels for the UI.
 function normalizeName(raw) {
   return String(raw || '')
     .replace(/^\d+[_-]?/, '')
@@ -14,6 +18,7 @@ function getSkillCatalog() {
   const skillsPath = fromProjectRoot('skills.json');
   const heroesDir = fromProjectRoot('Heroes');
 
+  // skills.json is optional during development, so fall back to an empty catalog.
   let skillData = {};
   try {
     skillData = JSON.parse(fs.readFileSync(skillsPath, 'utf8'));
@@ -21,6 +26,7 @@ function getSkillCatalog() {
     skillData = {};
   }
 
+  // Index hero directories by class id to simplify icon lookup later.
   const heroFolders = new Map();
   try {
     for (const entry of fs.readdirSync(heroesDir, { withFileTypes: true })) {
@@ -40,6 +46,8 @@ function getSkillCatalog() {
     const normalizedClassId = String(Number(classId));
     const heroFolder = heroFolders.get(normalizedClassId);
     const className = heroFolder?.className || `Class ${classId}`;
+
+    // Attach readable names and icons to each ability from the hero asset folder.
     const abilityList = Object.entries(abilities || {})
       .map(([abilityId, cooldown]) => {
         const normalizedAbilityId = String(Number(abilityId));
@@ -52,7 +60,7 @@ function getSkillCatalog() {
             const match = files.find((file) => file.startsWith(`${normalizedAbilityId}_`));
             if (match) {
               abilityName = normalizeName(match);
-              image = path.posix.join('Heroes', heroFolder.dirName, match).replace(/\\/g, '/');
+              image = path.posix.join('Heroes', heroFolder.dirName, match).replace(/\/g, '/');
             }
           } catch {
           }
