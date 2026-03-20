@@ -9,6 +9,10 @@ const cardSizeValueEl = document.getElementById("cardSizeValue");
 const minimizeToTrayBtn = document.getElementById("minimizeToTrayBtn");
 const closeAppBtn = document.getElementById("closeAppBtn");
 const closeSkillsModalBtn = document.getElementById("closeSkillsModalBtn");
+const languageSelect = document.getElementById("languageSelect");
+const languageLabel = document.getElementById("languageLabel");
+const skillsModalTitle = document.getElementById("skillsModalTitle");
+const skillsModalSubtitle = document.getElementById("skillsModalSubtitle");
 const filePathEl = document.getElementById("filePath");
 const watchStatusEl = document.getElementById("watchStatus");
 const hudStatusEl = document.getElementById("hudStatus");
@@ -30,9 +34,95 @@ let hudActive = true;
 let skillCatalog = { classes: [] };
 let selectedSkillsByClass = loadSkillSelections();
 let cardScale = loadCardScale();
+let currentLanguage = "ru";
+let lastWatchStatusMessage = "";
+
+
+const I18N = {
+  ru: {
+    htmlLang: 'ru',
+    pickLog: 'Выбрать лог',
+    reload: 'Обновить',
+    lockOverlay: 'Lock overlay',
+    unlockOverlay: 'Unlock overlay',
+    skills: 'Skills',
+    language: 'Язык',
+    cardSizeTitle: 'Размер карточки',
+    minimizeToTray: 'В трей',
+    closeApp: 'Закрыть приложение',
+    noFileSelected: 'Файл не выбран',
+    noWatching: 'Нет слежения',
+    hudActive: 'HUD active',
+    hudHidden: 'HUD hidden',
+    spirit: 'Spirit',
+    trackedClassSkills: 'Отслеживаемые способности классов',
+    chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
+    skillsEmpty: 'skills.json не найден или пуст',
+    unknown: 'Неизвестно',
+    errorPrefix: 'Ошибка',
+  },
+  en: {
+    htmlLang: 'en',
+    pickLog: 'Select log',
+    reload: 'Refresh',
+    lockOverlay: 'Lock overlay',
+    unlockOverlay: 'Unlock overlay',
+    skills: 'Skills',
+    language: 'Language',
+    cardSizeTitle: 'Card size',
+    minimizeToTray: 'To tray',
+    closeApp: 'Close application',
+    noFileSelected: 'No file selected',
+    noWatching: 'Not watching',
+    hudActive: 'HUD active',
+    hudHidden: 'HUD hidden',
+    spirit: 'Spirit',
+    trackedClassSkills: 'Tracked class skills',
+    chooseAbilities: 'Choose one or more abilities for each class',
+    skillsEmpty: 'skills.json not found or empty',
+    unknown: 'Unknown',
+    errorPrefix: 'Error',
+  },
+};
+
+function t(key) {
+  return I18N[currentLanguage]?.[key] || I18N.ru[key] || key;
+}
+
+function applyTranslations() {
+  document.documentElement.lang = t('htmlLang');
+  pickFileBtn.textContent = t('pickLog');
+  reloadBtn.textContent = t('reload');
+  toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
+  skillsBtn.textContent = t('skills');
+  languageLabel.textContent = t('language');
+  if (languageSelect) languageSelect.value = currentLanguage;
+  const sizeControls = document.querySelector('.size-controls');
+  if (sizeControls) sizeControls.title = t('cardSizeTitle');
+  minimizeToTrayBtn.textContent = t('minimizeToTray');
+  closeAppBtn.title = t('closeApp');
+  if (!filePathEl.textContent || filePathEl.textContent === I18N.ru.noFileSelected || filePathEl.textContent === I18N.en.noFileSelected) {
+    filePathEl.textContent = t('noFileSelected');
+  }
+  watchStatusEl.textContent = lastWatchStatusMessage || t('noWatching');
+  skillsModalTitle.textContent = t('trackedClassSkills');
+  skillsModalSubtitle.textContent = t('chooseAbilities');
+  if (!latestData?.players?.length) {
+    setHudActiveState(hudActive);
+  } else {
+    renderPlayers(latestData.players || []);
+  }
+  renderSkillsModal();
+}
+
+function setLanguage(language) {
+  currentLanguage = String(language || '').toLowerCase() === 'en' ? 'en' : 'ru';
+  applyTranslations();
+}
 
 function formatNumber(value) {
-  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Number(value || 0));
+  const locale = currentLanguage === "en" ? "en-US" : "ru-RU";
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Number(value || 0));
 }
 
 function formatDurationMs(ms) {
@@ -132,7 +222,7 @@ function setHudActiveState(active, foregroundExe = null) {
   hudActive = !!active;
   overlayRoot.classList.toggle('hud-hidden', !hudActive);
   const suffix = foregroundExe ? ` (${foregroundExe})` : '';
-  hudStatusEl.textContent = hudActive ? 'HUD active' : `HUD hidden${suffix}`;
+  hudStatusEl.textContent = hudActive ? t('hudActive') : `${t('hudHidden')}${suffix}`;
 }
 
 function getScaledMetrics() {
@@ -215,7 +305,7 @@ function createCard(player, slotIndex, positions) {
     </div>
     <div class="player-info-row">
       <div class="spirit-inline">
-        <span class="spirit-label">Spirit</span>
+        <span class="spirit-label">${escapeHtml(t("spirit"))}</span>
         <span class="spirit-total">-</span>
       </div>
       <div class="relics-block"></div>
@@ -339,8 +429,8 @@ function updateCard(card, player) {
   applyCardLayout(card, displayIcons.length);
 
   card.dataset.playerId = player.id || '';
-  card.querySelector('.player-name').textContent = player.name || 'Unknown';
-  card.querySelector('.player-class').textContent = player.className || 'Unknown';
+  card.querySelector('.player-name').textContent = player.name || t('unknown');
+  card.querySelector('.player-class').textContent = player.className || t('unknown');
   card.querySelector('.player-class').style.color = classColor;
   const spiritEl = card.querySelector('.spirit-total');
   spiritEl.textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
@@ -422,7 +512,7 @@ function buildAbilityOption(classId, ability, selected) {
 function renderSkillsModal() {
   const classes = skillCatalog.classes || [];
   if (!classes.length) {
-    skillsCatalogEl.innerHTML = '<div class="empty-state">skills.json not found or empty</div>';
+    skillsCatalogEl.innerHTML = `<div class="empty-state">${escapeHtml(t('skillsEmpty'))}</div>`;
     return;
   }
 
@@ -460,7 +550,7 @@ async function ensureSkillCatalog() {
 
 function openSkillsModal() {
   updateCardScaleUi();
-ensureSkillCatalog();
+  ensureSkillCatalog();
   skillsModal.classList.remove('hidden');
 }
 
@@ -485,6 +575,11 @@ skillsBtn.addEventListener('click', openSkillsModal);
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
+languageSelect.addEventListener("change", async (event) => {
+  const nextLanguage = event.currentTarget.value === "en" ? "en" : "ru";
+  const result = await window.api.setLanguage(nextLanguage);
+  setLanguage(result?.language || nextLanguage);
+});
 skillsModal.addEventListener('mousedown', (event) => {
   if (event.target === skillsModal) closeSkillsModal();
 });
@@ -498,12 +593,13 @@ closeAppBtn.addEventListener("click", async () => {
 });
 
 window.api.onWatchStatus((payload) => {
-  watchStatusEl.textContent = payload?.message || "Нет слежения";
+  lastWatchStatusMessage = payload?.message || t("noWatching");
+  watchStatusEl.textContent = lastWatchStatusMessage;
 });
 
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
-  toggleLockBtn.textContent = overlayLocked ? "Unlock overlay" : "Lock overlay";
+  toggleLockBtn.textContent = overlayLocked ? t("unlockOverlay") : t("lockOverlay");
 });
 
 window.api.onHudState((payload) => {
@@ -512,21 +608,31 @@ window.api.onHudState((payload) => {
 
 window.api.onLogData((payload) => {
   if (!payload?.ok) {
-    playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">Ошибка: ${escapeHtml(payload?.error || "unknown")}</div>`;
+    playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t("errorPrefix"))}: ${escapeHtml(payload?.error || "unknown")}</div>`;
     cardMap.clear();
     return;
   }
 
   latestData = payload.data;
-  filePathEl.textContent = payload.filePath || "Файл не выбран";
+  filePathEl.textContent = payload.filePath || t("noFileSelected");
   renderPlayers(latestData.players || []);
 
   if (!cooldownTimer) cooldownTimer = setInterval(tickCooldowns, 1000);
 });
 
+window.api.onLanguageChanged((payload) => {
+  setLanguage(payload?.language || "ru");
+});
+
 window.api.getCurrentFile().then((result) => {
   if (result?.filePath) filePathEl.textContent = result.filePath;
+  else filePathEl.textContent = t("noFileSelected");
+});
+
+window.api.getLanguage().then((result) => {
+  setLanguage(result?.language || "ru");
 });
 
 updateCardScaleUi();
+applyTranslations();
 ensureSkillCatalog();

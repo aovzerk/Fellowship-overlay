@@ -19,6 +19,8 @@ let isQuitting = false;
 
 const TARGET_GAME_EXE = 'fellowship-win64-shipping.exe';
 const FOREGROUND_POLL_INTERVAL_MS = 1000;
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
+const DEFAULT_LANGUAGE = 'ru';
 const FOREGROUND_EXE_SCRIPT = String.raw`
 Add-Type @"
 using System;
@@ -52,6 +54,79 @@ try {
 }
 `;
 
+const I18N = {
+  en: {
+    trayTooltip: 'Fellowship Overlay',
+    trayHide: 'Hide overlay',
+    trayShow: 'Show overlay',
+    trayUnlock: 'Unlock overlay',
+    trayLock: 'Lock overlay',
+    trayChooseLog: 'Select log',
+    trayRefresh: 'Refresh',
+    trayExit: 'Exit',
+    watchFileUnavailable: 'File is unavailable',
+    watchActive: 'Watching active',
+    logFiles: 'Log files',
+    allFiles: 'All files',
+  },
+  ru: {
+    trayTooltip: 'Fellowship Overlay',
+    trayHide: 'Скрыть оверлей',
+    trayShow: 'Показать оверлей',
+    trayUnlock: 'Разблокировать оверлей',
+    trayLock: 'Заблокировать оверлей',
+    trayChooseLog: 'Выбрать лог',
+    trayRefresh: 'Обновить',
+    trayExit: 'Выход',
+    watchFileUnavailable: 'Файл недоступен',
+    watchActive: 'Слежение активно',
+    logFiles: 'Логи',
+    allFiles: 'Все файлы',
+  },
+};
+
+function normalizeLanguage(value) {
+  return String(value || '').toLowerCase() === 'en' ? 'en' : 'ru';
+}
+
+function t(key) {
+  const lang = getCurrentLanguage();
+  return I18N[lang]?.[key] || I18N[DEFAULT_LANGUAGE]?.[key] || key;
+}
+
+function loadSettings() {
+  try {
+    const raw = fs.readFileSync(SETTINGS_FILE, 'utf8');
+    const parsed = JSON.parse(raw || '{}');
+    return {
+      language: normalizeLanguage(parsed.language),
+    };
+  } catch {
+    return { language: DEFAULT_LANGUAGE };
+  }
+}
+
+function saveSettings(nextSettings) {
+  try {
+    fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(nextSettings, null, 2), 'utf8');
+  } catch {
+    // Ignore write errors; UI can still work for the current session.
+  }
+}
+
+let settings = loadSettings();
+
+function getCurrentLanguage() {
+  return normalizeLanguage(settings.language);
+}
+
+function setCurrentLanguage(language) {
+  settings = { ...settings, language: normalizeLanguage(language) };
+  saveSettings(settings);
+  if (tray) tray.setToolTip(t('trayTooltip'));
+  return getCurrentLanguage();
+}
 
 function showWindow() {
   if (!win) return;
@@ -64,25 +139,30 @@ function hideToTray() {
   win.hide();
 }
 
-
 function createTray() {
   if (tray) return tray;
 
   tray = new Tray(getTrayIcon());
-  tray.setToolTip('Fellowship Overlay');
+  tray.setToolTip(t('trayTooltip'));
 
   const buildMenu = () => Menu.buildFromTemplate([
-    { label: win?.isVisible() ? 'Скрыть оверлей' : 'Показать оверлей', click: () => {
-      if (!win) return;
-      if (win.isVisible()) hideToTray();
-      else showWindow();
-    } },
-    { label: clickThroughEnabled ? 'Разблокировать оверлей' : 'Заблокировать оверлей', click: () => setClickThrough(!clickThroughEnabled) },
+    {
+      label: win?.isVisible() ? t('trayHide') : t('trayShow'),
+      click: () => {
+        if (!win) return;
+        if (win.isVisible()) hideToTray();
+        else showWindow();
+      },
+    },
+    {
+      label: clickThroughEnabled ? t('trayUnlock') : t('trayLock'),
+      click: () => setClickThrough(!clickThroughEnabled),
+    },
     { type: 'separator' },
-    { label: 'Выбрать лог', click: () => chooseFile() },
-    { label: 'Обновить', click: () => currentFilePath && parseAndSend(currentFilePath) },
+    { label: t('trayChooseLog'), click: () => chooseFile() },
+    { label: t('trayRefresh'), click: () => currentFilePath && parseAndSend(currentFilePath) },
     { type: 'separator' },
-    { label: 'Выход', click: () => { isQuitting = true; app.quit(); } },
+    { label: t('trayExit'), click: () => { isQuitting = true; app.quit(); } },
   ]);
 
   tray.on('click', () => {
@@ -151,7 +231,7 @@ function startWatching(filePath) {
       if (eventType === 'rename' && !fs.existsSync(filePath)) {
         win?.webContents.send('watch-status', {
           ok: false,
-          message: 'Файл недоступен',
+          message: t('watchFileUnavailable'),
         });
         return;
       }
@@ -160,7 +240,7 @@ function startWatching(filePath) {
 
     win?.webContents.send('watch-status', {
       ok: true,
-      message: 'Слежение активно',
+      message: t('watchActive'),
     });
   } catch (error) {
     win?.webContents.send('watch-status', {
@@ -237,8 +317,8 @@ async function chooseFile() {
   const result = await dialog.showOpenDialog(win, {
     properties: ['openFile'],
     filters: [
-      { name: 'Log files', extensions: ['txt', 'log'] },
-      { name: 'All files', extensions: ['*'] },
+      { name: t('logFiles'), extensions: ['txt', 'log'] },
+      { name: t('allFiles'), extensions: ['*'] },
     ],
   });
 
@@ -281,6 +361,10 @@ function createWindow() {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(fromProjectRoot('src', 'renderer', 'index.html'));
+
+  win.webContents.once('did-finish-load', () => {
+    win?.webContents.send('language-changed', { language: getCurrentLanguage() });
+  });
 
   win.on('close', (event) => {
     if (!isQuitting) {
@@ -325,6 +409,15 @@ app.whenReady().then(() => {
     return { ok: true };
   });
   ipcMain.handle('get-skill-catalog', async () => getSkillCatalog());
+  ipcMain.handle('get-language', async () => ({ language: getCurrentLanguage() }));
+  ipcMain.handle('set-language', async (_, language) => {
+    const nextLanguage = setCurrentLanguage(language);
+    win?.webContents.send('language-changed', { language: nextLanguage });
+    if (currentFilePath && fs.existsSync(currentFilePath)) {
+      win?.webContents.send('watch-status', { ok: true, message: t('watchActive') });
+    }
+    return { language: nextLanguage };
+  });
 });
 
 app.on('window-all-closed', () => {

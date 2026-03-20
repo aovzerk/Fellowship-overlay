@@ -13,6 +13,13 @@
       <button id="reloadBtn">Обновить</button>
       <button id="toggleLockBtn">Lock/Unlock</button>
       <button id="skillsBtn">Skills</button>
+      <label class="language-switcher interactive" for="languageSelect" title="Language">
+        <span id="languageLabel">Язык</span>
+        <select id="languageSelect">
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+      </label>
       <div class="size-controls interactive" title="Card size">
         <button id="cardSizeDownBtn" type="button">−</button>
         <span id="cardSizeValue">100%</span>
@@ -31,8 +38,8 @@
       <div class="panel modal-card">
         <div class="modal-header">
           <div>
-            <div class="modal-title">Tracked class skills</div>
-            <div class="modal-subtitle">Choose one or more abilities for each class</div>
+            <div id="skillsModalTitle" class="modal-title">Tracked class skills</div>
+            <div id="skillsModalSubtitle" class="modal-subtitle">Choose one or more abilities for each class</div>
           </div>
           <button id="closeSkillsModalBtn" class="danger-btn">✕</button>
         </div>
