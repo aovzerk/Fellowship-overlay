@@ -79,14 +79,14 @@ let playerPositionsCache = overlaySettingsCache.playerPositions;
 const I18N = {
   ru: {
     htmlLang: 'ru',
-    pickLog: 'Выбрать лог',
+    pickLog: 'Выбрать папку',
     reload: 'Обновить',
     lockOverlay: 'Lock overlay',
     unlockOverlay: 'Unlock overlay',
     skills: 'Skills',
     language: 'Язык',
     cardSizeTitle: 'Размер карточки',
-    noFileSelected: 'Файл не выбран',
+    noFileSelected: 'Папка не выбрана',
     noWatching: 'Нет слежения',
     hudActive: 'HUD active',
     hudHidden: 'HUD hidden',
@@ -116,14 +116,14 @@ const I18N = {
   },
   en: {
     htmlLang: 'en',
-    pickLog: 'Select log',
+    pickLog: 'Select folder',
     reload: 'Refresh',
     lockOverlay: 'Lock overlay',
     unlockOverlay: 'Unlock overlay',
     skills: 'Skills',
     language: 'Language',
     cardSizeTitle: 'Card size',
-    noFileSelected: 'No file selected',
+    noFileSelected: 'No folder selected',
     noWatching: 'Not watching',
     hudActive: 'HUD active',
     hudHidden: 'HUD hidden',
@@ -155,6 +155,11 @@ const I18N = {
 
 function t(key) {
   return I18N[currentLanguage]?.[key] || I18N.en[key] || key;
+}
+
+function setLogSourceText(source) {
+  const text = source?.filePath || source?.directoryPath || t('noFileSelected');
+  filePathEl.textContent = text;
 }
 
 function applyTranslations() {
@@ -520,9 +525,7 @@ function clearLegacyLocalStorage() {
   ].forEach((key) => {
     try {
       localStorage.removeItem(key);
-    } catch {
-      // ignore cleanup errors
-    }
+    } catch {}
   });
 }
 
@@ -1111,7 +1114,7 @@ function closeSkillsModal() {
 
 pickFileBtn.addEventListener("click", async () => {
   const result = await window.api.pickLogFile();
-  if (!result?.canceled && result?.filePath) filePathEl.textContent = result.filePath;
+  if (!result?.canceled) setLogSourceText(result);
   updatePullPanelVisibility();
   updateRecentSkillsPanelVisibility();
 });
@@ -1173,6 +1176,8 @@ window.api.onOpenSettings(() => {
 
 
 window.api.onLogData((payload) => {
+  setLogSourceText(payload);
+
   if (!payload?.ok) {
     latestData = null;
     playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t("errorPrefix"))}: ${escapeHtml(payload?.error || "unknown")}</div>`;
@@ -1184,7 +1189,6 @@ window.api.onLogData((payload) => {
   }
 
   latestData = payload.data;
-  filePathEl.textContent = payload.filePath || t("noFileSelected");
   renderPlayers(latestData.players || []);
   updateRecentSkillsPanelVisibility();
 
@@ -1196,8 +1200,7 @@ window.api.onLanguageChanged((payload) => {
 });
 
 window.api.getCurrentFile().then((result) => {
-  if (result?.filePath) filePathEl.textContent = result.filePath;
-  else filePathEl.textContent = t("noFileSelected");
+  setLogSourceText(result);
   updatePullPanelVisibility();
   updateRecentSkillsPanelVisibility();
 });
