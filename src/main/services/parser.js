@@ -8,6 +8,10 @@ const CURRENT_PULL_RESET_MS = 8000;
 const CHICKENIZE_RELIC_ID = 1478;
 const BOSS_SUMMON_MIN_DELAY_MS = 12000;
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
+const READ_STREAM_CHUNK_SIZE = 1024 * 1024;
+const MAX_STORED_ENCOUNTERS = 2;
+const MAX_STORED_NPC_DEATHS = 400;
+const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
 
 function loadDungeonDataByName(name) {
   const normalized = String(name || "").trim();
@@ -519,7 +523,7 @@ function ensurePlayer(state, id, name) {
       damageTaken: 0,
       deaths: 0,
       abilities: new Map(),
-      spiritHistory: [],
+      spirit: null,
       relics: [],
       stones: {
         raw: [],
@@ -575,7 +579,7 @@ function ensureAbility(player, abilityId, abilityName) {
       healing: 0,
       activations: 0,
       hits: 0,
-      activationTimestamps: [],
+      lastActivationTs: null,
     });
   }
 
@@ -600,7 +604,7 @@ function ensureEncounterAbility(encounter, playerId, playerName, abilityId, abil
       healing: 0,
       activations: 0,
       hits: 0,
-      activationTimestamps: [],
+      lastActivationTs: null,
     });
   }
 
@@ -613,7 +617,7 @@ function addAbilityStat(player, abilityId, abilityName, type, amount = 0, ts = n
 
   if (type === "activation") {
     stat.activations += 1;
-    if (ts) stat.activationTimestamps.push(ts);
+    if (ts) stat.lastActivationTs = ts;
     return;
   }
 
@@ -658,7 +662,7 @@ function addEncounterAbilityStat(encounter, playerId, playerName, abilityId, abi
 
   if (type === "activation") {
     stat.activations += 1;
-    if (ts) stat.activationTimestamps.push(ts);
+    if (ts) stat.lastActivationTs = ts;
     return;
   }
 
@@ -712,6 +716,20 @@ function sortAbilities(list) {
   });
 }
 
+function serializeAbilityStat(ability) {
+  const lastActivationTs = ability?.lastActivationTs || null;
+  return {
+    id: ability?.id ?? null,
+    name: ability?.name || null,
+    damage: Number(ability?.damage || 0),
+    healing: Number(ability?.healing || 0),
+    activations: Number(ability?.activations || 0),
+    hits: Number(ability?.hits || 0),
+    lastActivationTs,
+    activationTimestamps: lastActivationTs ? [lastActivationTs] : [],
+  };
+}
+
 function extractSpiritFromResourceList(parts) {
   for (const part of parts) {
     if (typeof part !== "string") continue;
@@ -733,17 +751,13 @@ function extractSpiritFromResourceList(parts) {
 }
 
 function addSpiritSnapshot(player, ts, current, max, abilityId = null, abilityName = null) {
-  if (!player.spiritHistory) {
-    player.spiritHistory = [];
-  }
-
-  const last = player.spiritHistory[player.spiritHistory.length - 1];
+  const last = player.spirit || null;
 
   if (last && last.current === current && last.max === max) {
     return;
   }
 
-  player.spiritHistory.push({ ts, current, max, abilityId, abilityName });
+  player.spirit = { ts, current, max, abilityId, abilityName };
 }
 
 function buildUsesPerBoss(player, encounters) {
@@ -760,15 +774,7 @@ function buildUsesPerBoss(player, encounters) {
 
     const abilities = sortAbilities(encounterMap.values())
       .filter(isLikelyCombatAbility)
-      .map((a) => ({
-        id: a.id,
-        name: a.name,
-        activations: a.activations,
-        hits: a.hits,
-        damage: a.damage,
-        healing: a.healing,
-        activationTimestamps: a.activationTimestamps,
-      }));
+      .map(serializeAbilityStat);
 
     result.push({ encounterId: encounter.id, encounterName: encounter.name, abilities });
   }
@@ -895,6 +901,9 @@ function processLine(state, line) {
       const enc = createEncounter(encounterName, encounterId, ts);
       state.currentEncounter = enc;
       state.encounters.push(enc);
+      if (state.encounters.length > MAX_STORED_ENCOUNTERS) {
+        state.encounters.splice(0, state.encounters.length - MAX_STORED_ENCOUNTERS);
+      }
       state.collectingDungeonParty = false;
       state.bossFight = {
         active: isBossEncounterName(state, encounterName),
@@ -1011,6 +1020,9 @@ function processLine(state, line) {
       if (isNpcId(deadId)) {
         const death = { ts, npcId: deadId, npcName: deadName, killerId, killerName, killingAbilityId, killingAbility };
         state.npcDeaths.push(death);
+        if (state.npcDeaths.length > MAX_STORED_NPC_DEATHS) {
+          state.npcDeaths.splice(0, state.npcDeaths.length - MAX_STORED_NPC_DEATHS);
+        }
         markCurrentPullDeath(state, ts, deadId, deadName);
         if (!state.dungeon.countedNpcDeaths.has(deadId)) {
           state.dungeon.countedNpcDeaths.add(deadId);
@@ -1020,7 +1032,12 @@ function processLine(state, line) {
           const percentToAdd = (wasChickenized || wasBossSpawned) ? 0 : (Number(meta?.percent) || 0);
           if (percentToAdd) state.dungeon.completedPercent += percentToAdd;
         }
-        if (state.currentEncounter) state.currentEncounter.npcDeaths.push(death);
+        if (state.currentEncounter) {
+          state.currentEncounter.npcDeaths.push(death);
+          if (state.currentEncounter.npcDeaths.length > MAX_STORED_ENCOUNTER_NPC_DEATHS) {
+            state.currentEncounter.npcDeaths.splice(0, state.currentEncounter.npcDeaths.length - MAX_STORED_ENCOUNTER_NPC_DEATHS);
+          }
+        }
       }
       if (isPlayerId(deadId)) ensurePlayer(state, deadId, deadName).deaths += 1;
       break;
@@ -1030,17 +1047,33 @@ function processLine(state, line) {
   }
 }
 
-async function readChunk(filePath, start, endExclusive) {
+async function processFileRange(filePath, start, endExclusive, entry) {
   const length = Math.max(0, endExclusive - start);
-  if (!length) return "";
-  const handle = await fs.promises.open(filePath, "r");
-  try {
-    const buffer = Buffer.alloc(length);
-    const { bytesRead } = await handle.read(buffer, 0, length, start);
-    return buffer.subarray(0, bytesRead).toString("utf8");
-  } finally {
-    await handle.close();
-  }
+  if (!length) return;
+
+  await new Promise((resolve, reject) => {
+    let leftover = entry.leftover || "";
+    const stream = fs.createReadStream(filePath, {
+      start,
+      end: endExclusive - 1,
+      encoding: "utf8",
+      highWaterMark: READ_STREAM_CHUNK_SIZE,
+    });
+
+    const flushChunk = (chunk) => {
+      const text = leftover + chunk;
+      const lines = text.split(/\r?\n/);
+      leftover = lines.pop() || "";
+      for (const line of lines) processLine(entry.state, line);
+    };
+
+    stream.on("data", flushChunk);
+    stream.on("error", reject);
+    stream.on("end", () => {
+      entry.leftover = leftover;
+      resolve();
+    });
+  });
 }
 
 function getFileIdentity(stat) {
@@ -1057,19 +1090,10 @@ async function parseCombatLog(filePath) {
     ? { identity: currentIdentity, offset: 0, leftover: "", state: createState() }
     : cached;
 
-  const chunk = await readChunk(filePath, entry.offset, stat.size);
-  const text = entry.leftover + chunk;
-  const lines = text.split(/\r?\n/);
-
-  entry.leftover = lines.pop() || "";
-  for (const line of lines) processLine(entry.state, line);
+  await processFileRange(filePath, entry.offset, stat.size, entry);
 
   entry.offset = stat.size;
   entry.identity = currentIdentity;
-
-  if (!entry.leftover && text && /\r?\n$/.test(text)) {
-    entry.leftover = "";
-  }
 
   parserCache.set(filePath, entry);
   return finalizeState(entry.state);
@@ -1083,7 +1107,7 @@ function shouldHidePlayersUntilPartyResolved(state) {
 function finalizeState(state) {
   const latestLogTs = [...state.players.values()]
     .flatMap((player) => [
-      ...(player.spiritHistory || []).map((x) => parseTs(x.ts)),
+      parseTs(player.spirit?.ts),
       ...(player.relics || []).map((x) => parseTs(x.lastUsedAt)),
     ])
     .filter((x) => x != null)
@@ -1096,15 +1120,7 @@ function finalizeState(state) {
       playerKey,
       abilities: sortAbilities(abilitiesMap.values())
         .filter(isLikelyCombatAbility)
-        .map((a) => ({
-          id: a.id,
-          name: a.name,
-          damage: a.damage,
-          healing: a.healing,
-          activations: a.activations,
-          hits: a.hits,
-          activationTimestamps: a.activationTimestamps,
-        })),
+        .map(serializeAbilityStat),
     }));
 
     return {
@@ -1127,10 +1143,11 @@ function finalizeState(state) {
       return true;
     })
     .map((player) => {
-      const abilities = sortAbilities(player.abilities.values());
+      const abilities = sortAbilities(player.abilities.values()).map(serializeAbilityStat);
       const combatAbilities = abilities.filter(isLikelyCombatAbility);
       return {
         ...player,
+        spiritHistory: player.spirit ? [{ ...player.spirit }] : [],
         relics: computeRelicCooldownState(player, cooldownNowMs),
         abilities,
         combatAbilities,

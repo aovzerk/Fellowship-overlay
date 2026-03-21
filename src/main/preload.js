@@ -8,7 +8,10 @@ contextBridge.exposeInMainWorld('api', {
   getSkillCatalog: () => ipcRenderer.invoke('get-skill-catalog'),
   getLanguage: () => ipcRenderer.invoke('get-language'),
   setLanguage: (language) => ipcRenderer.invoke('set-language', language),
-
+  getPlayerPositionsSync: () => ipcRenderer.sendSync('get-player-positions-sync'),
+  savePlayerPositions: (playerPositions) => ipcRenderer.invoke('save-player-positions', playerPositions),
+  getOverlaySettingsSync: () => ipcRenderer.sendSync('get-overlay-settings-sync'),
+  saveOverlaySettings: (partialSettings) => ipcRenderer.invoke('save-overlay-settings', partialSettings),
 
   onLogData: (callback) => ipcRenderer.on('log-data', (_, payload) => callback(payload)),
   onWatchStatus: (callback) => ipcRenderer.on('watch-status', (_, payload) => callback(payload)),

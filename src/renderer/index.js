@@ -44,18 +44,36 @@ const VISIBILITY_SETTINGS_KEY = "overlay-visibility-settings-v2";
 const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
 const CARD_SCALE_STEP = 0.05;
+const DEFAULT_PULL_PANEL_POSITION = { x: 16, y: 12 };
+const DEFAULT_RECENT_SKILLS_PANEL_POSITION = { x: 16, y: 200 };
+const DEFAULT_VISIBILITY_SETTINGS = { showParty: true, showPull: true, showRecentSkills: true };
+const DEFAULT_RECENT_SKILLS_LIMIT = 7;
+const DEFAULT_CARD_SCALE = 1;
+const DEFAULT_OVERLAY_SETTINGS = {
+  playerPositions: {},
+  panelPositions: {
+    pullInfo: DEFAULT_PULL_PANEL_POSITION,
+    recentSkills: DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+  },
+  visibilitySettings: DEFAULT_VISIBILITY_SETTINGS,
+  recentSkillsLimit: DEFAULT_RECENT_SKILLS_LIMIT,
+  selectedSkillsByClass: {},
+  cardScale: DEFAULT_CARD_SCALE,
+};
 let overlayLocked = false;
 let latestData = null;
 const cardMap = new Map();
 let cooldownTimer = null;
 let hudActive = true;
 let skillCatalog = { classes: [] };
+let overlaySettingsCache = loadOverlaySettings();
 let selectedSkillsByClass = loadSkillSelections();
 let cardScale = loadCardScale();
 let currentLanguage = "en";
 let lastWatchStatusMessage = "";
 let visibilitySettings = loadVisibilitySettings();
 let recentSkillsLimit = loadRecentSkillsLimit();
+let playerPositionsCache = overlaySettingsCache.playerPositions;
 
 
 const I18N = {
@@ -355,76 +373,239 @@ function getPartySlotIndex(player, index = 0) {
   return index;
 }
 
-function loadPositions() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-  } catch {
-    return {};
+function normalizePosition(value, fallback = { x: 0, y: 0 }) {
+  const x = Number(value?.x);
+  const y = Number(value?.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return { x: Math.round(Number(fallback?.x || 0)), y: Math.round(Number(fallback?.y || 0)) };
   }
+  return { x: Math.round(x), y: Math.round(y) };
+}
+
+function normalizePlayerPositions(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const normalized = {};
+  Object.entries(value).forEach(([key, position]) => {
+    const x = Number(position?.x);
+    const y = Number(position?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    normalized[String(key)] = { x: Math.round(x), y: Math.round(y) };
+  });
+  return normalized;
+}
+
+function normalizePanelPositions(value) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return {
+    pullInfo: normalizePosition(source.pullInfo, DEFAULT_PULL_PANEL_POSITION),
+    recentSkills: normalizePosition(source.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+  };
+}
+
+function normalizeVisibilitySettings(value) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return {
+    showParty: source.showParty !== false,
+    showPull: source.showPull !== false,
+    showRecentSkills: source.showRecentSkills !== false,
+  };
+}
+
+function normalizeRecentSkillsLimit(value) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_RECENT_SKILLS_LIMIT;
+  return Math.round(clamp(normalized, 1, 20));
+}
+
+function normalizeSkillSelections(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const normalized = {};
+  Object.entries(value).forEach(([classId, abilityIds]) => {
+    const parsedClassId = String(Number(classId));
+    if (!parsedClassId || parsedClassId === 'NaN') return;
+    normalized[parsedClassId] = (Array.isArray(abilityIds) ? abilityIds : [])
+      .map((id) => String(Number(id)))
+      .filter((id) => id && id !== 'NaN');
+  });
+  return normalized;
+}
+
+function normalizeCardScaleValue(value) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_CARD_SCALE;
+  return Math.round(clamp(normalized, CARD_SCALE_MIN, CARD_SCALE_MAX) * 100) / 100;
+}
+
+function normalizeOverlaySettings(value) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return {
+    playerPositions: normalizePlayerPositions(source.playerPositions),
+    panelPositions: normalizePanelPositions(source.panelPositions),
+    visibilitySettings: normalizeVisibilitySettings(source.visibilitySettings),
+    recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
+    selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
+    cardScale: normalizeCardScaleValue(source.cardScale),
+  };
+}
+
+function mergeOverlaySettings(baseSettings, partialSettings) {
+  const base = normalizeOverlaySettings(baseSettings);
+  const partial = partialSettings && typeof partialSettings === 'object' && !Array.isArray(partialSettings) ? partialSettings : {};
+  return normalizeOverlaySettings({
+    ...base,
+    ...partial,
+    panelPositions: {
+      ...base.panelPositions,
+      ...(partial.panelPositions && typeof partial.panelPositions === 'object' ? partial.panelPositions : {}),
+    },
+    visibilitySettings: {
+      ...base.visibilitySettings,
+      ...(partial.visibilitySettings && typeof partial.visibilitySettings === 'object' ? partial.visibilitySettings : {}),
+    },
+    playerPositions: partial.playerPositions === undefined ? base.playerPositions : partial.playerPositions,
+    selectedSkillsByClass: partial.selectedSkillsByClass === undefined ? base.selectedSkillsByClass : partial.selectedSkillsByClass,
+  });
+}
+
+function getLocalStorageJson(key, fallback = null) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function loadLegacySettingsFromLocalStorage() {
+  const legacySettings = {};
+
+  const playerPositions = normalizePlayerPositions(getLocalStorageJson(STORAGE_KEY, {}));
+  if (Object.keys(playerPositions).length) legacySettings.playerPositions = playerPositions;
+
+  const visibilityRaw = getLocalStorageJson(VISIBILITY_SETTINGS_KEY, {});
+  if (visibilityRaw && typeof visibilityRaw === 'object' && !Array.isArray(visibilityRaw)) {
+    legacySettings.visibilitySettings = normalizeVisibilitySettings(visibilityRaw);
+    if (visibilityRaw.recentSkillsLimit !== undefined) {
+      legacySettings.recentSkillsLimit = normalizeRecentSkillsLimit(visibilityRaw.recentSkillsLimit);
+    }
+  }
+
+  const pullPosition = getLocalStorageJson(PULL_PANEL_POSITION_KEY, null);
+  const recentSkillsPosition = getLocalStorageJson(RECENT_SKILLS_PANEL_POSITION_KEY, null);
+  if (pullPosition || recentSkillsPosition) {
+    legacySettings.panelPositions = {
+      pullInfo: normalizePosition(pullPosition, DEFAULT_PULL_PANEL_POSITION),
+      recentSkills: normalizePosition(recentSkillsPosition, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+    };
+  }
+
+  const selectedSkillsByClass = normalizeSkillSelections(getLocalStorageJson(SKILL_SELECTIONS_KEY, {}));
+  if (Object.keys(selectedSkillsByClass).length) legacySettings.selectedSkillsByClass = selectedSkillsByClass;
+
+  const cardScaleRaw = Number(localStorage.getItem(CARD_SCALE_KEY));
+  if (Number.isFinite(cardScaleRaw)) {
+    legacySettings.cardScale = normalizeCardScaleValue(cardScaleRaw);
+  }
+
+  return legacySettings;
+}
+
+function clearLegacyLocalStorage() {
+  [
+    STORAGE_KEY,
+    SKILL_SELECTIONS_KEY,
+    CARD_SCALE_KEY,
+    PULL_PANEL_POSITION_KEY,
+    RECENT_SKILLS_PANEL_POSITION_KEY,
+    VISIBILITY_SETTINGS_KEY,
+  ].forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // ignore cleanup errors
+    }
+  });
+}
+
+function loadOverlaySettings() {
+  let persistedSettings = DEFAULT_OVERLAY_SETTINGS;
+  try {
+    const response = window.api?.getOverlaySettingsSync?.();
+    persistedSettings = normalizeOverlaySettings(response?.settings || DEFAULT_OVERLAY_SETTINGS);
+  } catch {
+    persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
+  }
+
+  const legacySettings = loadLegacySettingsFromLocalStorage();
+  const hasLegacySettings = Object.keys(legacySettings).length > 0;
+  if (!hasLegacySettings) {
+    return persistedSettings;
+  }
+
+  const mergedSettings = mergeOverlaySettings(persistedSettings, legacySettings);
+  if (JSON.stringify(mergedSettings) !== JSON.stringify(persistedSettings)) {
+    window.api?.saveOverlaySettings?.(mergedSettings).catch(() => {});
+  }
+  clearLegacyLocalStorage();
+  return mergedSettings;
+}
+
+function getOverlaySettings() {
+  overlaySettingsCache = mergeOverlaySettings(DEFAULT_OVERLAY_SETTINGS, overlaySettingsCache || {});
+  return overlaySettingsCache;
+}
+
+function saveOverlaySettingsPatch(patch) {
+  overlaySettingsCache = mergeOverlaySettings(getOverlaySettings(), patch);
+  window.api?.saveOverlaySettings?.(patch).catch(() => {});
+  return overlaySettingsCache;
+}
+
+function loadPositions() {
+  if (playerPositionsCache && typeof playerPositionsCache === 'object') {
+    return playerPositionsCache;
+  }
+  playerPositionsCache = normalizePlayerPositions(getOverlaySettings().playerPositions);
+  return playerPositionsCache;
 }
 
 function savePositions(positions) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+  const normalized = normalizePlayerPositions(positions);
+  playerPositionsCache = normalized;
+  saveOverlaySettingsPatch({ playerPositions: normalized });
 }
 
 function loadPullPanelPosition() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(PULL_PANEL_POSITION_KEY) || '{}');
-    const x = Number(raw?.x);
-    const y = Number(raw?.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return { x: 16, y: 12 };
-    return { x, y };
-  } catch {
-    return { x: 16, y: 12 };
-  }
+  return normalizePosition(getOverlaySettings().panelPositions?.pullInfo, DEFAULT_PULL_PANEL_POSITION);
 }
 
 function savePullPanelPosition(position) {
-  localStorage.setItem(PULL_PANEL_POSITION_KEY, JSON.stringify({
-    x: Math.round(Number(position?.x || 0)),
-    y: Math.round(Number(position?.y || 0)),
-  }));
+  saveOverlaySettingsPatch({
+    panelPositions: {
+      pullInfo: normalizePosition(position, DEFAULT_PULL_PANEL_POSITION),
+    },
+  });
 }
 
 function loadRecentSkillsPanelPosition() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_SKILLS_PANEL_POSITION_KEY) || '{}');
-    const x = Number(raw?.x);
-    const y = Number(raw?.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return { x: 16, y: 200 };
-    return { x, y };
-  } catch {
-    return { x: 16, y: 200 };
-  }
+  return normalizePosition(getOverlaySettings().panelPositions?.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION);
 }
 
 function saveRecentSkillsPanelPosition(position) {
-  localStorage.setItem(RECENT_SKILLS_PANEL_POSITION_KEY, JSON.stringify({
-    x: Math.round(Number(position?.x || 0)),
-    y: Math.round(Number(position?.y || 0)),
-  }));
+  saveOverlaySettingsPatch({
+    panelPositions: {
+      recentSkills: normalizePosition(position, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+    },
+  });
 }
 
 function loadVisibilitySettings() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(VISIBILITY_SETTINGS_KEY) || '{}');
-    return {
-      showParty: raw?.showParty !== false,
-      showPull: raw?.showPull !== false,
-      showRecentSkills: raw?.showRecentSkills !== false,
-    };
-  } catch {
-    return { showParty: true, showPull: true, showRecentSkills: true };
-  }
+  return normalizeVisibilitySettings(getOverlaySettings().visibilitySettings);
 }
 
 function saveVisibilitySettings() {
-  localStorage.setItem(VISIBILITY_SETTINGS_KEY, JSON.stringify({
-    showParty: !!visibilitySettings.showParty,
-    showPull: !!visibilitySettings.showPull,
-    showRecentSkills: !!visibilitySettings.showRecentSkills,
-    recentSkillsLimit: clamp(Number(recentSkillsLimit || 7), 1, 20),
-  }));
+  saveOverlaySettingsPatch({
+    visibilitySettings: normalizeVisibilitySettings(visibilitySettings),
+  });
 }
 
 function updateOverlayVisibility() {
@@ -454,46 +635,30 @@ function setRecentSkillsVisibility(enabled) {
 }
 
 function loadRecentSkillsLimit() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(VISIBILITY_SETTINGS_KEY) || '{}');
-    return clamp(Number(raw?.recentSkillsLimit || 7), 1, 20);
-  } catch {
-    return 7;
-  }
+  return normalizeRecentSkillsLimit(getOverlaySettings().recentSkillsLimit);
 }
 
 function setRecentSkillsLimit(value) {
-  recentSkillsLimit = clamp(Number(value || 7), 1, 20);
+  recentSkillsLimit = normalizeRecentSkillsLimit(value);
   if (recentSkillsLimitInput) recentSkillsLimitInput.value = String(recentSkillsLimit);
-  saveVisibilitySettings();
+  saveOverlaySettingsPatch({ recentSkillsLimit });
   renderRecentSkillsPanel(latestData?.recentSkills || []);
 }
 
 function loadSkillSelections() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(SKILL_SELECTIONS_KEY) || "{}");
-    const normalized = {};
-    Object.entries(raw || {}).forEach(([classId, abilityIds]) => {
-      normalized[String(Number(classId))] = (Array.isArray(abilityIds) ? abilityIds : []).map((id) => String(Number(id)));
-    });
-    return normalized;
-  } catch {
-    return {};
-  }
+  return normalizeSkillSelections(getOverlaySettings().selectedSkillsByClass);
 }
 
 function saveSkillSelections() {
-  localStorage.setItem(SKILL_SELECTIONS_KEY, JSON.stringify(selectedSkillsByClass));
+  saveOverlaySettingsPatch({ selectedSkillsByClass: normalizeSkillSelections(selectedSkillsByClass) });
 }
 
 function loadCardScale() {
-  const raw = Number(localStorage.getItem(CARD_SCALE_KEY) || 1);
-  if (!Number.isFinite(raw)) return 1;
-  return clamp(raw, CARD_SCALE_MIN, CARD_SCALE_MAX);
+  return normalizeCardScaleValue(getOverlaySettings().cardScale);
 }
 
 function saveCardScale() {
-  localStorage.setItem(CARD_SCALE_KEY, String(cardScale));
+  saveOverlaySettingsPatch({ cardScale });
 }
 
 function updateCardScaleUi() {
@@ -502,7 +667,7 @@ function updateCardScaleUi() {
 }
 
 function setCardScale(nextScale) {
-  const normalized = Math.round(clamp(nextScale, CARD_SCALE_MIN, CARD_SCALE_MAX) * 100) / 100;
+  const normalized = normalizeCardScaleValue(nextScale);
   if (normalized === cardScale) return;
   cardScale = normalized;
   saveCardScale();
@@ -544,7 +709,7 @@ function applyCardLayout(card, iconCount = 0) {
   card.style.width = `${getCardWidthForIconCount(iconCount)}px`;
 }
 
-function makeCardDraggable(card, dragHandle, positions) {
+function makeCardDraggable(card, dragHandle, layoutKey, positions) {
   let dragging = false;
   let startMouseX = 0;
   let startMouseY = 0;
@@ -561,8 +726,8 @@ function makeCardDraggable(card, dragHandle, positions) {
     const top = clamp(startTop + dy, 0, maxY);
     card.style.left = `${left}px`;
     card.style.top = `${top}px`;
-    const layoutKey = card.dataset.layoutKey || getPlayerLayoutKey(0);
-    positions[layoutKey] = { x: left, y: top };
+    const resolvedLayoutKey = layoutKey || card.dataset.layoutKey || getPlayerLayoutKey(0);
+    if (positions && typeof positions === 'object') positions[resolvedLayoutKey] = { x: left, y: top };
   }
 
   function onUp() {
@@ -767,7 +932,7 @@ function buildTrackedSkillCooldowns(player) {
   return selectedSkills.map((skill) => {
     const ability = abilityMap.get(String(skill.id));
     const activationTimestamps = Array.isArray(ability?.activationTimestamps) ? ability.activationTimestamps : [];
-    const lastActivation = activationTimestamps.length ? activationTimestamps[activationTimestamps.length - 1] : null;
+    const lastActivation = ability?.lastActivationTs || (activationTimestamps.length ? activationTimestamps[activationTimestamps.length - 1] : null);
     const lastUsedMs = lastActivation ? Date.parse(lastActivation) : NaN;
     const adjustedCooldownSeconds = Number(skill.cooldown || 0) * cooldownModifier;
     const cooldownEndsAt = Number.isFinite(lastUsedMs) ? lastUsedMs + adjustedCooldownSeconds * 1000 : null;
@@ -790,8 +955,8 @@ function buildTrackedSkillCooldowns(player) {
 }
 
 function updateCard(card, player) {
-  const history = player.spiritHistory || [];
-  const last = history[history.length - 1];
+  const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
+  const last = player.spirit || history[history.length - 1] || null;
   const classColor = player.classColor || '#6b7280';
   const trackedSkills = buildTrackedSkillCooldowns(player);
   const displayIcons = [...trackedSkills, ...(player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }))];
