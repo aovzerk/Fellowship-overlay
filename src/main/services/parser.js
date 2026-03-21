@@ -638,6 +638,9 @@ function addRecentSkillActivation(state, player, abilityId, abilityName, ts) {
   if (abilityId == null && !abilityName) return;
   if (getRelicMetaByAnyId(abilityId)) return;
 
+  const trackedPlayerId = state.recentSkillsPlayerId || null;
+  if (!trackedPlayerId || player.id !== trackedPlayerId) return;
+
   const entry = {
     ts,
     playerId: player.id,

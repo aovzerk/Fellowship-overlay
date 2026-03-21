@@ -273,7 +273,7 @@ function renderRecentSkillsPanel(recentSkills = []) {
 
   const row = recentSkillsPanelEl.querySelector('.recent-skills-row');
   const fragment = document.createDocumentFragment();
-  items.forEach((item) => {
+  items.forEach((item, index) => {
     const chip = document.createElement('div');
     chip.className = 'relic-chip recent-skill-chip';
     chip.dataset.key = `${item.playerId || 'player'}-${item.abilityId || 'skill'}-${item.ts || index}`;
