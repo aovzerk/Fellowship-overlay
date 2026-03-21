@@ -1,6 +1,6 @@
 {
   "name": "fellowship-overlay",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Fellowship overlay",
   "main": "src/main/index.js",
   "author": "AOV",
@@ -10,7 +10,7 @@
     "dist": "electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "^36.9.5",
+    "electron": "^41.0.3",
     "electron-builder": "^26.8.1"
   },
   "build": {
