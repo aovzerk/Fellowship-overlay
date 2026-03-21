@@ -10,6 +10,8 @@ Lightweight in-game overlay for tracking party members, relics, and Spirit value
   - Spirit (numeric only)
   - Equipped relics with cooldown visualization
   - Cdrs selected skills based on gem bonuses
+  - Recent Skills
+  - Pack percent (in dev)
 - Smart Spirit highlighting based on gem bonuses
 - Draggable UI
 - Minimal and compact layout for in-game usage
