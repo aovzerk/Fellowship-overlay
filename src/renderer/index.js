@@ -89,9 +89,6 @@ const I18N = {
     errorPrefix: 'Ошибка',
     currentPull: 'Текущий пул',
     pullTotal: 'Всего',
-    pullAlive: 'Живые',
-    dungeonProgress: 'Прогресс данжа',
-    mobs: 'Мобы',
     noPullData: 'Нет данных по текущему бою',
     recentSkillsTitle: 'Последние скиллы',
     noRecentSkills: 'Нет использованных скиллов',
@@ -129,9 +126,6 @@ const I18N = {
     errorPrefix: 'Error',
     currentPull: 'Current pull',
     pullTotal: 'Total',
-    pullAlive: 'Alive',
-    dungeonProgress: 'Dungeon progress',
-    mobs: 'Mobs',
     noPullData: 'No current pull data',
     recentSkillsTitle: 'Recent skills',
     noRecentSkills: 'No used skills yet',
@@ -550,7 +544,7 @@ function applyCardLayout(card, iconCount = 0) {
   card.style.width = `${getCardWidthForIconCount(iconCount)}px`;
 }
 
-function makeCardDraggable(card, dragHandle, _layoutKey, positions) {
+function makeCardDraggable(card, dragHandle, positions) {
   let dragging = false;
   let startMouseX = 0;
   let startMouseY = 0;
@@ -1012,9 +1006,6 @@ window.api.onOpenSettings(() => {
   openSettingsModal();
 });
 
-window.api.onHudState((payload) => {
-  setHudActiveState(payload?.active, payload?.foregroundExe || null);
-});
 
 window.api.onLogData((payload) => {
   if (!payload?.ok) {

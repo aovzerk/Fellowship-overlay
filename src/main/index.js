@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { execFile } = require('child_process');
 const { parseCombatLog } = require('./services/parser');
 const { getSkillCatalog } = require('./services/skill-catalog');
 const { getAppIconPath, getTrayIcon } = require('./utils/icons');
@@ -12,13 +11,9 @@ let currentFilePath = null;
 let currentWatcher = null;
 let reparseTimer = null;
 let clickThroughEnabled = true;
-let foregroundPollTimer = null;
-let lastHudActive = null;
 let tray = null;
 let isQuitting = false;
 
-const TARGET_GAME_EXE = 'fellowship-win64-shipping.exe';
-const FOREGROUND_POLL_INTERVAL_MS = 1000;
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const DEFAULT_LANGUAGE = 'ru';
 
@@ -27,11 +22,7 @@ const I18N = {
     trayTooltip: 'Fellowship Overlay',
     trayHide: 'Hide overlay',
     trayShow: 'Show overlay',
-    trayUnlock: 'Unlock overlay',
-    trayLock: 'Lock overlay',
     traySettings: 'Settings',
-    trayChooseLog: 'Select log',
-    trayRefresh: 'Refresh',
     trayExit: 'Exit',
     watchFileUnavailable: 'File is unavailable',
     watchActive: 'Watching active',
@@ -42,11 +33,7 @@ const I18N = {
     trayTooltip: 'Fellowship Overlay',
     trayHide: 'Скрыть оверлей',
     trayShow: 'Показать оверлей',
-    trayUnlock: 'Разблокировать оверлей',
-    trayLock: 'Заблокировать оверлей',
     traySettings: 'Настройки',
-    trayChooseLog: 'Выбрать лог',
-    trayRefresh: 'Обновить',
     trayExit: 'Выход',
     watchFileUnavailable: 'Файл недоступен',
     watchActive: 'Слежение активно',
@@ -188,12 +175,6 @@ function stopWatching() {
   }
 }
 
-function stopForegroundPolling() {
-  if (foregroundPollTimer) {
-    clearInterval(foregroundPollTimer);
-    foregroundPollTimer = null;
-  }
-}
 
 function scheduleParse(filePath, delay = 120) {
   clearTimeout(reparseTimer);
@@ -241,30 +222,6 @@ function setClickThrough(enabled) {
   });
 }
 
-function sendHudState(isActive, foregroundExe = null) {
-  win.webContents.send('hud-state', {
-    active: !!isActive,
-    foregroundExe,
-    targetExe: TARGET_GAME_EXE,
-  });
-}
-
-
-async function refreshHudState() {
-  const isGameActive = true;
-
-  if (lastHudActive === isGameActive) return;
-  lastHudActive = isGameActive;
-  sendHudState(isGameActive, null);
-}
-
-function startForegroundPolling() {
-  stopForegroundPolling();
-  refreshHudState();
-  foregroundPollTimer = setInterval(() => {
-    refreshHudState();
-  }, FOREGROUND_POLL_INTERVAL_MS);
-}
 
 async function chooseFile() {
   if (!win) return { canceled: true };
@@ -330,7 +287,6 @@ function createWindow() {
 
   createTray();
   setClickThrough(true);
-  startForegroundPolling();
 }
 
 app.whenReady().then(() => {
@@ -354,21 +310,8 @@ app.whenReady().then(() => {
     return { locked: !clickThroughEnabled };
   });
   ipcMain.handle('get-current-file', async () => ({ filePath: currentFilePath }));
-  ipcMain.handle('minimize-to-tray', async () => {
-    hideToTray();
-    return { ok: true };
-  });
-  ipcMain.handle('quit-app', async () => {
-    isQuitting = true;
-    app.quit();
-    return { ok: true };
-  });
   ipcMain.handle('get-skill-catalog', async () => getSkillCatalog());
   ipcMain.handle('get-language', async () => ({ language: getCurrentLanguage() }));
-  ipcMain.handle('open-settings', async () => {
-    openSettingsWindow();
-    return { ok: true };
-  });
   ipcMain.handle('set-language', async (_, language) => {
     const nextLanguage = setCurrentLanguage(language);
     win?.webContents.send('language-changed', { language: nextLanguage });
@@ -388,7 +331,6 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   stopWatching();
-  stopForegroundPolling();
   globalShortcut.unregisterAll();
 });
 
