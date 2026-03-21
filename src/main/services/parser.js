@@ -710,6 +710,11 @@ async function parseCombatLog(filePath) {
   return finalizeState(entry.state);
 }
 
+function shouldHidePlayersUntilPartyResolved(state) {
+  const hasDungeonStart = !!state?.dungeon?.startedAt;
+  return hasDungeonStart && state.collectingDungeonParty && state.dungeonPartyIds.size === 0;
+}
+
 function finalizeState(state) {
   const latestLogTs = [...state.players.values()]
     .flatMap((player) => [
@@ -719,6 +724,7 @@ function finalizeState(state) {
     .filter((x) => x != null)
     .reduce((max, x) => Math.max(max, x), 0);
   const cooldownNowMs = Math.max(Date.now(), latestLogTs || 0);
+  const hidePlayersUntilPartyResolved = shouldHidePlayersUntilPartyResolved(state);
 
   const encounters = state.encounters.map((encounter) => {
     const abilitiesByPlayer = [...encounter.abilitiesByPlayer.entries()].map(([playerKey, abilitiesMap]) => ({
@@ -750,7 +756,11 @@ function finalizeState(state) {
   });
 
   const players = [...state.players.values()]
-    .filter((player) => state.dungeonPartyIds.size === 0 || state.dungeonPartyIds.has(player.id))
+    .filter((player) => {
+      if (hidePlayersUntilPartyResolved) return false;
+      if (state.dungeonPartyIds.size > 0) return state.dungeonPartyIds.has(player.id);
+      return true;
+    })
     .map((player) => {
       const abilities = sortAbilities(player.abilities.values());
       const combatAbilities = abilities.filter(isLikelyCombatAbility);

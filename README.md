@@ -18,10 +18,11 @@ Lightweight in-game overlay for tracking party members, relics, and Spirit value
 - **F8** — Lock / Unlock overlay (enable/disable dragging)
 - **F9** — Select log file
 
-## Screenshot
+## Screenshots
 
-![Overlay Example](./screenshot.png)
-
+![Overlay Example](./screenshots/screenshot1.png)
+![Overlay Example](./screenshots/screenshot2.png)
+![Overlay Example](./screenshots/screenshot3.png)
 ## Installation
 
 **Requirements:**
