@@ -24,10 +24,12 @@ const hudStatusEl = document.getElementById("hudStatus");
 const overlayRoot = document.getElementById("overlay-root");
 const skillsModal = document.getElementById("skillsModal");
 const skillsCatalogEl = document.getElementById("skillsCatalog");
+const pullInfoEl = document.getElementById("pullInfo");
 
 const STORAGE_KEY = "overlay-player-positions-v2";
 const SKILL_SELECTIONS_KEY = "overlay-skill-selections-v1";
 const CARD_SCALE_KEY = "overlay-card-scale-v1";
+const PULL_PANEL_POSITION_KEY = "overlay-pull-panel-position-v1";
 const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
 const CARD_SCALE_STEP = 0.05;
@@ -68,6 +70,15 @@ const I18N = {
     skillsEmpty: 'skills.json не найден или пуст',
     unknown: 'Неизвестно',
     errorPrefix: 'Ошибка',
+    currentPull: 'Текущий пул',
+    pullTotal: 'Всего',
+    pullAlive: 'Живые',
+    dungeonProgress: 'Прогресс данжа',
+    mobs: 'Мобы',
+    noPullData: 'Нет данных по текущему бою',
+    chickenizedInfo: 'Chickenize',
+    chickenizedSuffix: 'моб(ов) = 0%',
+    chickenizedAlive: 'живых',
   },
   en: {
     htmlLang: 'en',
@@ -93,6 +104,15 @@ const I18N = {
     skillsEmpty: 'skills.json not found or empty',
     unknown: 'Unknown',
     errorPrefix: 'Error',
+    currentPull: 'Current pull',
+    pullTotal: 'Total',
+    pullAlive: 'Alive',
+    dungeonProgress: 'Dungeon progress',
+    mobs: 'Mobs',
+    noPullData: 'No current pull data',
+    chickenizedInfo: 'Chickenize',
+    chickenizedSuffix: 'mob(s) = 0%',
+    chickenizedAlive: 'alive',
   },
 };
 
@@ -121,12 +141,60 @@ function applyTranslations() {
   watchStatusEl.textContent = lastWatchStatusMessage || t('noWatching');
   skillsModalTitle.textContent = t('trackedClassSkills');
   skillsModalSubtitle.textContent = t('chooseAbilities');
+  renderPullInfo(latestData?.currentPull, latestData?.dungeon);
   if (!latestData?.players?.length) {
     setHudActiveState(hudActive);
   } else {
     renderPlayers(latestData.players || []);
   }
   renderSkillsModal();
+}
+
+function formatPercent(value) {
+  const number = Number(value || 0);
+  const locale = currentLanguage === "en" ? "en-US" : "ru-RU";
+  return new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(number);
+}
+
+function updatePullPanelVisibility() {
+  if (!pullInfoEl) return;
+  const hasSelectedFile = !!(latestData || (filePathEl && filePathEl.textContent && filePathEl.textContent !== t("noFileSelected")));
+  pullInfoEl.classList.toggle('hidden', !hasSelectedFile);
+}
+
+function renderPullInfo(currentPull, dungeon) {
+  if (!pullInfoEl) return;
+  const mobs = Array.isArray(currentPull?.mobs) ? currentPull.mobs : [];
+  const alivePercent = Number(currentPull?.alivePercent || 0);
+  const completedPercent = Number(dungeon?.completedPercent || 0);
+  const projectedTotalPercent = completedPercent + alivePercent;
+  const chickenizedCount = Number(currentPull?.chickenizedCount || 0);
+  const chickenizedOriginalPercent = Number(currentPull?.chickenizedOriginalPercent || 0);
+  const aliveChickenizedCount = Number(currentPull?.aliveChickenizedCount || 0);
+  const aliveChickenizedOriginalPercent = Number(currentPull?.aliveChickenizedOriginalPercent || 0);
+  const dungeonTitle = String(dungeon?.name || '').trim() || t("currentPull");
+
+  if (!mobs.length) {
+    pullInfoEl.innerHTML = `
+      <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
+      <div class="pull-empty">${escapeHtml(t("noPullData"))}</div>
+    `;
+    updatePullPanelVisibility();
+    return;
+  }
+
+  const chickenizedLine = chickenizedCount > 0
+    ? `<div class="pull-note chickenized">${escapeHtml(t("chickenizedInfo"))}: <strong>${escapeHtml(String(chickenizedCount))}</strong> ${escapeHtml(t("chickenizedSuffix"))} <span>(-${escapeHtml(formatPercent(chickenizedOriginalPercent))}%${aliveChickenizedCount > 0 ? `, ${escapeHtml(t("chickenizedAlive"))}: ${escapeHtml(String(aliveChickenizedCount))} / -${escapeHtml(formatPercent(aliveChickenizedOriginalPercent))}%` : ''})</span></div>`
+    : '';
+
+  pullInfoEl.innerHTML = `
+    <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
+    <div class="pull-stats">
+      <div class="pull-stat"><span>${escapeHtml(t("pullTotal"))}</span><strong>${escapeHtml(formatPercent(projectedTotalPercent))}% (+${escapeHtml(formatPercent(alivePercent))}%)</strong></div>
+    </div>
+    ${chickenizedLine}
+  `;
+  updatePullPanelVisibility();
 }
 
 function setLanguage(language) {
@@ -181,6 +249,25 @@ function loadPositions() {
 
 function savePositions(positions) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+}
+
+function loadPullPanelPosition() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PULL_PANEL_POSITION_KEY) || '{}');
+    const x = Number(raw?.x);
+    const y = Number(raw?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { x: 16, y: 12 };
+    return { x, y };
+  } catch {
+    return { x: 16, y: 12 };
+  }
+}
+
+function savePullPanelPosition(position) {
+  localStorage.setItem(PULL_PANEL_POSITION_KEY, JSON.stringify({
+    x: Math.round(Number(position?.x || 0)),
+    y: Math.round(Number(position?.y || 0)),
+  }));
 }
 
 function loadSkillSelections() {
@@ -299,6 +386,63 @@ function makeCardDraggable(card, dragHandle, _layoutKey, positions) {
     e.preventDefault();
     e.stopPropagation();
   });
+}
+
+
+function makePanelDraggable(panel, getDragHandle) {
+  let dragging = false;
+  let startMouseX = 0;
+  let startMouseY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  function onMove(e) {
+    if (!dragging) return;
+    const dx = e.clientX - startMouseX;
+    const dy = e.clientY - startMouseY;
+    const maxX = Math.max(0, window.innerWidth - panel.offsetWidth - 6);
+    const maxY = Math.max(0, window.innerHeight - panel.offsetHeight - 6);
+    const left = clamp(startLeft + dx, 0, maxX);
+    const top = clamp(startTop + dy, 0, maxY);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    savePullPanelPosition({
+      x: parseFloat(panel.style.left || '16'),
+      y: parseFloat(panel.style.top || '12'),
+    });
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+  }
+
+  panel.addEventListener('mousedown', (e) => {
+    const dragHandle = getDragHandle();
+    if (!dragHandle || !dragHandle.contains(e.target)) return;
+    if (!overlayLocked) return;
+    dragging = true;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+    startLeft = parseFloat(panel.style.left || '0');
+    startTop = parseFloat(panel.style.top || '0');
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+}
+
+function initializePullPanel() {
+  if (!pullInfoEl) return;
+  const pos = loadPullPanelPosition();
+  pullInfoEl.style.left = `${pos.x}px`;
+  pullInfoEl.style.top = `${pos.y}px`;
+  pullInfoEl.classList.add('interactive');
+  pullInfoEl.classList.add('hidden');
+  makePanelDraggable(pullInfoEl, () => pullInfoEl.querySelector('.pull-drag-handle'));
 }
 
 function createCard(player, slotIndex, positions) {
@@ -465,6 +609,8 @@ function renderPlayers(players = []) {
     }
   }
 
+  renderPullInfo(latestData?.currentPull, latestData?.dungeon);
+
   players.forEach((player, index) => {
     const slotIndex = getPartySlotIndex(player, index);
     const layoutKey = getPlayerLayoutKey(slotIndex);
@@ -494,7 +640,10 @@ function renderPlayers(players = []) {
 }
 
 function tickCooldowns() {
-  if (!latestData?.players?.length) return;
+  if (!latestData?.players?.length) {
+    renderPullInfo(latestData?.currentPull, latestData?.dungeon);
+    return;
+  }
   const now = Date.now();
   latestData.players.forEach((player) => {
     const card = cardMap.get(player.id);
@@ -584,6 +733,7 @@ function closeSkillsModal() {
 pickFileBtn.addEventListener("click", async () => {
   const result = await window.api.pickLogFile();
   if (!result?.canceled && result?.filePath) filePathEl.textContent = result.filePath;
+  updatePullPanelVisibility();
 });
 
 reloadBtn.addEventListener("click", async () => {
@@ -631,8 +781,10 @@ window.api.onHudState((payload) => {
 
 window.api.onLogData((payload) => {
   if (!payload?.ok) {
+    latestData = null;
     playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t("errorPrefix"))}: ${escapeHtml(payload?.error || "unknown")}</div>`;
     cardMap.clear();
+    updatePullPanelVisibility();
     return;
   }
 
@@ -650,6 +802,7 @@ window.api.onLanguageChanged((payload) => {
 window.api.getCurrentFile().then((result) => {
   if (result?.filePath) filePathEl.textContent = result.filePath;
   else filePathEl.textContent = t("noFileSelected");
+  updatePullPanelVisibility();
 });
 
 window.api.getLanguage().then((result) => {
@@ -657,5 +810,7 @@ window.api.getLanguage().then((result) => {
 });
 
 updateCardScaleUi();
+initializePullPanel();
 applyTranslations();
+updatePullPanelVisibility();
 ensureSkillCatalog();

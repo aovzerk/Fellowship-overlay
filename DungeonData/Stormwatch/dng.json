@@ -1,0 +1,68 @@
+{
+  "map": "Stormwatch",
+  "zone_id": 12,
+  "killcount": 155,
+  "bossesID": [133],
+  "mobs": {
+    "193": {
+      "name": "Profane Invoker",
+      "score": 4,
+      "percent": 2.5806
+    },
+    "189": {
+      "name": "Executioner",
+      "score": 5,
+      "percent": 3.2258
+    },
+    "132": {
+      "name": "Bully Basher",
+      "score": 4,
+      "percent": 2.5806
+    },
+    "131": {
+      "name": "Facestabber",
+      "score": 2,
+      "percent": 1.2903
+    },
+    "134": {
+      "name": "Mancatcher",
+      "score": 2,
+      "percent": 1.2903
+    },
+    "130": {
+      "name": "Shinchopper",
+      "score": 1,
+      "percent": 0.6452
+    },
+    "129": {
+      "name": "Stormscreamer",
+      "score": 5,
+      "percent": 3.2258
+    },
+    "48": {
+      "name": "Dire Rat",
+      "score": 1,
+      "percent": 0.6452
+    },
+    "32": {
+      "name": "Nightmist Cutthroat",
+      "score": 3,
+      "percent": 1.9355
+    },
+    "12": {
+      "name": "Pillager",
+      "score": 2,
+      "percent": 1.2903
+    },
+    "10": {
+      "name": "Ashen Arsonist",
+      "score": 3,
+      "percent": 1.9355
+    },
+    "133": {
+      "name": "Warlord Brogg",
+      "score": 0,
+      "percent": 0.0
+    }
+  }
+}

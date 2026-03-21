@@ -1,5 +1,244 @@
 
 const fs = require("fs");
+
+const path = require("path");
+
+const DUNGEON_DATA_CACHE = new Map();
+const CURRENT_PULL_RESET_MS = 8000;
+const CHICKENIZE_RELIC_ID = 1478;
+const BOSS_SUMMON_MIN_DELAY_MS = 5000;
+
+function loadDungeonDataByName(name) {
+  const normalized = String(name || "").trim();
+  if (!normalized) return null;
+  if (DUNGEON_DATA_CACHE.has(normalized)) return DUNGEON_DATA_CACHE.get(normalized);
+  const filePath = fromProjectRoot(path.join("DungeonData", normalized, "dng.json"));
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    DUNGEON_DATA_CACHE.set(normalized, parsed);
+    return parsed;
+  } catch {
+    DUNGEON_DATA_CACHE.set(normalized, null);
+    return null;
+  }
+}
+
+function extractNpcTemplateId(unitId) {
+  if (!isNpcId(unitId)) return null;
+  const match = String(unitId).match(/^Npc-[^-]+-(\d+)$/i);
+  return match ? Number(match[1]) : null;
+}
+
+function getNpcPercentMeta(state, unitId, fallbackName = null) {
+  const templateId = extractNpcTemplateId(unitId);
+  if (templateId == null) return null;
+  const dungeonData = state?.dungeon?.data;
+  const mob = dungeonData?.mobs?.[String(templateId)];
+  if (!mob) return null;
+  return {
+    templateId,
+    name: mob.name || fallbackName || `NPC ${templateId}`,
+    score: Number(mob.score) || 0,
+    percent: Number(mob.percent) || 0,
+  };
+}
+
+function getBossTemplateIds(state) {
+  const raw = state?.dungeon?.data?.bossesID;
+  if (!Array.isArray(raw)) return new Set();
+  return new Set(raw.map((value) => Number(value)).filter((value) => Number.isFinite(value)));
+}
+
+function isBossTemplateId(state, templateId) {
+  if (templateId == null) return false;
+  return getBossTemplateIds(state).has(Number(templateId));
+}
+
+function getBossEncounterNames(state) {
+  const bossIds = getBossTemplateIds(state);
+  const mobs = state?.dungeon?.data?.mobs;
+  const names = new Set();
+  if (!mobs) return names;
+  for (const bossId of bossIds) {
+    const name = String(mobs[String(bossId)]?.name || '').trim().toLowerCase();
+    if (name) names.add(name);
+  }
+  return names;
+}
+
+function isBossEncounterName(state, encounterName) {
+  const bossNames = getBossEncounterNames(state);
+  if (!bossNames.size) return false;
+  return String(encounterName || '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean)
+    .some((value) => bossNames.has(value));
+}
+
+function createCurrentPull() {
+  return {
+    startedAt: null,
+    lastCombatAtMs: null,
+    npcMap: new Map(),
+  };
+}
+
+function createBossFightState() {
+  return {
+    active: false,
+    encounterId: null,
+    startedAt: null,
+  };
+}
+
+function isChickenizeAbility(abilityId, abilityName) {
+  if (Number(abilityId) === CHICKENIZE_RELIC_ID) return true;
+  return String(abilityName || '').trim().toLowerCase() === 'chickenize';
+}
+
+function shouldTreatNpcAsBossSpawned(state, templateId, ts = null) {
+  if (templateId == null) return false;
+  if (!state?.currentEncounter || !state?.bossFight?.active) return false;
+  if (isBossTemplateId(state, templateId)) return false;
+
+  const encounterStartedAtMs = parseTs(state?.bossFight?.startedAt);
+  const seenAtMs = parseTs(ts);
+  if (encounterStartedAtMs == null || seenAtMs == null) return false;
+
+  return seenAtMs - encounterStartedAtMs >= BOSS_SUMMON_MIN_DELAY_MS;
+}
+
+function resetCurrentPull(state, tsMs = null) {
+  state.currentPull = createCurrentPull();
+  if (tsMs != null) {
+    state.currentPull.startedAt = new Date(tsMs).toISOString();
+    state.currentPull.lastCombatAtMs = tsMs;
+  }
+}
+
+function touchCurrentPull(state, ts, npcId, npcName) {
+  const tsMs = parseTs(ts);
+  if (tsMs == null || !npcId) return;
+  if (!state.currentPull) resetCurrentPull(state);
+  const lastCombatAtMs = state.currentPull.lastCombatAtMs;
+  const existingMobs = [...state.currentPull.npcMap.values()];
+  const lastDeathMs = existingMobs
+    .map((mob) => parseTs(mob.deadAt))
+    .filter((value) => value != null)
+    .reduce((max, value) => Math.max(max, value), 0);
+  const allKnownMobsDead = existingMobs.length > 0 && existingMobs.every((mob) => !!mob.deadAt);
+  if (lastCombatAtMs != null && tsMs - lastCombatAtMs > CURRENT_PULL_RESET_MS) {
+    resetCurrentPull(state, tsMs);
+  } else if (allKnownMobsDead && lastDeathMs && tsMs - lastDeathMs > 500) {
+    resetCurrentPull(state, tsMs);
+  }
+  if (!state.currentPull.startedAt) state.currentPull.startedAt = ts;
+  state.currentPull.lastCombatAtMs = tsMs;
+
+  const meta = getNpcPercentMeta(state, npcId, npcName) || {
+    templateId: extractNpcTemplateId(npcId),
+    name: npcName || `NPC ${extractNpcTemplateId(npcId) || "?"}`,
+    score: 0,
+    percent: 0,
+  };
+
+  let npc = state.currentPull.npcMap.get(npcId);
+  if (!npc) {
+    const bossSpawned = shouldTreatNpcAsBossSpawned(state, meta.templateId, ts);
+    npc = {
+      unitId: npcId,
+      templateId: meta.templateId,
+      name: meta.name || npcName || `NPC ${meta.templateId || "?"}`,
+      score: Number(meta.score) || 0,
+      percent: Number(meta.percent) || 0,
+      firstSeenAt: ts,
+      lastSeenAt: ts,
+      deadAt: null,
+      chickenizedAt: null,
+      chickenized: false,
+      bossSpawnedAt: bossSpawned ? ts : null,
+      bossSpawned,
+    };
+    if (bossSpawned) state.dungeon.bossSpawnedNpcIds.add(npcId);
+    state.currentPull.npcMap.set(npcId, npc);
+  } else {
+    npc.lastSeenAt = ts;
+    if (meta.name) npc.name = meta.name;
+    if (meta.templateId != null) npc.templateId = meta.templateId;
+    if (Number.isFinite(meta.score)) npc.score = Number(meta.score);
+    if (Number.isFinite(meta.percent)) npc.percent = Number(meta.percent);
+    if (npc.chickenizedAt) npc.chickenized = true;
+    if (npc.bossSpawnedAt || state.dungeon.bossSpawnedNpcIds.has(npcId)) npc.bossSpawned = true;
+  }
+}
+
+function markNpcChickenized(state, ts, npcId, npcName) {
+  if (!npcId || !isNpcId(npcId)) return;
+  touchCurrentPull(state, ts, npcId, npcName);
+  const npc = state.currentPull?.npcMap?.get(npcId);
+  if (npc) {
+    npc.chickenizedAt = npc.chickenizedAt || ts;
+    npc.chickenized = true;
+  }
+  if (!state.dungeon.chickenizedNpcIds) state.dungeon.chickenizedNpcIds = new Set();
+  state.dungeon.chickenizedNpcIds.add(npcId);
+}
+
+function markCurrentPullDeath(state, ts, npcId, npcName) {
+  const tsMs = parseTs(ts);
+  if (tsMs == null) return;
+  touchCurrentPull(state, ts, npcId, npcName);
+  const npc = state.currentPull?.npcMap?.get(npcId);
+  if (npc) npc.deadAt = ts;
+}
+
+function buildCurrentPullSummary(state) {
+  const pull = state.currentPull;
+  if (!pull?.npcMap?.size) {
+    return {
+      startedAt: null,
+      lastCombatAt: null,
+      totalPercent: 0,
+      alivePercent: 0,
+      killedPercent: 0,
+      mobCount: 0,
+      aliveCount: 0,
+      mobs: [],
+    };
+  }
+
+  const mobs = [...pull.npcMap.values()]
+    .map((mob) => ({ ...mob, alive: !mob.deadAt, effectivePercent: (mob.chickenized || mob.bossSpawned) ? 0 : (Number(mob.percent) || 0) }))
+    .sort((a, b) => {
+      if (a.alive !== b.alive) return a.alive ? -1 : 1;
+      if (b.percent !== a.percent) return b.percent - a.percent;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+
+  const totalPercent = mobs.reduce((sum, mob) => sum + (Number(mob.effectivePercent) || 0), 0);
+  const alivePercent = mobs.reduce((sum, mob) => sum + (mob.alive ? (Number(mob.effectivePercent) || 0) : 0), 0);
+  const chickenizedMobs = mobs.filter((mob) => mob.chickenized);
+  const aliveChickenizedMobs = chickenizedMobs.filter((mob) => mob.alive);
+  const chickenizedOriginalPercent = chickenizedMobs.reduce((sum, mob) => sum + (Number(mob.percent) || 0), 0);
+  const aliveChickenizedOriginalPercent = aliveChickenizedMobs.reduce((sum, mob) => sum + (Number(mob.percent) || 0), 0);
+
+  return {
+    startedAt: pull.startedAt,
+    lastCombatAt: pull.lastCombatAtMs != null ? new Date(pull.lastCombatAtMs).toISOString() : null,
+    totalPercent,
+    alivePercent,
+    killedPercent: totalPercent - alivePercent,
+    mobCount: mobs.length,
+    aliveCount: mobs.filter((mob) => mob.alive).length,
+    chickenizedCount: chickenizedMobs.length,
+    aliveChickenizedCount: aliveChickenizedMobs.length,
+    chickenizedOriginalPercent,
+    aliveChickenizedOriginalPercent,
+    mobs,
+  };
+}
+
 const { fromProjectRoot } = require('../utils/project-paths');
 
 const RELIC_DATA = JSON.parse(
@@ -243,6 +482,11 @@ function createState() {
       completionSeconds: null,
       deaths: null,
       extra: {},
+      data: null,
+      completedPercent: 0,
+      countedNpcDeaths: new Set(),
+      chickenizedNpcIds: new Set(),
+      bossSpawnedNpcIds: new Set(),
     },
     players: new Map(),
     encounters: [],
@@ -251,6 +495,8 @@ function createState() {
     rawCounters: new Map(),
     dungeonPartyIds: new Set(),
     collectingDungeonParty: false,
+    currentPull: createCurrentPull(),
+    bossFight: createBossFightState(),
   };
 }
 
@@ -512,6 +758,21 @@ function stopPartyCollectionForEvent(state, event) {
   }
 }
 
+function noteBossNpcInLine(state, parts) {
+  if (!state?.currentEncounter || !state?.bossFight?.active) return;
+  for (const value of parts) {
+    if (!isNpcId(value)) continue;
+    const templateId = extractNpcTemplateId(value);
+    if (!isBossTemplateId(state, templateId)) continue;
+    state.dungeon.bossSpawnedNpcIds.delete(value);
+    const npc = state.currentPull?.npcMap?.get(value);
+    if (npc) {
+      npc.bossSpawned = false;
+      npc.bossSpawnedAt = null;
+    }
+  }
+}
+
 function processLine(state, line) {
   if (!line || !line.trim()) return;
 
@@ -527,6 +788,8 @@ function processLine(state, line) {
     stopPartyCollectionForEvent(state, event);
   }
 
+  noteBossNpcInLine(state, parts);
+
   switch (event) {
     case "DUNGEON_START": {
       state.dungeon.startedAt = ts;
@@ -534,10 +797,18 @@ function processLine(state, line) {
       state.dungeon.name = unquote(parts[2]);
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
+      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
+      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
       state.dungeon.affixes = parts[5];
       state.dungeon.success = false;
+      state.dungeon.completedPercent = 0;
+      state.dungeon.countedNpcDeaths.clear();
+      state.dungeon.chickenizedNpcIds.clear();
+      state.dungeon.bossSpawnedNpcIds.clear();
       state.dungeonPartyIds.clear();
       state.collectingDungeonParty = true;
+      state.bossFight = createBossFightState();
+      resetCurrentPull(state);
       break;
     }
     case "DUNGEON_END": {
@@ -545,6 +816,7 @@ function processLine(state, line) {
       state.dungeon.name = unquote(parts[2]);
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
+      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
       state.dungeon.affixes = parts[5];
       state.dungeon.success = parts[6] === "1";
       state.dungeon.durationMs = toNumber(parts[7]);
@@ -552,6 +824,19 @@ function processLine(state, line) {
       state.dungeon.deaths = toNumber(parts[9]);
       state.dungeon.extra = { chestCount: toNumber(parts[10]) };
       state.collectingDungeonParty = false;
+      state.bossFight = createBossFightState();
+      break;
+    }
+    case "ZONE_CHANGE": {
+      state.dungeon.name = unquote(parts[2]);
+      state.dungeon.id = toNumber(parts[3]);
+      state.dungeon.difficulty = toNumber(parts[4]);
+      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
+      state.dungeon.completedPercent = 0;
+      state.dungeon.countedNpcDeaths.clear();
+      state.dungeon.chickenizedNpcIds.clear();
+      state.dungeon.bossSpawnedNpcIds.clear();
+      state.bossFight = createBossFightState();
       break;
     }
     case "COMBATANT_INFO": {
@@ -574,6 +859,11 @@ function processLine(state, line) {
       state.currentEncounter = enc;
       state.encounters.push(enc);
       state.collectingDungeonParty = false;
+      state.bossFight = {
+        active: isBossEncounterName(state, encounterName),
+        encounterId,
+        startedAt: ts,
+      };
       break;
     }
     case "ENCOUNTER_END": {
@@ -586,6 +876,7 @@ function processLine(state, line) {
         enc.success = success;
       }
       state.currentEncounter = null;
+      state.bossFight = createBossFightState();
       break;
     }
     case "ABILITY_ACTIVATED": {
@@ -593,11 +884,16 @@ function processLine(state, line) {
       const sourceName = unquote(parts[3]);
       const abilityId = toNumber(parts[4]);
       const abilityName = unquote(parts[5]);
+      const targetId = parts[7];
+      const targetName = unquote(parts[8]);
       if (isPlayerId(sourceId) && abilityName) {
         const player = ensurePlayer(state, sourceId, sourceName);
         addAbilityStat(player, abilityId, abilityName, "activation", 0, ts);
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, "activation", 0, ts);
         markRelicUse(player, abilityId, ts);
+        if (isChickenizeAbility(abilityId, abilityName) && isNpcId(targetId)) {
+          markNpcChickenized(state, ts, targetId, targetName);
+        }
         const spirit = extractSpiritFromResourceList(parts);
         if (spirit) addSpiritSnapshot(player, ts, spirit.current, spirit.max, abilityId, abilityName);
       }
@@ -613,6 +909,11 @@ function processLine(state, line) {
       const abilityId = toNumber(parts[6]);
       const abilityName = unquote(parts[7]);
       const amount = toNumber(parts[9]) || 0;
+      if (isNpcId(sourceId) && isPlayerId(targetId)) touchCurrentPull(state, ts, sourceId, sourceName);
+      if (isNpcId(targetId) && isPlayerId(sourceId)) touchCurrentPull(state, ts, targetId, targetName);
+      if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
+        markNpcChickenized(state, ts, targetId, targetName);
+      }
       if (isPlayerId(sourceId)) {
         const player = ensurePlayer(state, sourceId, sourceName);
         player.damageDone += amount;
@@ -635,6 +936,8 @@ function processLine(state, line) {
       const abilityId = toNumber(parts[6]);
       const abilityName = unquote(parts[7]);
       const amount = toNumber(parts[11]) || 0;
+      if (isNpcId(sourceId) && isPlayerId(targetId)) touchCurrentPull(state, ts, sourceId, sourceName);
+      if (isNpcId(targetId) && isPlayerId(sourceId)) touchCurrentPull(state, ts, targetId, targetName);
       if (isPlayerId(sourceId)) {
         const player = ensurePlayer(state, sourceId, sourceName);
         player.healingDone += amount;
@@ -643,6 +946,21 @@ function processLine(state, line) {
         if (state.currentEncounter) addToMapNumber(state.currentEncounter.healingByPlayer, getActorKey(sourceId, sourceName), amount);
       }
       if (isPlayerId(targetId)) ensurePlayer(state, targetId, targetName);
+      break;
+    }
+    case "EFFECT_APPLIED":
+    case "EFFECT_REFRESHED": {
+      const sourceId = parts[2];
+      const sourceName = unquote(parts[3]);
+      const targetId = parts[4];
+      const targetName = unquote(parts[5]);
+      const abilityId = toNumber(parts[6]);
+      const abilityName = unquote(parts[7]);
+      if (isNpcId(sourceId) && isPlayerId(targetId)) touchCurrentPull(state, ts, sourceId, sourceName);
+      if (isNpcId(targetId) && isPlayerId(sourceId)) touchCurrentPull(state, ts, targetId, targetName);
+      if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
+        markNpcChickenized(state, ts, targetId, targetName);
+      }
       break;
     }
     case "UNIT_DEATH": {
@@ -655,6 +973,15 @@ function processLine(state, line) {
       if (isNpcId(deadId)) {
         const death = { ts, npcId: deadId, npcName: deadName, killerId, killerName, killingAbilityId, killingAbility };
         state.npcDeaths.push(death);
+        markCurrentPullDeath(state, ts, deadId, deadName);
+        if (!state.dungeon.countedNpcDeaths.has(deadId)) {
+          state.dungeon.countedNpcDeaths.add(deadId);
+          const meta = getNpcPercentMeta(state, deadId, deadName);
+          const wasChickenized = state.dungeon?.chickenizedNpcIds?.has(deadId);
+          const wasBossSpawned = state.dungeon?.bossSpawnedNpcIds?.has(deadId);
+          const percentToAdd = (wasChickenized || wasBossSpawned) ? 0 : (Number(meta?.percent) || 0);
+          if (percentToAdd) state.dungeon.completedPercent += percentToAdd;
+        }
         if (state.currentEncounter) state.currentEncounter.npcDeaths.push(death);
       }
       if (isPlayerId(deadId)) ensurePlayer(state, deadId, deadName).deaths += 1;
@@ -775,11 +1102,16 @@ function finalizeState(state) {
     .sort((a, b) => b.damageDone - a.damageDone);
 
   return {
-    dungeon: state.dungeon,
+    dungeon: {
+      ...state.dungeon,
+      killCount: Number(state.dungeon?.data?.killcount) || null,
+      completedPercent: Number(state.dungeon?.completedPercent || 0),
+    },
     players,
     partyPlayerIds: [...state.dungeonPartyIds],
     encounters,
     npcDeaths: state.npcDeaths,
+    currentPull: buildCurrentPullSummary(state),
     counters: Object.fromEntries(state.rawCounters),
   };
 }

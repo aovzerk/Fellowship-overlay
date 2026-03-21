@@ -375,3 +375,76 @@ button:hover {
   opacity: 0.9;
   font-size: 12px;
 }
+
+.pull-panel {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 10px 12px;
+}
+
+.pull-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.pull-drag-handle {
+  cursor: move;
+}
+
+.pull-stats {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.pull-stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.pull-stat span {
+  opacity: 0.72;
+}
+
+.pull-mob-list {
+  display: grid;
+  gap: 4px;
+}
+
+.pull-mob {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pull-mob.dead {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.pull-empty {
+  font-size: 13px;
+  opacity: 0.72;
+}
+
+
+.pull-note {
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+.pull-note span {
+  opacity: 0.72;
+}
+
+.pull-note.chickenized {
+  color: #ffd36a;
+}
+
