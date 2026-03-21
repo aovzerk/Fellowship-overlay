@@ -23,7 +23,6 @@ const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const DEFAULT_LANGUAGE = 'en';
 const DEFAULT_PULL_PANEL_POSITION = { x: 16, y: 12 };
 const DEFAULT_RECENT_SKILLS_PANEL_POSITION = { x: 16, y: 200 };
-const DEFAULT_VISIBILITY_SETTINGS = { showParty: true, showPull: true, showRecentSkills: true };
 const DEFAULT_RECENT_SKILLS_LIMIT = 7;
 const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
