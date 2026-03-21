@@ -16,6 +16,10 @@ const cardSizeValueEl = document.getElementById("cardSizeValue");
 const closeSkillsModalBtn = document.getElementById("closeSkillsModalBtn");
 const languageSelect = document.getElementById("languageSelect");
 const languageLabel = document.getElementById("languageLabel");
+const showPartyToggle = document.getElementById("showPartyToggle");
+const showPullToggle = document.getElementById("showPullToggle");
+const showPartyToggleLabel = document.getElementById("showPartyToggleLabel");
+const showPullToggleLabel = document.getElementById("showPullToggleLabel");
 const skillsModalTitle = document.getElementById("skillsModalTitle");
 const skillsModalSubtitle = document.getElementById("skillsModalSubtitle");
 const filePathEl = document.getElementById("filePath");
@@ -30,6 +34,7 @@ const STORAGE_KEY = "overlay-player-positions-v2";
 const SKILL_SELECTIONS_KEY = "overlay-skill-selections-v1";
 const CARD_SCALE_KEY = "overlay-card-scale-v1";
 const PULL_PANEL_POSITION_KEY = "overlay-pull-panel-position-v1";
+const VISIBILITY_SETTINGS_KEY = "overlay-visibility-settings-v1";
 const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
 const CARD_SCALE_STEP = 0.05;
@@ -43,6 +48,7 @@ let selectedSkillsByClass = loadSkillSelections();
 let cardScale = loadCardScale();
 let currentLanguage = "en";
 let lastWatchStatusMessage = "";
+let visibilitySettings = loadVisibilitySettings();
 
 
 const I18N = {
@@ -66,6 +72,8 @@ const I18N = {
     logSettings: 'Лог',
     overlaySettings: 'Оверлей',
     appearanceSettings: 'Внешний вид',
+    showParty: 'Показывать группу и кулдауны',
+    showPull: 'Показывать информацию по пулам и %',
     chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
     skillsEmpty: 'skills.json не найден или пуст',
     unknown: 'Неизвестно',
@@ -100,6 +108,8 @@ const I18N = {
     logSettings: 'Log',
     overlaySettings: 'Overlay',
     appearanceSettings: 'Appearance',
+    showParty: 'Show party and cooldowns',
+    showPull: 'Show pull and % info',
     chooseAbilities: 'Choose one or more abilities for each class',
     skillsEmpty: 'skills.json not found or empty',
     unknown: 'Unknown',
@@ -132,6 +142,10 @@ function applyTranslations() {
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
   skillsBtn.textContent = t('skills');
   languageLabel.textContent = t('language');
+  if (showPartyToggleLabel) showPartyToggleLabel.textContent = t('showParty');
+  if (showPullToggleLabel) showPullToggleLabel.textContent = t('showPull');
+  if (showPartyToggle) showPartyToggle.checked = !!visibilitySettings.showParty;
+  if (showPullToggle) showPullToggle.checked = !!visibilitySettings.showPull;
   if (languageSelect) languageSelect.value = currentLanguage;
   const sizeControls = document.querySelector('.size-controls');
   if (sizeControls) sizeControls.title = t('cardSizeTitle');
@@ -141,6 +155,7 @@ function applyTranslations() {
   watchStatusEl.textContent = lastWatchStatusMessage || t('noWatching');
   skillsModalTitle.textContent = t('trackedClassSkills');
   skillsModalSubtitle.textContent = t('chooseAbilities');
+  updateOverlayVisibility();
   renderPullInfo(latestData?.currentPull, latestData?.dungeon);
   if (!latestData?.players?.length) {
     setHudActiveState(hudActive);
@@ -159,7 +174,8 @@ function formatPercent(value) {
 function updatePullPanelVisibility() {
   if (!pullInfoEl) return;
   const hasSelectedFile = !!(latestData || (filePathEl && filePathEl.textContent && filePathEl.textContent !== t("noFileSelected")));
-  pullInfoEl.classList.toggle('hidden', !hasSelectedFile);
+  const isVisible = hasSelectedFile && visibilitySettings.showPull;
+  pullInfoEl.classList.toggle('hidden', !isVisible);
 }
 
 function renderPullInfo(currentPull, dungeon) {
@@ -268,6 +284,43 @@ function savePullPanelPosition(position) {
     x: Math.round(Number(position?.x || 0)),
     y: Math.round(Number(position?.y || 0)),
   }));
+}
+
+function loadVisibilitySettings() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(VISIBILITY_SETTINGS_KEY) || '{}');
+    return {
+      showParty: raw?.showParty !== false,
+      showPull: raw?.showPull !== false,
+    };
+  } catch {
+    return { showParty: true, showPull: true };
+  }
+}
+
+function saveVisibilitySettings() {
+  localStorage.setItem(VISIBILITY_SETTINGS_KEY, JSON.stringify({
+    showParty: !!visibilitySettings.showParty,
+    showPull: !!visibilitySettings.showPull,
+  }));
+}
+
+function updateOverlayVisibility() {
+  overlayRoot.classList.toggle('party-hidden', !visibilitySettings.showParty);
+  overlayRoot.classList.toggle('pull-hidden', !visibilitySettings.showPull);
+}
+
+function setPartyVisibility(enabled) {
+  visibilitySettings = { ...visibilitySettings, showParty: !!enabled };
+  saveVisibilitySettings();
+  updateOverlayVisibility();
+}
+
+function setPullVisibility(enabled) {
+  visibilitySettings = { ...visibilitySettings, showPull: !!enabled };
+  saveVisibilitySettings();
+  updateOverlayVisibility();
+  updatePullPanelVisibility();
 }
 
 function loadSkillSelections() {
@@ -745,6 +798,12 @@ toggleLockBtn.addEventListener("click", async () => {
 });
 
 skillsBtn.addEventListener('click', openSkillsModal);
+showPartyToggle?.addEventListener('change', (event) => {
+  setPartyVisibility(event.currentTarget.checked);
+});
+showPullToggle?.addEventListener('change', (event) => {
+  setPullVisibility(event.currentTarget.checked);
+});
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
@@ -811,6 +870,7 @@ window.api.getLanguage().then((result) => {
 
 updateCardScaleUi();
 initializePullPanel();
+updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();
 ensureSkillCatalog();

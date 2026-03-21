@@ -366,6 +366,37 @@ button:hover {
   margin-top: 10px;
 }
 
+
+.settings-toggle-list {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  font-size: 13px;
+}
+
+.settings-toggle input {
+  margin: 0;
+}
+
+.settings-toggle span {
+  font-weight: 700;
+}
+
+#overlay-root.party-hidden #playersContainer,
+#overlay-root.pull-hidden #pullInfo {
+  display: none;
+}
+
 .settings-note {
   display: block;
   max-width: 100%;
