@@ -46,16 +46,16 @@ const CARD_SCALE_MAX = 1.8;
 const CARD_SCALE_STEP = 0.05;
 const DEFAULT_PULL_PANEL_POSITION = { x: 16, y: 12 };
 const DEFAULT_RECENT_SKILLS_PANEL_POSITION = { x: 16, y: 200 };
-const DEFAULT_VISIBILITY_SETTINGS = { showParty: true, showPull: true, showRecentSkills: true };
+const DEFAULT_VISIBILITY_SETTINGS = { showParty: true, showPull: false, showRecentSkills: false };
 const DEFAULT_RECENT_SKILLS_LIMIT = 7;
 const DEFAULT_CARD_SCALE = 1;
 const DEFAULT_OVERLAY_SETTINGS = {
   playerPositions: {},
   panelPositions: {
-    pullInfo: DEFAULT_PULL_PANEL_POSITION,
-    recentSkills: DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+    pullInfo: { ...DEFAULT_PULL_PANEL_POSITION },
+    recentSkills: { ...DEFAULT_RECENT_SKILLS_PANEL_POSITION },
   },
-  visibilitySettings: DEFAULT_VISIBILITY_SETTINGS,
+  visibilitySettings: { ...DEFAULT_VISIBILITY_SETTINGS },
   recentSkillsLimit: DEFAULT_RECENT_SKILLS_LIMIT,
   selectedSkillsByClass: {},
   cardScale: DEFAULT_CARD_SCALE,
@@ -410,9 +410,15 @@ function normalizePanelPositions(value) {
 function normalizeVisibilitySettings(value) {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   return {
-    showParty: source.showParty !== false,
-    showPull: source.showPull !== false,
-    showRecentSkills: source.showRecentSkills !== false,
+    showParty: typeof source.showParty === 'boolean'
+      ? source.showParty
+      : DEFAULT_VISIBILITY_SETTINGS.showParty,
+    showPull: typeof source.showPull === 'boolean'
+      ? source.showPull
+      : DEFAULT_VISIBILITY_SETTINGS.showPull,
+    showRecentSkills: typeof source.showRecentSkills === 'boolean'
+      ? source.showRecentSkills
+      : DEFAULT_VISIBILITY_SETTINGS.showRecentSkills,
   };
 }
 
@@ -486,11 +492,22 @@ function loadLegacySettingsFromLocalStorage() {
   const playerPositions = normalizePlayerPositions(getLocalStorageJson(STORAGE_KEY, {}));
   if (Object.keys(playerPositions).length) legacySettings.playerPositions = playerPositions;
 
-  const visibilityRaw = getLocalStorageJson(VISIBILITY_SETTINGS_KEY, {});
-  if (visibilityRaw && typeof visibilityRaw === 'object' && !Array.isArray(visibilityRaw)) {
+  const visibilityRaw = getLocalStorageJson(VISIBILITY_SETTINGS_KEY, null);
+  const hasLegacyVisibilitySettings =
+    visibilityRaw &&
+    typeof visibilityRaw === 'object' &&
+    !Array.isArray(visibilityRaw) &&
+    (
+      typeof visibilityRaw.showParty === 'boolean' ||
+      typeof visibilityRaw.showPull === 'boolean' ||
+      typeof visibilityRaw.showRecentSkills === 'boolean' ||
+      visibilityRaw.recentSkillsLimit !== undefined
+    );
+
+  if (hasLegacyVisibilitySettings) {
     legacySettings.visibilitySettings = normalizeVisibilitySettings(visibilityRaw);
     if (visibilityRaw.recentSkillsLimit !== undefined) {
-      legacySettings.recentSkillsLimit = normalizeRecentSkillsLimit(visibilityRaw.recentSkillsLimit);
+    legacySettings.recentSkillsLimit = normalizeRecentSkillsLimit(visibilityRaw.recentSkillsLimit);
     }
   }
 
@@ -530,10 +547,16 @@ function clearLegacyLocalStorage() {
 }
 
 function loadOverlaySettings() {
-  let persistedSettings = DEFAULT_OVERLAY_SETTINGS;
+  let persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
+
   try {
     const response = window.api?.getOverlaySettingsSync?.();
-    persistedSettings = normalizeOverlaySettings(response?.settings || DEFAULT_OVERLAY_SETTINGS);
+    const rawSettings =
+      response && typeof response === 'object' && !Array.isArray(response)
+        ? (response.settings && typeof response.settings === 'object' ? response.settings : response)
+        : DEFAULT_OVERLAY_SETTINGS;
+
+    persistedSettings = normalizeOverlaySettings(rawSettings);
   } catch {
     persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
   }
@@ -559,7 +582,7 @@ function getOverlaySettings() {
 
 function saveOverlaySettingsPatch(patch) {
   overlaySettingsCache = mergeOverlaySettings(getOverlaySettings(), patch);
-  window.api?.saveOverlaySettings?.(patch).catch(() => {});
+  window.api?.saveOverlaySettings?.(overlaySettingsCache).catch(() => {});
   return overlaySettingsCache;
 }
 
