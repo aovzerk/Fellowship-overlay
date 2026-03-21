@@ -358,7 +358,7 @@ function updateIconNodes(container, items) {
     icon.alt = escapeHtml(item.name);
     row.title = item.name || '';
 
-    const baseCooldownMs = Math.max(0, Number(item.baseCooldown || item.cooldown || 0) * 1000);
+    const baseCooldownMs = Math.max(0, Number(item.effectiveCooldown || item.cooldown || item.baseCooldown || 0) * 1000);
     const remainingMs = Math.max(0, Number(item.cooldownRemainingMs || 0));
     const progress = item.isReady || !baseCooldownMs ? 1 : Math.max(0, Math.min(1, 1 - (remainingMs / baseCooldownMs)));
     const angle = progress * 360;

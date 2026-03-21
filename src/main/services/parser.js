@@ -57,6 +57,7 @@ function ensurePlayerRelic(player, relicLike) {
       name: meta.name,
       icon: meta.icon,
       baseCooldown: meta.baseCooldown,
+      effectiveCooldown: meta.baseCooldown,
       lastUsedAt: null,
       cooldownEndsAt: null,
       cooldownRemainingMs: 0,
@@ -67,6 +68,9 @@ function ensurePlayerRelic(player, relicLike) {
     relic.name = meta.name;
     relic.icon = meta.icon;
     relic.baseCooldown = meta.baseCooldown;
+    if (!Number.isFinite(Number(relic.effectiveCooldown)) || relic.isReady) {
+      relic.effectiveCooldown = meta.baseCooldown;
+    }
   }
 
   return relic;
@@ -84,13 +88,22 @@ function setPlayerRelics(player, relics) {
   for (const relic of relics) ensurePlayerRelic(player, relic);
 }
 
+function getRelicCooldownModifier(player) {
+  const whiteStone = Number(player?.stones?.white || 0);
+  if (whiteStone >= 2640) return 0.76;
+  if (whiteStone >= 960) return 0.92;
+  return 1;
+}
+
 function markRelicUse(player, abilityId, ts) {
   const relic = getEquippedRelicByAnyId(player, abilityId);
   if (!relic) return;
 
   const tsMs = parseTs(ts);
+  const cooldownSeconds = relic.baseCooldown * getRelicCooldownModifier(player);
   relic.lastUsedAt = ts;
-  relic.cooldownEndsAt = tsMs != null ? new Date(tsMs + relic.baseCooldown * 1000).toISOString() : null;
+  relic.effectiveCooldown = cooldownSeconds;
+  relic.cooldownEndsAt = tsMs != null ? new Date(tsMs + cooldownSeconds * 1000).toISOString() : null;
 }
 
 function computeRelicCooldownState(player, nowMs) {
