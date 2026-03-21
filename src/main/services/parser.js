@@ -9,6 +9,8 @@ const CHICKENIZE_RELIC_ID = 1478;
 const BOSS_SUMMON_MIN_DELAY_MS = 12000;
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
 const READ_STREAM_CHUNK_SIZE = 1024 * 1024;
+const REVERSE_SEARCH_CHUNK_SIZE = 1024 * 1024;
+const RECENT_DUNGEONS_TO_SCAN = 2;
 const MAX_STORED_ENCOUNTERS = 2;
 const MAX_STORED_NPC_DEATHS = 400;
 const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
@@ -473,26 +475,45 @@ function isLikelyCombatAbility(ability) {
   return true;
 }
 
+function createDungeonState() {
+  return {
+    startedAt: null,
+    endedAt: null,
+    name: null,
+    id: null,
+    difficulty: null,
+    affixes: [],
+    success: null,
+    durationMs: null,
+    completionSeconds: null,
+    deaths: null,
+    extra: {},
+    data: null,
+    completedPercent: 0,
+    countedNpcDeaths: new Set(),
+    chickenizedNpcIds: new Set(),
+    bossSpawnedNpcIds: new Set(),
+  };
+}
+
+function resetDungeonScope(state) {
+  state.dungeon = createDungeonState();
+  state.players = new Map();
+  state.encounters = [];
+  state.currentEncounter = null;
+  state.npcDeaths = [];
+  state.dungeonPartyIds = new Set();
+  state.collectingDungeonParty = false;
+  state.currentPull = createCurrentPull();
+  state.bossFight = createBossFightState();
+  state.recentSkillActivations = [];
+  state.recentSkillsPlayerId = null;
+  state.recentSkillsPlayerName = null;
+}
+
 function createState() {
   return {
-    dungeon: {
-      startedAt: null,
-      endedAt: null,
-      name: null,
-      id: null,
-      difficulty: null,
-      affixes: [],
-      success: null,
-      durationMs: null,
-      completionSeconds: null,
-      deaths: null,
-      extra: {},
-      data: null,
-      completedPercent: 0,
-      countedNpcDeaths: new Set(),
-      chickenizedNpcIds: new Set(),
-      bossSpawnedNpcIds: new Set(),
-    },
+    dungeon: createDungeonState(),
     players: new Map(),
     encounters: [],
     currentEncounter: null,
@@ -826,25 +847,18 @@ function processLine(state, line) {
 
   switch (event) {
     case "DUNGEON_START": {
+      const dungeonName = unquote(parts[2]);
+      resetDungeonScope(state);
       state.dungeon.startedAt = ts;
       state.dungeon.endedAt = null;
-      state.dungeon.name = unquote(parts[2]);
+      state.dungeon.name = dungeonName;
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
-      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
-      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
+      state.dungeon.data = loadDungeonDataByName(dungeonName);
       state.dungeon.affixes = parts[5];
       state.dungeon.success = false;
       state.dungeon.completedPercent = 0;
-      state.dungeon.countedNpcDeaths.clear();
-      state.dungeon.chickenizedNpcIds.clear();
-      state.dungeon.bossSpawnedNpcIds.clear();
-      state.dungeonPartyIds.clear();
       state.collectingDungeonParty = true;
-      state.bossFight = createBossFightState();
-      state.recentSkillsPlayerId = null;
-      state.recentSkillsPlayerName = null;
-      state.recentSkillActivations = [];
       resetCurrentPull(state);
       break;
     }
@@ -865,18 +879,16 @@ function processLine(state, line) {
       break;
     }
     case "ZONE_CHANGE": {
-      state.dungeon.name = unquote(parts[2]);
+      const dungeonName = unquote(parts[2]);
+      const dungeonData = loadDungeonDataByName(dungeonName);
+      if (dungeonData) {
+        resetDungeonScope(state);
+      }
+      state.dungeon.name = dungeonName;
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
-      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
+      state.dungeon.data = dungeonData;
       state.dungeon.completedPercent = 0;
-      state.dungeon.countedNpcDeaths.clear();
-      state.dungeon.chickenizedNpcIds.clear();
-      state.dungeon.bossSpawnedNpcIds.clear();
-      state.bossFight = createBossFightState();
-      state.recentSkillsPlayerId = null;
-      state.recentSkillsPlayerName = null;
-      state.recentSkillActivations = [];
       break;
     }
     case "COMBATANT_INFO": {
@@ -1083,14 +1095,101 @@ function getFileIdentity(stat) {
   return `${stat.dev || 0}:${stat.ino || 0}`;
 }
 
+function getLineDungeonBoundaryKind(line) {
+  if (!line || (!line.includes('|DUNGEON_START|') && !line.includes('|ZONE_CHANGE|'))) {
+    return null;
+  }
+
+  const parts = splitLogLine(line);
+  if (parts.length < 3) return null;
+
+  const event = parts[1] || null;
+  if (event === 'DUNGEON_START') return 'start';
+  if (event !== 'ZONE_CHANGE') return null;
+
+  return loadDungeonDataByName(unquote(parts[2])) ? 'zone' : null;
+}
+
+function chooseRecentDungeonParseOffset(boundaryOffsets, fallbackZoneOffset) {
+  if (boundaryOffsets.length >= RECENT_DUNGEONS_TO_SCAN) {
+    return boundaryOffsets[RECENT_DUNGEONS_TO_SCAN - 1];
+  }
+  if (boundaryOffsets.length > 0) {
+    return boundaryOffsets[boundaryOffsets.length - 1];
+  }
+  return fallbackZoneOffset ?? 0;
+}
+
+async function findRecentDungeonParseOffset(filePath, fileSize) {
+  if (!fileSize) return 0;
+
+  const handle = await fs.promises.open(filePath, 'r');
+  const boundaryOffsets = [];
+  let fallbackZoneOffset = null;
+  let carry = Buffer.alloc(0);
+
+  const processLineBuffer = (lineBuffer, lineStartOffset) => {
+    if (!lineBuffer?.length) return false;
+
+    let line = lineBuffer.toString('utf8');
+    if (line.endsWith('\r')) line = line.slice(0, -1);
+
+    const kind = getLineDungeonBoundaryKind(line);
+    if (!kind) return false;
+
+    if (kind === 'start') {
+      boundaryOffsets.push(lineStartOffset);
+      return boundaryOffsets.length >= RECENT_DUNGEONS_TO_SCAN;
+    }
+
+    if (fallbackZoneOffset == null) fallbackZoneOffset = lineStartOffset;
+    return false;
+  };
+
+  try {
+    let position = fileSize;
+
+    while (position > 0 && boundaryOffsets.length < RECENT_DUNGEONS_TO_SCAN) {
+      const toRead = Math.min(REVERSE_SEARCH_CHUNK_SIZE, position);
+      position -= toRead;
+
+      const buffer = Buffer.allocUnsafe(toRead);
+      const { bytesRead } = await handle.read(buffer, 0, toRead, position);
+      const chunk = buffer.subarray(0, bytesRead);
+      const combined = carry.length ? Buffer.concat([chunk, carry]) : chunk;
+
+      let lineEnd = combined.length;
+      let newlineIndex = combined.lastIndexOf(0x0a, lineEnd - 1);
+
+      while (newlineIndex !== -1) {
+        const lineBuffer = combined.subarray(newlineIndex + 1, lineEnd);
+        const shouldStop = processLineBuffer(lineBuffer, position + newlineIndex + 1);
+        if (shouldStop) return chooseRecentDungeonParseOffset(boundaryOffsets, fallbackZoneOffset);
+
+        lineEnd = newlineIndex;
+        newlineIndex = combined.lastIndexOf(0x0a, lineEnd - 1);
+      }
+
+      carry = combined.subarray(0, lineEnd);
+    }
+
+    if (carry.length) processLineBuffer(carry, 0);
+
+    return chooseRecentDungeonParseOffset(boundaryOffsets, fallbackZoneOffset);
+  } finally {
+    await handle.close();
+  }
+}
+
 async function parseCombatLog(filePath) {
   const stat = await fs.promises.stat(filePath);
   const currentIdentity = getFileIdentity(stat);
   const cached = parserCache.get(filePath);
 
   const shouldReset = !cached || cached.identity !== currentIdentity || stat.size < cached.offset;
+  const startOffset = shouldReset ? await findRecentDungeonParseOffset(filePath, stat.size) : cached.offset;
   const entry = shouldReset
-    ? { identity: currentIdentity, offset: 0, leftover: "", state: createState() }
+    ? { identity: currentIdentity, offset: startOffset, leftover: "", state: createState() }
     : cached;
 
   await processFileRange(filePath, entry.offset, stat.size, entry);
