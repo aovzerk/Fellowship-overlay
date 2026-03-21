@@ -6,7 +6,8 @@ const path = require("path");
 const DUNGEON_DATA_CACHE = new Map();
 const CURRENT_PULL_RESET_MS = 8000;
 const CHICKENIZE_RELIC_ID = 1478;
-const BOSS_SUMMON_MIN_DELAY_MS = 5000;
+const BOSS_SUMMON_MIN_DELAY_MS = 12000;
+const MAX_RECENT_SKILL_ACTIVATIONS = 30;
 
 function loadDungeonDataByName(name) {
   const normalized = String(name || "").trim();
@@ -497,6 +498,9 @@ function createState() {
     collectingDungeonParty: false,
     currentPull: createCurrentPull(),
     bossFight: createBossFightState(),
+    recentSkillActivations: [],
+    recentSkillsPlayerId: null,
+    recentSkillsPlayerName: null,
   };
 }
 
@@ -622,6 +626,27 @@ function addAbilityStat(player, abilityId, abilityName, type, amount = 0, ts = n
   if (type === "healing") {
     stat.healing += amount;
     stat.hits += 1;
+  }
+}
+
+function addRecentSkillActivation(state, player, abilityId, abilityName, ts) {
+  if (!state || !player || !ts) return;
+  if (abilityId == null && !abilityName) return;
+  if (getRelicMetaByAnyId(abilityId)) return;
+
+  const entry = {
+    ts,
+    playerId: player.id,
+    playerName: player.name,
+    classId: player.classId,
+    className: player.className,
+    abilityId: abilityId == null ? null : Number(abilityId),
+    abilityName: abilityName || null,
+  };
+
+  state.recentSkillActivations.push(entry);
+  if (state.recentSkillActivations.length > MAX_RECENT_SKILL_ACTIVATIONS) {
+    state.recentSkillActivations.splice(0, state.recentSkillActivations.length - MAX_RECENT_SKILL_ACTIVATIONS);
   }
 }
 
@@ -808,6 +833,9 @@ function processLine(state, line) {
       state.dungeonPartyIds.clear();
       state.collectingDungeonParty = true;
       state.bossFight = createBossFightState();
+      state.recentSkillsPlayerId = null;
+      state.recentSkillsPlayerName = null;
+      state.recentSkillActivations = [];
       resetCurrentPull(state);
       break;
     }
@@ -837,6 +865,9 @@ function processLine(state, line) {
       state.dungeon.chickenizedNpcIds.clear();
       state.dungeon.bossSpawnedNpcIds.clear();
       state.bossFight = createBossFightState();
+      state.recentSkillsPlayerId = null;
+      state.recentSkillsPlayerName = null;
+      state.recentSkillActivations = [];
       break;
     }
     case "COMBATANT_INFO": {
@@ -848,7 +879,13 @@ function processLine(state, line) {
         setPlayerClass(player, classId);
         setPlayerStones(player, parts[10]);
         setPlayerRelics(player, extractRelicsFromCombatantInfo(parts));
-        if (state.collectingDungeonParty) state.dungeonPartyIds.add(unitId);
+        if (state.collectingDungeonParty) {
+          state.dungeonPartyIds.add(unitId);
+          if (!state.recentSkillsPlayerId) {
+            state.recentSkillsPlayerId = unitId;
+            state.recentSkillsPlayerName = name || null;
+          }
+        }
       }
       break;
     }
@@ -891,6 +928,7 @@ function processLine(state, line) {
         addAbilityStat(player, abilityId, abilityName, "activation", 0, ts);
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, "activation", 0, ts);
         markRelicUse(player, abilityId, ts);
+        addRecentSkillActivation(state, player, abilityId, abilityName, ts);
         if (isChickenizeAbility(abilityId, abilityName) && isNpcId(targetId)) {
           markNpcChickenized(state, ts, targetId, targetName);
         }
@@ -1101,6 +1139,26 @@ function finalizeState(state) {
     })
     .sort((a, b) => b.damageDone - a.damageDone);
 
+  const visiblePlayerIds = new Set(players.map((player) => player.id));
+  const playerById = new Map(players.map((player) => [player.id, player]));
+  const recentSkillsPlayerId = state.recentSkillsPlayerId && visiblePlayerIds.has(state.recentSkillsPlayerId)
+    ? state.recentSkillsPlayerId
+    : null;
+  const recentSkills = (state.recentSkillActivations || [])
+    .filter((entry) => visiblePlayerIds.has(entry.playerId))
+    .filter((entry) => !recentSkillsPlayerId || entry.playerId === recentSkillsPlayerId)
+    .sort((a, b) => (parseTs(a.ts) || 0) - (parseTs(b.ts) || 0))
+    .slice(-MAX_RECENT_SKILL_ACTIVATIONS)
+    .map((entry) => {
+      const player = playerById.get(entry.playerId);
+      return {
+        ...entry,
+        classId: player?.classId ?? entry.classId ?? null,
+        className: player?.className ?? entry.className ?? null,
+        playerName: player?.name ?? entry.playerName ?? null,
+      };
+    });
+
   return {
     dungeon: {
       ...state.dungeon,
@@ -1108,6 +1166,9 @@ function finalizeState(state) {
       completedPercent: Number(state.dungeon?.completedPercent || 0),
     },
     players,
+    recentSkills,
+    recentSkillsPlayerId,
+    recentSkillsPlayerName: recentSkillsPlayerId ? (playerById.get(recentSkillsPlayerId)?.name ?? state.recentSkillsPlayerName ?? null) : null,
     partyPlayerIds: [...state.dungeonPartyIds],
     encounters,
     npcDeaths: state.npcDeaths,

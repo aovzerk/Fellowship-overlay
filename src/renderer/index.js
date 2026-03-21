@@ -29,12 +29,18 @@ const overlayRoot = document.getElementById("overlay-root");
 const skillsModal = document.getElementById("skillsModal");
 const skillsCatalogEl = document.getElementById("skillsCatalog");
 const pullInfoEl = document.getElementById("pullInfo");
+const recentSkillsPanelEl = document.getElementById("recentSkillsPanel");
+const showRecentSkillsToggle = document.getElementById("showRecentSkillsToggle");
+const showRecentSkillsToggleLabel = document.getElementById("showRecentSkillsToggleLabel");
+const recentSkillsLimitInput = document.getElementById("recentSkillsLimitInput");
+const recentSkillsLimitLabel = document.getElementById("recentSkillsLimitLabel");
 
 const STORAGE_KEY = "overlay-player-positions-v2";
 const SKILL_SELECTIONS_KEY = "overlay-skill-selections-v1";
 const CARD_SCALE_KEY = "overlay-card-scale-v1";
 const PULL_PANEL_POSITION_KEY = "overlay-pull-panel-position-v1";
-const VISIBILITY_SETTINGS_KEY = "overlay-visibility-settings-v1";
+const RECENT_SKILLS_PANEL_POSITION_KEY = "overlay-recent-skills-panel-position-v1";
+const VISIBILITY_SETTINGS_KEY = "overlay-visibility-settings-v2";
 const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
 const CARD_SCALE_STEP = 0.05;
@@ -49,6 +55,7 @@ let cardScale = loadCardScale();
 let currentLanguage = "en";
 let lastWatchStatusMessage = "";
 let visibilitySettings = loadVisibilitySettings();
+let recentSkillsLimit = loadRecentSkillsLimit();
 
 
 const I18N = {
@@ -74,6 +81,8 @@ const I18N = {
     appearanceSettings: 'Внешний вид',
     showParty: 'Показывать группу и кулдауны',
     showPull: 'Показывать информацию по пулам и %',
+    showRecentSkills: 'Показывать последние скиллы',
+    recentSkillsLimit: 'Лимит последних скиллов',
     chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
     skillsEmpty: 'skills.json не найден или пуст',
     unknown: 'Неизвестно',
@@ -84,6 +93,8 @@ const I18N = {
     dungeonProgress: 'Прогресс данжа',
     mobs: 'Мобы',
     noPullData: 'Нет данных по текущему бою',
+    recentSkillsTitle: 'Последние скиллы',
+    noRecentSkills: 'Нет использованных скиллов',
     chickenizedInfo: 'Chickenize',
     chickenizedSuffix: 'моб(ов) = 0%',
     chickenizedAlive: 'живых',
@@ -110,6 +121,8 @@ const I18N = {
     appearanceSettings: 'Appearance',
     showParty: 'Show party and cooldowns',
     showPull: 'Show pull and % info',
+    showRecentSkills: 'Show recent skills',
+    recentSkillsLimit: 'Recent skills limit',
     chooseAbilities: 'Choose one or more abilities for each class',
     skillsEmpty: 'skills.json not found or empty',
     unknown: 'Unknown',
@@ -120,6 +133,8 @@ const I18N = {
     dungeonProgress: 'Dungeon progress',
     mobs: 'Mobs',
     noPullData: 'No current pull data',
+    recentSkillsTitle: 'Recent skills',
+    noRecentSkills: 'No used skills yet',
     chickenizedInfo: 'Chickenize',
     chickenizedSuffix: 'mob(s) = 0%',
     chickenizedAlive: 'alive',
@@ -144,8 +159,12 @@ function applyTranslations() {
   languageLabel.textContent = t('language');
   if (showPartyToggleLabel) showPartyToggleLabel.textContent = t('showParty');
   if (showPullToggleLabel) showPullToggleLabel.textContent = t('showPull');
+  if (showRecentSkillsToggleLabel) showRecentSkillsToggleLabel.textContent = t('showRecentSkills');
+  if (recentSkillsLimitLabel) recentSkillsLimitLabel.textContent = t('recentSkillsLimit');
   if (showPartyToggle) showPartyToggle.checked = !!visibilitySettings.showParty;
   if (showPullToggle) showPullToggle.checked = !!visibilitySettings.showPull;
+  if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
+  if (recentSkillsLimitInput) recentSkillsLimitInput.value = String(recentSkillsLimit);
   if (languageSelect) languageSelect.value = currentLanguage;
   const sizeControls = document.querySelector('.size-controls');
   if (sizeControls) sizeControls.title = t('cardSizeTitle');
@@ -157,12 +176,14 @@ function applyTranslations() {
   skillsModalSubtitle.textContent = t('chooseAbilities');
   updateOverlayVisibility();
   renderPullInfo(latestData?.currentPull, latestData?.dungeon);
+  renderRecentSkillsPanel(latestData?.recentSkills || []);
   if (!latestData?.players?.length) {
     setHudActiveState(hudActive);
   } else {
     renderPlayers(latestData.players || []);
   }
   renderSkillsModal();
+  updateRecentSkillsPanelVisibility();
 }
 
 function formatPercent(value) {
@@ -176,6 +197,82 @@ function updatePullPanelVisibility() {
   const hasSelectedFile = !!(latestData || (filePathEl && filePathEl.textContent && filePathEl.textContent !== t("noFileSelected")));
   const isVisible = hasSelectedFile && visibilitySettings.showPull;
   pullInfoEl.classList.toggle('hidden', !isVisible);
+}
+
+function updateRecentSkillsPanelVisibility() {
+  if (!recentSkillsPanelEl) return;
+  const hasSelectedFile = !!(latestData || (filePathEl && filePathEl.textContent && filePathEl.textContent !== t("noFileSelected")));
+  const isVisible = hasSelectedFile && visibilitySettings.showRecentSkills;
+  recentSkillsPanelEl.classList.toggle('hidden', !isVisible);
+}
+
+function getDefaultSkillIcon() {
+  return 'Heroes/Default/default_skill.jpg';
+}
+
+function getAbilityCatalogEntry(classId, abilityId) {
+  const normalizedClassId = String(Number(classId || 0));
+  const wantedAbilityId = String(Number(abilityId || 0));
+  const classEntry = (skillCatalog.classes || []).find((entry) => String(Number(entry.id || 0)) === normalizedClassId);
+  if (!classEntry) return null;
+  return (classEntry.abilities || []).find((ability) => String(Number(ability.id || 0)) === wantedAbilityId) || null;
+}
+
+function resolveRecentSkillIcon(entry) {
+  const catalogEntry = getAbilityCatalogEntry(entry?.classId, entry?.abilityId);
+  return catalogEntry?.icon || getDefaultSkillIcon();
+}
+
+function renderRecentSkillsPanel(recentSkills = []) {
+  if (!recentSkillsPanelEl) return;
+  const allItems = Array.isArray(recentSkills) ? recentSkills : [];
+  const normalizedLimit = clamp(Number(recentSkillsLimit || 7), 1, 20);
+  const items = allItems.slice(-normalizedLimit).map((entry) => ({
+    ...entry,
+    icon: resolveRecentSkillIcon(entry),
+  }));
+
+  if (!items.length) {
+    recentSkillsPanelEl.innerHTML = `
+      <div class="player-header drag-handle recent-skills-header">
+        <div class="player-title-block">
+          <div class="player-name">${escapeHtml(t("recentSkillsTitle"))}</div>
+        </div>
+      </div>
+      <div class="pull-empty">${escapeHtml(t("noRecentSkills"))}</div>
+    `;
+    updateRecentSkillsPanelVisibility();
+    return;
+  }
+
+  recentSkillsPanelEl.innerHTML = `
+    <div class="player-header drag-handle recent-skills-header">
+      <div class="player-title-block">
+        <div class="player-name">${escapeHtml(t("recentSkillsTitle"))}</div>
+      </div>
+    </div>
+    <div class="recent-skills-row"></div>
+  `;
+
+  const row = recentSkillsPanelEl.querySelector('.recent-skills-row');
+  const fragment = document.createDocumentFragment();
+  items.forEach((item) => {
+    const chip = document.createElement('div');
+    chip.className = 'relic-chip recent-skill-chip';
+    chip.dataset.key = `${item.playerId || 'player'}-${item.abilityId || 'skill'}-${item.ts || index}`;
+    chip.innerHTML = `
+      <img class="relic-icon" alt="" />
+    `;
+    const icon = chip.querySelector('.relic-icon');
+    icon.src = toAssetSrc(item.icon || getDefaultSkillIcon());
+    icon.alt = escapeHtml(item.abilityName || 'Skill');
+    const timeLabel = formatTimeShort(item.ts);
+    chip.title = `${item.playerName || t('unknown')} — ${item.abilityName || t('unknown')}${timeLabel ? ` — ${timeLabel}` : ''}`;
+    fragment.appendChild(chip);
+  });
+  row.appendChild(fragment);
+  recentSkillsPanelEl.style.width = `${getCardWidthForIconCount(items.length)}px`;
+  updateRecentSkillsPanelVisibility();
 }
 
 function renderPullInfo(currentPull, dungeon) {
@@ -195,7 +292,9 @@ function renderPullInfo(currentPull, dungeon) {
       <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
       <div class="pull-empty">${escapeHtml(t("noPullData"))}</div>
     `;
+    renderRecentSkillsPanel([]);
     updatePullPanelVisibility();
+    updateRecentSkillsPanelVisibility();
     return;
   }
 
@@ -228,6 +327,13 @@ function formatDurationMs(ms) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatTimeShort(ts) {
+  const date = new Date(ts);
+  if (!Number.isFinite(date.getTime())) return '';
+  const locale = currentLanguage === 'en' ? 'en-US' : 'ru-RU';
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date);
 }
 
 function escapeHtml(value) {
@@ -286,15 +392,35 @@ function savePullPanelPosition(position) {
   }));
 }
 
+function loadRecentSkillsPanelPosition() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RECENT_SKILLS_PANEL_POSITION_KEY) || '{}');
+    const x = Number(raw?.x);
+    const y = Number(raw?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { x: 16, y: 200 };
+    return { x, y };
+  } catch {
+    return { x: 16, y: 200 };
+  }
+}
+
+function saveRecentSkillsPanelPosition(position) {
+  localStorage.setItem(RECENT_SKILLS_PANEL_POSITION_KEY, JSON.stringify({
+    x: Math.round(Number(position?.x || 0)),
+    y: Math.round(Number(position?.y || 0)),
+  }));
+}
+
 function loadVisibilitySettings() {
   try {
     const raw = JSON.parse(localStorage.getItem(VISIBILITY_SETTINGS_KEY) || '{}');
     return {
       showParty: raw?.showParty !== false,
       showPull: raw?.showPull !== false,
+      showRecentSkills: raw?.showRecentSkills !== false,
     };
   } catch {
-    return { showParty: true, showPull: true };
+    return { showParty: true, showPull: true, showRecentSkills: true };
   }
 }
 
@@ -302,12 +428,15 @@ function saveVisibilitySettings() {
   localStorage.setItem(VISIBILITY_SETTINGS_KEY, JSON.stringify({
     showParty: !!visibilitySettings.showParty,
     showPull: !!visibilitySettings.showPull,
+    showRecentSkills: !!visibilitySettings.showRecentSkills,
+    recentSkillsLimit: clamp(Number(recentSkillsLimit || 7), 1, 20),
   }));
 }
 
 function updateOverlayVisibility() {
   overlayRoot.classList.toggle('party-hidden', !visibilitySettings.showParty);
   overlayRoot.classList.toggle('pull-hidden', !visibilitySettings.showPull);
+  overlayRoot.classList.toggle('recent-skills-hidden', !visibilitySettings.showRecentSkills);
 }
 
 function setPartyVisibility(enabled) {
@@ -321,6 +450,29 @@ function setPullVisibility(enabled) {
   saveVisibilitySettings();
   updateOverlayVisibility();
   updatePullPanelVisibility();
+}
+
+function setRecentSkillsVisibility(enabled) {
+  visibilitySettings = { ...visibilitySettings, showRecentSkills: !!enabled };
+  saveVisibilitySettings();
+  updateOverlayVisibility();
+  updateRecentSkillsPanelVisibility();
+}
+
+function loadRecentSkillsLimit() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(VISIBILITY_SETTINGS_KEY) || '{}');
+    return clamp(Number(raw?.recentSkillsLimit || 7), 1, 20);
+  } catch {
+    return 7;
+  }
+}
+
+function setRecentSkillsLimit(value) {
+  recentSkillsLimit = clamp(Number(value || 7), 1, 20);
+  if (recentSkillsLimitInput) recentSkillsLimitInput.value = String(recentSkillsLimit);
+  saveVisibilitySettings();
+  renderRecentSkillsPanel(latestData?.recentSkills || []);
 }
 
 function loadSkillSelections() {
@@ -442,7 +594,7 @@ function makeCardDraggable(card, dragHandle, _layoutKey, positions) {
 }
 
 
-function makePanelDraggable(panel, getDragHandle) {
+function makePanelDraggable(panel, getDragHandle, savePosition = null) {
   let dragging = false;
   let startMouseX = 0;
   let startMouseY = 0;
@@ -464,10 +616,12 @@ function makePanelDraggable(panel, getDragHandle) {
   function onUp() {
     if (!dragging) return;
     dragging = false;
-    savePullPanelPosition({
+    const position = {
       x: parseFloat(panel.style.left || '16'),
       y: parseFloat(panel.style.top || '12'),
-    });
+    };
+    if (typeof savePosition === 'function') savePosition(position);
+    else savePullPanelPosition(position);
     window.removeEventListener('mousemove', onMove);
     window.removeEventListener('mouseup', onUp);
   }
@@ -495,7 +649,17 @@ function initializePullPanel() {
   pullInfoEl.style.top = `${pos.y}px`;
   pullInfoEl.classList.add('interactive');
   pullInfoEl.classList.add('hidden');
-  makePanelDraggable(pullInfoEl, () => pullInfoEl.querySelector('.pull-drag-handle'));
+  makePanelDraggable(pullInfoEl, () => pullInfoEl.querySelector('.pull-drag-handle'), savePullPanelPosition);
+}
+
+function initializeRecentSkillsPanel() {
+  if (!recentSkillsPanelEl) return;
+  const pos = loadRecentSkillsPanelPosition();
+  recentSkillsPanelEl.style.left = `${pos.x}px`;
+  recentSkillsPanelEl.style.top = `${pos.y}px`;
+  recentSkillsPanelEl.classList.add('interactive');
+  recentSkillsPanelEl.classList.add('hidden');
+  makePanelDraggable(recentSkillsPanelEl, () => recentSkillsPanelEl.querySelector('.drag-handle'), saveRecentSkillsPanelPosition);
 }
 
 function createCard(player, slotIndex, positions) {
@@ -663,6 +827,7 @@ function renderPlayers(players = []) {
   }
 
   renderPullInfo(latestData?.currentPull, latestData?.dungeon);
+  renderRecentSkillsPanel(latestData?.recentSkills || []);
 
   players.forEach((player, index) => {
     const slotIndex = getPartySlotIndex(player, index);
@@ -695,6 +860,7 @@ function renderPlayers(players = []) {
 function tickCooldowns() {
   if (!latestData?.players?.length) {
     renderPullInfo(latestData?.currentPull, latestData?.dungeon);
+    renderRecentSkillsPanel(latestData?.recentSkills || []);
     return;
   }
   const now = Date.now();
@@ -771,6 +937,7 @@ async function ensureSkillCatalog() {
   if (skillCatalog.classes?.length) return;
   skillCatalog = await window.api.getSkillCatalog();
   renderSkillsModal();
+  updateRecentSkillsPanelVisibility();
 }
 
 function openSkillsModal() {
@@ -787,6 +954,7 @@ pickFileBtn.addEventListener("click", async () => {
   const result = await window.api.pickLogFile();
   if (!result?.canceled && result?.filePath) filePathEl.textContent = result.filePath;
   updatePullPanelVisibility();
+  updateRecentSkillsPanelVisibility();
 });
 
 reloadBtn.addEventListener("click", async () => {
@@ -803,6 +971,16 @@ showPartyToggle?.addEventListener('change', (event) => {
 });
 showPullToggle?.addEventListener('change', (event) => {
   setPullVisibility(event.currentTarget.checked);
+});
+showRecentSkillsToggle?.addEventListener('change', (event) => {
+  setRecentSkillsVisibility(event.currentTarget.checked);
+});
+recentSkillsLimitInput?.addEventListener('change', (event) => {
+  setRecentSkillsLimit(event.currentTarget.value);
+});
+recentSkillsLimitInput?.addEventListener('input', (event) => {
+  const value = clamp(Number(event.currentTarget.value || 7), 1, 20);
+  event.currentTarget.value = String(value);
 });
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
@@ -843,13 +1021,16 @@ window.api.onLogData((payload) => {
     latestData = null;
     playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t("errorPrefix"))}: ${escapeHtml(payload?.error || "unknown")}</div>`;
     cardMap.clear();
+    renderRecentSkillsPanel([]);
     updatePullPanelVisibility();
+    updateRecentSkillsPanelVisibility();
     return;
   }
 
   latestData = payload.data;
   filePathEl.textContent = payload.filePath || t("noFileSelected");
   renderPlayers(latestData.players || []);
+  updateRecentSkillsPanelVisibility();
 
   if (!cooldownTimer) cooldownTimer = setInterval(tickCooldowns, 1000);
 });
@@ -862,6 +1043,7 @@ window.api.getCurrentFile().then((result) => {
   if (result?.filePath) filePathEl.textContent = result.filePath;
   else filePathEl.textContent = t("noFileSelected");
   updatePullPanelVisibility();
+  updateRecentSkillsPanelVisibility();
 });
 
 window.api.getLanguage().then((result) => {
@@ -870,7 +1052,9 @@ window.api.getLanguage().then((result) => {
 
 updateCardScaleUi();
 initializePullPanel();
+initializeRecentSkillsPanel();
 updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();
+updateRecentSkillsPanelVisibility();
 ensureSkillCatalog();

@@ -21,38 +21,6 @@ const TARGET_GAME_EXE = 'fellowship-win64-shipping.exe';
 const FOREGROUND_POLL_INTERVAL_MS = 1000;
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const DEFAULT_LANGUAGE = 'ru';
-const FOREGROUND_EXE_SCRIPT = String.raw`
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public static class Win32ForegroundWindow {
-  [DllImport("user32.dll")]
-  public static extern IntPtr GetForegroundWindow();
-
-  [DllImport("user32.dll")]
-  public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-}
-"@;
-
-$hwnd = [Win32ForegroundWindow]::GetForegroundWindow();
-if ($hwnd -eq [IntPtr]::Zero) {
-  return
-}
-
-$pid = 0
-[void][Win32ForegroundWindow]::GetWindowThreadProcessId($hwnd, [ref]$pid)
-if ($pid -le 0) {
-  return
-}
-
-try {
-  $proc = Get-Process -Id $pid -ErrorAction Stop
-  if ($proc -and $proc.ProcessName) {
-    Write-Output ($proc.ProcessName + '.exe')
-  }
-} catch {
-}
-`;
 
 const I18N = {
   en: {
@@ -274,7 +242,6 @@ function setClickThrough(enabled) {
 }
 
 function sendHudState(isActive, foregroundExe = null) {
-  if (!win) return;
   win.webContents.send('hud-state', {
     active: !!isActive,
     foregroundExe,
@@ -282,36 +249,13 @@ function sendHudState(isActive, foregroundExe = null) {
   });
 }
 
-function getForegroundProcessName() {
-  return new Promise((resolve) => {
-    if (process.platform !== 'win32') {
-      resolve(null);
-      return;
-    }
-
-    execFile(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', FOREGROUND_EXE_SCRIPT],
-      { windowsHide: true, timeout: 2500, maxBuffer: 64 * 1024 },
-      (error, stdout) => {
-        if (error) {
-          resolve(null);
-          return;
-        }
-        const value = String(stdout || '').trim();
-        resolve(value || null);
-      }
-    );
-  });
-}
 
 async function refreshHudState() {
-  const foregroundExe = await getForegroundProcessName();
   const isGameActive = true;
 
   if (lastHudActive === isGameActive) return;
   lastHudActive = isGameActive;
-  sendHudState(isGameActive, foregroundExe);
+  sendHudState(isGameActive, null);
 }
 
 function startForegroundPolling() {

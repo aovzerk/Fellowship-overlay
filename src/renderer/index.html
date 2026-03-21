@@ -10,6 +10,7 @@
   <div id="overlay-root">
     <div id="playersContainer"></div>
     <div id="pullInfo" class="panel pull-panel"></div>
+    <div id="recentSkillsPanel" class="panel recent-skills-panel"></div>
 
     <div id="settingsModal" class="modal-overlay hidden interactive">
       <div class="panel modal-card settings-modal-card">
@@ -45,6 +46,16 @@
               <label class="settings-toggle interactive" for="showPullToggle">
                 <input id="showPullToggle" type="checkbox" checked />
                 <span id="showPullToggleLabel">Показывать проценты пулов</span>
+              </label>
+              <label class="settings-toggle interactive" for="showRecentSkillsToggle">
+                <input id="showRecentSkillsToggle" type="checkbox" checked />
+                <span id="showRecentSkillsToggleLabel">Показывать последние скиллы</span>
+              </label>
+            </div>
+            <div class="settings-row settings-row-inline settings-row-field">
+              <label class="settings-field interactive" for="recentSkillsLimitInput">
+                <span id="recentSkillsLimitLabel">Лимит последних скиллов</span>
+                <input id="recentSkillsLimitInput" type="number" min="1" max="20" step="1" value="7" />
               </label>
             </div>
             <div class="settings-row settings-row-inline">
