@@ -48,7 +48,15 @@ let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
 
-const SETTINGS_FILE: string = path.join(app.getPath('userData'), 'settings.json');
+function resolveSettingsFilePath(): string {
+  const settingsDirectory = app.isPackaged
+    ? path.dirname(app.getPath('exe'))
+    : fromProjectRoot();
+
+  return path.join(settingsDirectory, 'settings.json');
+}
+
+const SETTINGS_FILE: string = resolveSettingsFilePath();
 const settingsStore: OverlaySettingsStore = createOverlaySettingsStore({ settingsFile: SETTINGS_FILE });
 
 function showWindow(): void {
