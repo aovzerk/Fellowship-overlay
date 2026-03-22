@@ -5,7 +5,7 @@
   const PULL_PANEL_POSITION_KEY = 'overlay-pull-panel-position-v1';
   const RECENT_SKILLS_PANEL_POSITION_KEY = 'overlay-recent-skills-panel-position-v1';
   const VISIBILITY_SETTINGS_KEY = 'overlay-visibility-settings-v2';
-  const CARD_SCALE_MIN = 0.75;
+  const CARD_SCALE_MIN = 0.50;
   const CARD_SCALE_MAX = 1.8;
   const CARD_SCALE_STEP = 0.05;
   const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
