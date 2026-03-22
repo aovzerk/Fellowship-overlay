@@ -47,6 +47,8 @@ interface OpenDialogResultLike {
 let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
+let interactiveModalCount = 0;
+let restoreClickThroughAfterModalClose = true;
 
 const SETTINGS_FILE: string = path.join(app.getPath('userData'), 'settings.json');
 const settingsStore: OverlaySettingsStore = createOverlaySettingsStore({ settingsFile: SETTINGS_FILE });
@@ -60,6 +62,16 @@ function showWindow(): void {
 function hideToTray(): void {
   if (!win) return;
   win.hide();
+}
+
+function toggleOverlayVisibility(): boolean {
+  if (!win) return false;
+  if (win.isVisible()) {
+    hideToTray();
+    return false;
+  }
+  showWindow();
+  return true;
 }
 
 function sendWatchStatus(ok: boolean, message: string): void {
@@ -81,6 +93,9 @@ const logDirectoryService: LogDirectoryService = createLogDirectoryService({
 function openSettingsWindow(): void {
   if (!win) return;
   showWindow();
+  interactiveModalCount = 1;
+  restoreClickThroughAfterModalClose = clickThroughEnabled;
+  if (clickThroughEnabled) setClickThrough(false);
   const payload: OpenSettingsPayload = {
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
@@ -89,6 +104,25 @@ function openSettingsWindow(): void {
     language: settingsStore.getCurrentLanguage(),
   };
   win.webContents.send('open-settings', payload);
+}
+
+function setSettingsModalOpen(open: boolean): void {
+  if (open) {
+    interactiveModalCount = 1;
+    restoreClickThroughAfterModalClose = clickThroughEnabled;
+    if (clickThroughEnabled) setClickThrough(false);
+    return;
+  }
+  interactiveModalCount = 0;
+}
+
+function closeInteractiveModal(): { locked: boolean } {
+  interactiveModalCount = Math.max(0, interactiveModalCount - 1);
+  if (interactiveModalCount === 0 && restoreClickThroughAfterModalClose) {
+    setClickThrough(true);
+  }
+  restoreClickThroughAfterModalClose = clickThroughEnabled;
+  return { locked: !clickThroughEnabled };
 }
 
 const trayManager: TrayManager = createTrayManager({
@@ -142,7 +176,7 @@ async function chooseLogDirectory(): Promise<PickDirectoryResult> {
 
 function createWindow(): void {
   const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
+  const { width, height } = primaryDisplay.bounds;
 
   const appIcon = getAppIconPath();
 
@@ -198,12 +232,32 @@ app.whenReady().then(() => {
     void chooseLogDirectory();
   });
 
+  globalShortcut.register('F10', () => {
+    toggleOverlayVisibility();
+  });
+
+  globalShortcut.register('F11', () => {
+    if (!win?.isVisible() || interactiveModalCount === 0) {
+      openSettingsWindow();
+      return;
+    }
+    win.webContents.send('request-close-settings');
+  });
+
   ipcMain.handle('pick-log-file', async (): Promise<PickDirectoryResult> => chooseLogDirectory());
   ipcMain.handle('reload-current-file', async () => logDirectoryService.reloadCurrentFile());
   ipcMain.handle('toggle-overlay-lock', async (): Promise<{ locked: boolean }> => {
     setClickThrough(!clickThroughEnabled);
     return { locked: !clickThroughEnabled };
   });
+  ipcMain.handle('toggle-overlay-visibility', async (): Promise<{ visible: boolean }> => ({
+    visible: toggleOverlayVisibility(),
+  }));
+  ipcMain.handle('set-settings-modal-open', async (_: unknown, open: boolean): Promise<{ ok: boolean }> => {
+    setSettingsModalOpen(!!open);
+    return { ok: true };
+  });
+  ipcMain.handle('close-interactive-modal', async (): Promise<{ locked: boolean }> => closeInteractiveModal());
   ipcMain.handle('get-current-file', async (): Promise<LogSourceInfo> => ({
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),

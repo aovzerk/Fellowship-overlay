@@ -28,6 +28,7 @@
     "files": [
       "dist/**/*",
       "src/renderer/**/*",
+      "src/main/services/ability-tooltips.json",
       "game-data/**/*",
       "icons/**/*",
       "package.json"

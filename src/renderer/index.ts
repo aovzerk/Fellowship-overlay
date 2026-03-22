@@ -15,6 +15,11 @@ const settingsModalSubtitle = mustElement<HTMLElement>('settingsModalSubtitle');
 const logSettingsTitle = mustElement<HTMLElement>('logSettingsTitle');
 const overlaySettingsTitle = mustElement<HTMLElement>('overlaySettingsTitle');
 const appearanceSettingsTitle = mustElement<HTMLElement>('appearanceSettingsTitle');
+const hotkeysSettingsTitle = document.getElementById('hotkeysSettingsTitle') as HTMLElement | null;
+const hotkeyToggleInteractionLabel = document.getElementById('hotkeyToggleInteractionLabel') as HTMLElement | null;
+const hotkeyPickLogLabel = document.getElementById('hotkeyPickLogLabel') as HTMLElement | null;
+const hotkeyToggleVisibilityLabel = document.getElementById('hotkeyToggleVisibilityLabel') as HTMLElement | null;
+const hotkeyOpenSettingsLabel = document.getElementById('hotkeyOpenSettingsLabel') as HTMLElement | null;
 const pickFileBtn = mustElement<HTMLButtonElement>('pickFileBtn');
 const reloadBtn = mustElement<HTMLButtonElement>('reloadBtn');
 const toggleLockBtn = mustElement<HTMLButtonElement>('toggleLockBtn');
@@ -22,13 +27,23 @@ const skillsBtn = mustElement<HTMLButtonElement>('skillsBtn');
 const cardSizeDownBtn = mustElement<HTMLButtonElement>('cardSizeDownBtn');
 const cardSizeUpBtn = mustElement<HTMLButtonElement>('cardSizeUpBtn');
 const cardSizeValueEl = mustElement<HTMLElement>('cardSizeValue');
+const cardSizeControls = document.getElementById('cardSizeControls') as HTMLElement | null;
+const frameGapDownBtn = mustElement<HTMLButtonElement>('frameGapDownBtn');
+const frameGapUpBtn = mustElement<HTMLButtonElement>('frameGapUpBtn');
+const frameGapValueEl = mustElement<HTMLElement>('frameGapValue');
+const frameGapControls = document.getElementById('frameGapControls') as HTMLElement | null;
+const iconsPerRowDownBtn = mustElement<HTMLButtonElement>('iconsPerRowDownBtn');
+const iconsPerRowUpBtn = mustElement<HTMLButtonElement>('iconsPerRowUpBtn');
+const iconsPerRowValueEl = mustElement<HTMLElement>('iconsPerRowValue');
+const iconsPerRowControls = document.getElementById('iconsPerRowControls') as HTMLElement | null;
+const panelOpacitySlider = mustElement<HTMLInputElement>('panelOpacitySlider');
+const panelOpacityValueEl = mustElement<HTMLElement>('panelOpacityValue');
+const panelOpacityLabel = document.getElementById('panelOpacityLabel') as HTMLElement | null;
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
-const showPartyToggle = document.getElementById('showPartyToggle') as HTMLInputElement | null;
-const showPullToggle = document.getElementById('showPullToggle') as HTMLInputElement | null;
-const showPartyToggleLabel = document.getElementById('showPartyToggleLabel') as HTMLElement | null;
-const showPullToggleLabel = document.getElementById('showPullToggleLabel') as HTMLElement | null;
+const layoutDirectionSelect = document.getElementById('layoutDirectionSelect') as HTMLSelectElement | null;
+const layoutDirectionLabel = document.getElementById('layoutDirectionLabel') as HTMLElement | null;
 const skillsModalTitle = mustElement<HTMLElement>('skillsModalTitle');
 const skillsModalSubtitle = mustElement<HTMLElement>('skillsModalSubtitle');
 const filePathEl = mustElement<HTMLElement>('filePath');
@@ -39,12 +54,23 @@ const skillsModal = mustElement<HTMLElement>('skillsModal');
 const skillsCatalogEl = mustElement<HTMLElement>('skillsCatalog');
 const pullInfoEl = mustElement<HTMLElement>('pullInfo');
 const recentSkillsPanelEl = mustElement<HTMLElement>('recentSkillsPanel');
+const showPartyToggle = document.getElementById('showPartyToggle') as HTMLInputElement | null;
+const showPullToggle = document.getElementById('showPullToggle') as HTMLInputElement | null;
 const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle') as HTMLInputElement | null;
+const showPartyToggleLabel = document.getElementById('showPartyToggleLabel') as HTMLElement | null;
+const showPullToggleLabel = document.getElementById('showPullToggleLabel') as HTMLElement | null;
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
 
-const { CARD_SCALE_STEP } = window.OverlayRendererConstants;
+const {
+  CARD_SCALE_STEP,
+  DEFAULT_FRAME_GAP,
+  DEFAULT_ICONS_PER_ROW,
+  DEFAULT_LAYOUT_DIRECTION,
+  DEFAULT_PANEL_OPACITY,
+  FRAME_GAP_STEP,
+} = window.OverlayRendererConstants;
 const {
   applyTranslations: applyTranslationsShared,
   setLogSourceText: setLogSourceTextShared,
@@ -70,7 +96,6 @@ const {
   getCardWidthForIconCount: getCardWidthForIconCountShared,
   getDefaultPosition,
   initializePanel,
-  makeCardDraggable,
 } = window.OverlayRendererLayout;
 const { createPlayerCardRenderer } = window.OverlayRendererPlayerCards;
 const { renderSkillsModal: renderSkillsModalShared } = window.OverlayRendererSkillsModal;
@@ -85,11 +110,16 @@ let hudActive = true;
 let skillCatalog: SkillCatalog = { classes: [] };
 let selectedSkillsByClass: SkillSelectionMap = settingsController.loadSkillSelections();
 let cardScale = settingsController.loadCardScale();
+let frameGap = settingsController.loadFrameGap?.() ?? DEFAULT_FRAME_GAP;
+let iconsPerRow = settingsController.loadIconsPerRow?.() ?? DEFAULT_ICONS_PER_ROW;
+let panelOpacity = settingsController.loadPanelOpacity?.() ?? DEFAULT_PANEL_OPACITY;
+let layoutDirection = settingsController.loadLayoutDirection?.() ?? DEFAULT_LAYOUT_DIRECTION;
 let currentLanguage: LanguageCode = 'en';
 let lastWatchStatusMessage = '';
 let visibilitySettings: OverlayVisibilitySettings = settingsController.loadVisibilitySettings();
 let recentSkillsLimit = settingsController.loadRecentSkillsLimit();
 let playerCardRenderer: PlayerCardRenderer | null = null;
+let settingsModalOpen = false;
 
 function t(key: string): string {
   return translateText(currentLanguage, key);
@@ -119,7 +149,7 @@ function getPartySlotIndex(player: { id: string } | null | undefined, index = 0)
 }
 
 function getCardWidthForIconCount(iconCount: number): number {
-  return getCardWidthForIconCountShared(cardScale, iconCount);
+  return getCardWidthForIconCountShared(cardScale, iconCount, iconsPerRow);
 }
 
 function setLanguage(language: LanguageCode | string | null | undefined): void {
@@ -203,6 +233,12 @@ function updateOverlayVisibility(): void {
   overlayRoot.classList.toggle('recent-skills-hidden', !visibilitySettings.showRecentSkills);
 }
 
+function applyAppearanceVariables(): void {
+  overlayRoot.style.setProperty('--card-scale', String(cardScale));
+  overlayRoot.style.setProperty('--party-gap', `${frameGap}px`);
+  overlayRoot.style.setProperty('--panel-bg-alpha', String(panelOpacity));
+}
+
 function setPartyVisibility(enabled: boolean): void {
   visibilitySettings = { ...visibilitySettings, showParty: !!enabled };
   saveVisibilitySettings();
@@ -235,8 +271,29 @@ function setRecentSkillsLimit(value: unknown): void {
 }
 
 function updateCardScaleUi(): void {
-  overlayRoot.style.setProperty('--card-scale', String(cardScale));
   cardSizeValueEl.textContent = `${Math.round(cardScale * 100)}%`;
+}
+
+function updateFrameGapUi(): void {
+  frameGapValueEl.textContent = `${frameGap}px`;
+}
+
+function updateIconsPerRowUi(): void {
+  iconsPerRowValueEl.textContent = String(iconsPerRow);
+}
+
+function updatePanelOpacityUi(): void {
+  panelOpacitySlider.value = String(Math.round(panelOpacity * 100));
+  panelOpacityValueEl.textContent = `${Math.round(panelOpacity * 100)}%`;
+}
+
+function updateLayoutDirectionUi(): void {
+  if (layoutDirectionSelect) layoutDirectionSelect.value = layoutDirection;
+}
+
+function rerenderPlayersIfNeeded(): void {
+  applyAppearanceVariables();
+  if (latestData?.players) renderPlayers(latestData.players);
 }
 
 function setCardScale(nextScale: number): void {
@@ -245,7 +302,43 @@ function setCardScale(nextScale: number): void {
   cardScale = normalized;
   settingsController.saveCardScale(cardScale);
   updateCardScaleUi();
-  if (latestData?.players) renderPlayers(latestData.players);
+  rerenderPlayersIfNeeded();
+}
+
+function setFrameGap(nextGap: number): void {
+  const normalized = settingsController.normalizeFrameGap(nextGap);
+  if (normalized === frameGap) return;
+  frameGap = normalized;
+  settingsController.saveFrameGap(frameGap);
+  updateFrameGapUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setIconsPerRow(nextValue: number): void {
+  const normalized = settingsController.normalizeIconsPerRow(nextValue);
+  if (normalized === iconsPerRow) return;
+  iconsPerRow = normalized;
+  settingsController.saveIconsPerRow(iconsPerRow);
+  updateIconsPerRowUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setPanelOpacity(nextValue: number): void {
+  const normalized = settingsController.normalizePanelOpacity(nextValue);
+  if (normalized === panelOpacity) return;
+  panelOpacity = normalized;
+  settingsController.savePanelOpacity(panelOpacity);
+  updatePanelOpacityUi();
+  applyAppearanceVariables();
+}
+
+function setLayoutDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeLayoutDirection(nextValue);
+  if (normalized === layoutDirection) return;
+  layoutDirection = normalized;
+  settingsController.saveLayoutDirection(layoutDirection);
+  updateLayoutDirectionUi();
+  rerenderPlayersIfNeeded();
 }
 
 function setHudActiveState(active: boolean, foregroundExe: string | null = null): void {
@@ -278,20 +371,36 @@ function renderSkillsModal(): void {
 function applyTranslations(): void {
   applyTranslationsShared({
     appearanceSettingsTitle,
+    cardSizeControls,
+    cardSizeLabel: null,
     currentLanguage,
     filePathEl,
+    frameGapControls,
+    frameGapLabel: null,
+    hotkeyOpenSettingsLabel,
+    hotkeyPickLogLabel,
+    hotkeyToggleInteractionLabel,
+    hotkeyToggleVisibilityLabel,
+    hotkeysSettingsTitle,
     hudActive,
+    iconsPerRowControls,
+    iconsPerRowLabel: null,
     languageLabel,
     languageSelect,
+    layoutDirection,
+    layoutDirectionLabel,
+    layoutDirectionSelect,
     lastWatchStatusMessage,
     latestData,
     logSettingsTitle,
     overlayLocked,
     overlaySettingsTitle,
+    panelOpacityLabel,
     pickFileBtn,
     recentSkillsLimit,
     recentSkillsLimitInput,
     recentSkillsLimitLabel,
+    recentSkillsPanelEl,
     reloadBtn,
     renderPlayers,
     renderPullInfo,
@@ -325,22 +434,34 @@ async function ensureSkillCatalog(): Promise<void> {
   updateRecentSkillsPanelVisibility();
 }
 
-function openSettingsModal(): void {
+async function openSettingsModal(): Promise<void> {
   updateCardScaleUi();
+  updateFrameGapUi();
+  updateIconsPerRowUi();
+  updatePanelOpacityUi();
+  updateLayoutDirectionUi();
   settingsModal.classList.remove('hidden');
+  settingsModalOpen = true;
+  await window.api.setSettingsModalOpen(true);
 }
 
-function closeSettingsModal(): void {
+async function closeSettingsModal(): Promise<void> {
   settingsModal.classList.add('hidden');
+  settingsModalOpen = false;
+  await window.api.setSettingsModalOpen(false);
+  await window.api.closeInteractiveModal();
 }
 
-function openSkillsModal(): void {
+async function openSkillsModal(): Promise<void> {
   updateCardScaleUi();
-  void ensureSkillCatalog();
+  updateFrameGapUi();
+  updateIconsPerRowUi();
+  updatePanelOpacityUi();
+  await ensureSkillCatalog();
   skillsModal.classList.remove('hidden');
 }
 
-function closeSkillsModal(): void {
+async function closeSkillsModal(): Promise<void> {
   skillsModal.classList.add('hidden');
 }
 
@@ -350,6 +471,9 @@ playerCardRenderer = createPlayerCardRenderer({
   formatNumber,
   getCardScale: () => cardScale,
   getDefaultPosition,
+  getFrameGap: () => frameGap,
+  getIconsPerRow: () => iconsPerRow,
+  getLayoutDirection: () => layoutDirection,
   getLatestData: () => latestData,
   getOverlayLocked: () => overlayLocked,
   getPartySlotIndex,
@@ -357,7 +481,7 @@ playerCardRenderer = createPlayerCardRenderer({
   getSelectedSkillsByClass: () => selectedSkillsByClass,
   getSkillCatalog: () => skillCatalog,
   loadPositions,
-  makeCardDraggable,
+  makeCardDraggable: window.OverlayRendererLayout.makeCardDraggable,
   playersContainer,
   renderPullInfo,
   renderRecentSkillsPanel,
@@ -396,7 +520,7 @@ toggleLockBtn.addEventListener('click', async () => {
   await window.api.toggleOverlayLock();
 });
 
-skillsBtn.addEventListener('click', openSkillsModal);
+skillsBtn.addEventListener('click', () => { void openSkillsModal(); });
 showPartyToggle?.addEventListener('change', (event: Event) => {
   setPartyVisibility((event.currentTarget as HTMLInputElement).checked);
 });
@@ -416,18 +540,28 @@ recentSkillsLimitInput.addEventListener('input', (event: Event) => {
 });
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
-closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
-closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP_STEP));
+frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
+iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
+iconsPerRowUpBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow + 1));
+panelOpacitySlider.addEventListener('input', (event: Event) => {
+  setPanelOpacity(Number((event.currentTarget as HTMLInputElement).value) / 100);
+});
+layoutDirectionSelect?.addEventListener('change', (event: Event) => {
+  setLayoutDirection((event.currentTarget as HTMLSelectElement).value);
+});
+closeSkillsModalBtn.addEventListener('click', () => { void closeSkillsModal(); });
+closeSettingsModalBtn.addEventListener('click', () => { void closeSettingsModal(); });
 languageSelect.addEventListener('change', async (event: Event) => {
   const nextLanguage = (event.currentTarget as HTMLSelectElement).value === 'en' ? 'en' : 'ru';
   const result = await window.api.setLanguage(nextLanguage);
   setLanguage(result?.language || nextLanguage);
 });
 skillsModal.addEventListener('mousedown', (event: MouseEvent) => {
-  if (event.target === skillsModal) closeSkillsModal();
+  if (event.target === skillsModal) void closeSkillsModal();
 });
 settingsModal.addEventListener('mousedown', (event: MouseEvent) => {
-  if (event.target === settingsModal) closeSettingsModal();
+  if (event.target === settingsModal) void closeSettingsModal();
 });
 
 window.api.onWatchStatus((payload) => {
@@ -438,10 +572,16 @@ window.api.onWatchStatus((payload) => {
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
+  rerenderPlayersIfNeeded();
 });
 
 window.api.onOpenSettings(() => {
-  openSettingsModal();
+  void openSettingsModal();
+});
+
+window.api.onRequestCloseSettings(() => {
+  if (!settingsModalOpen) return;
+  void closeSettingsModal();
 });
 
 window.api.onLogData((payload) => {
@@ -449,7 +589,7 @@ window.api.onLogData((payload) => {
 
   if (!payload?.ok) {
     latestData = null;
-    playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t('errorPrefix'))}: ${escapeHtml(payload?.error || 'unknown')}</div>`;
+    playersContainer.innerHTML = `<div class="panel player-card interactive floating-card">${escapeHtml(t('errorPrefix'))}: ${escapeHtml(payload?.error || 'unknown')}</div>`;
     cardMap.clear();
     renderRecentSkillsPanel([]);
     updatePullPanelVisibility();
@@ -479,7 +619,12 @@ window.api.getLanguage().then((result) => {
 });
 
 void ensureSkillCatalog();
+applyAppearanceVariables();
 updateCardScaleUi();
+updateFrameGapUi();
+updateIconsPerRowUi();
+updatePanelOpacityUi();
+updateLayoutDirectionUi();
 updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();

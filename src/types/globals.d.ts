@@ -31,6 +31,7 @@ declare interface Window {
 
 type Nullable<T> = import('./overlay').Nullable<T>;
 type LanguageCode = import('./overlay').LanguageCode;
+type LayoutDirection = import('./overlay').LayoutDirection;
 type Point = import('./overlay').Point;
 type PlayerPositions = import('./overlay').PlayerPositions;
 type SkillSelectionMap = import('./overlay').SkillSelectionMap;

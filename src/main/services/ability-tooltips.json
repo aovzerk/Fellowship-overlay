@@ -1,0 +1,298 @@
+{
+  "109": {
+    "name": "Radiant Blast",
+    "tooltip": "Instant\nSelf\n  47 Mana\n10.0s Cooldown\n\nWithin a cone in front of you, allies are healed for 3,240 - 3,960 and enemies take 1,758 - 2,149 magic damage.\n\nWhen Radiant Blast deals damage to any number of enemies, it generates 30% of a Radiant Rune.\n\nVigour expels an explosive flash of divine light from his outstretched hand, healing allies in its path, while searing enemies with its blinding brilliance."
+  },
+  "110": {
+    "name": "Circle of Light",
+    "tooltip": "Instant\nSelf\n  148 Mana\n15.0s Cooldown\n\nPlace a Circle of Light on the ground, instantly healing all allies within its radius for 11,466 - 14,014.\n\nVigour calls upon the power of light to create a circle of divine healing on the ground. Allies within its boundaries are restored in a sudden flash, as the light pours into them, mending their wounds."
+  },
+  "111": {
+    "name": "Lightshaper's Ward",
+    "tooltip": "Instant\n30yd range\n  63 Mana\n60.0s Cooldown\n\nTarget ally takes 20% reduced damage for 12 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "116": {
+    "name": "Ironleaf Ward",
+    "tooltip": "Instant\n30yd range\n  63 Mana\n60.0s Cooldown\n\nTarget ally takes 20% reduced damage for 12 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "125": {
+    "name": "Grappling Arrow",
+    "tooltip": "Instant\nSelf\n\n90.0s Recharge\n\nFire a Grappling Arrow at the targeted area. Once the arrow lands, it grapples and pulls all enemies within 800 radius to the arrow's location and reduces their movement speed by 65% for 8 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "966": {
+    "name": "Taunt",
+    "tooltip": "Instant\n30yd range\n\n8.0s Cooldown\n\nTaunt the target, forcing it to attack you for 6 sec.\n\nCan be used during Global Cooldown"
+  },
+  "973": {
+    "name": "Iron Wall",
+    "tooltip": "Instant\nSelf\n\n90.0s Cooldown\n\nYour Toughness can not be reduced for 12 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "974": {
+    "name": "Charge",
+    "tooltip": "Instant\n30yd range\n\n20.0s Cooldown\n\nCharge at target enemy, dealing 2,830 - 3,459 physical damage and Stunning them for 2 seconds.\n\nVETERAN OF WAR\nCharge reduces the cooldown of your Shield Slam, Shield Throw, Shields Up, and Shockwave abilities by 6 seconds."
+  },
+  "975": {
+    "name": "Hold the Line",
+    "tooltip": "Instant\nSelf\n\n30.0s Recharge\n\nInstantly resets the cooldown of your Shield Slam ability and causes your next Shield Slam within 12 seconds to be Empowered.\n\nEmpowered Shield Slam\nYour next Shield Slam applies a barrier on you, absorbing up to 34,870 damage taken for 8 seconds. Your Toughness is not reduced while the barrier is active.\n\nCan be used during Global Cooldown"
+  },
+  "976": {
+    "name": "Bash",
+    "tooltip": "Instant\n5yd range\n\n12.0s Cooldown\n\nInterrupt the target's spellcasting and prevent it from casting for 4 sec.\nMust interrupt a spell, or it will have no effect.\n\nCan be used during Global Cooldown"
+  },
+  "977": {
+    "name": "Shield Slam",
+    "tooltip": "Instant\n5yd range\n2 Charges\n7.5s Recharge\n\nDeals 3,362 - 4,109 physical damage to your target and 593 - 724 physical damage to other enemies near your target.\n\nShield Slam gains Cooldown Acceleration equal to your Haste.\n\nShield Slam generates 20% Toughness.\n\nLINGERING CONCUSSION\nShield Slam applies Lingering Concussion to your main target, causing them to deal 3% reduced damage to you for 12 seconds. Lingering Concussion stacks up to 5 times.\n\nTOUGHNESS\nToughness is displayed as a bar to the right of your character. The more Toughness you have, the less damage Helena takes. Your maximum Toughness value (1) is equal to 770% strength. Every 1% of Critical Strike, Haste, Expertise, and Spirit you have further increases the final amount by 2%.\n\nVETERAN OF WAR\nShield Slam reduces the cooldown of your Shockwave ability by 3.0 seconds."
+  },
+  "979": {
+    "name": "Shockwave",
+    "tooltip": "Instant\nSelf\n\n30.0s Cooldown\n\nSlam sword and shield together creating a forceful explosion, dealing 2,999 - 3,666 physical damage to enemies in a large radius.\n\nEnemies that take damage from Shockwave have reduced movement speed for 5 seconds, starting at 90% and dimishing by 10% every 0.5 seconds.\n\nVETERAN OF WAR\nShockwave reduces the cooldown of your Shields Up ability by 6 seconds."
+  },
+  "980": {
+    "name": "Measured Strike",
+    "tooltip": "Instant\n5yd range\n\nStrike target enemy with your sword, dealing 556 - 679 physical damage to them and nearby enemies.\n\nVETERAN OF WAR\nMeasured Strike reduces the cooldown of your Shield Slam and Shield Throw abilities by 1.5 seconds."
+  },
+  "981": {
+    "name": "Sweeping Strike",
+    "tooltip": "Instant\n5yd range\n\n30.0s Cooldown\n\nDeals 2,939 - 3,592 physical damage to your target and other nearby enemies.\n\nEnemies hit by Sweeping Strike bleed for 471 - 576 physical damage every 1.5 seconds for 12 seconds."
+  },
+  "982": {
+    "name": "Power Strike",
+    "tooltip": "Instant\n5yd range\n\n6.0s Cooldown\n\nPerform a heavy strike, dealing 3,157 - 3,858 physical damage to target.\n\nVETERAN OF WAR\nPower Strike reduces the cooldown of your Shield Slam and Shield Throw abilities by 1.5 seconds."
+  },
+  "984": {
+    "name": "Shields Up",
+    "tooltip": "Instant\nSelf\n2 Charges\n30.0s Recharge\n\nRaise your shield, increasing your Toughness by 60% and increasing your Block chance by 25% for 12 sec.\n\nShields Up gains Cooldown Acceleration equal to your Haste.\n\nEach time you succesfully Block an attack, you generate 3% Toughness.\n\nTOUGHNESS\nToughness is displayed as a bar to the right of your character. The more Toughness you have, the less damage Helena takes. Your maximum Toughness value (1) is equal to 770% strength. Every 1% of Critical Strike, Haste, Expertise, and Spirit you have further increases the final amount by 2%.\n\nCan be used during Global Cooldown"
+  },
+  "985": {
+    "name": "Shield Throw",
+    "tooltip": "Instant\n30yd range\n\n21.0s Cooldown\n\nThrow your shield at target enemy dealing 2,673 - 3,267 physical damage. The shield bounces to up to 5 additional nearby enemies.\n\nVETERAN OF WAR\nShield Throw reduces the cooldown of your Shockwave ability by 3.0 seconds."
+  },
+  "992": {
+    "name": "Dawnbreaker Orb",
+    "tooltip": "Instant\nSelf\n  2 Radiant Runes\n10.0s Cooldown\n\nConjure an orb of light that slowly travels forward, healing all allies it touches for 4,977 - 6,083 and damaging enemies for 3,207 - 3,920. The power of Dawnbreaker Orb's damage and healing is affected by the target's maximum health. The higher maximum health the target has, the more damage or healing it does.\n\nEach ally and enemy touched by Dawnbreaker Orb generates 5% of a Radiant Rune.\n\nVigour conjures an orb of intricate runes, humming with radiant power. The orb shines brilliantly as it slowly drifts forward, burning all darkness from its path and bolstering the lifeforce of Vigour's allies."
+  },
+  "993": {
+    "name": "Throw Book",
+    "tooltip": "Instant\n30yd range\n\n30.0s Cooldown\n\nEducate a target, Stunning them for 2 sec.\n\nCan be used during Global Cooldown"
+  },
+  "996": {
+    "name": "Luminous Barrier",
+    "tooltip": "1.5s Cast\n30yd range\n  1 Radiant Runes\n10.0s Recharge\n\nApply a shield to target ally that absorbs up to 27,120 damage. Luminous Barrier lasts for 8 seconds.\n\nLightshaper's Mastery\nAll Absorbs created from Vigour's Hero Abilities and Talents reduce all damage taken by the affected target by 20% while active. (Intellect scaling)\n\nVigour inscribes a rune of protection onto an ally, causing light to be woven around them into a barrier of divine energy. The barrier stops all forms of attack, whether forged by steel or conjured by magic."
+  },
+  "997": {
+    "name": "Remove Magic",
+    "tooltip": "Instant\n30yd range\n  82 Mana\n6.0s Cooldown\n\nRemove all Harmful Magic Effects from target ally."
+  },
+  "1001": {
+    "name": "Runic Proliferation",
+    "tooltip": "Instant\nSelf\n  96 Mana\n60.0s Cooldown\n\nInstantly generate 3 Radiant Runes. For the next 8 seconds, any Rune Abilities you cast are empowered, increasing their effectiveness by 20%.\n\nCan be used during Global Cooldown"
+  },
+  "1003": {
+    "name": "Levitate",
+    "tooltip": "Instant\nSelf\n2 Charges 18 Mana\n60.0s Recharge\n\nYour movement speed is increased by 70% for 4 seconds and you take 40% reduced Area of Effect damage for the duration.\n\nCan be used during Global Cooldown and while Casting or Channeling"
+  },
+  "1021": {
+    "name": "Frigid Winds",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nBlast enemies in front of you with arctic winds, Knocking Back enemies and Slowing them by 50% for 12 sec.\n\nCan be used during Global Cooldown"
+  },
+  "1026": {
+    "name": "Winter's Blessing",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nYour Spirit is increased by 20% for 20 seconds and 30% of all damage you deal is replicated as healing divided equally between all allies.\n\nCan be used during Global Cooldown"
+  },
+  "1032": {
+    "name": "Ice Blitz",
+    "tooltip": "Instant\nSelf\n\n120.0s Cooldown\n\nYou enter a state of focused casting for 20 seconds, causing you to deal 20% more damage for the duration.\n\nCan be used during Global Cooldown and while casting"
+  },
+  "1047": {
+    "name": "Enfeebling Rootsap",
+    "tooltip": "Instant\n30yd range\n  77 Mana\n45.0s Cooldown\n\nCommand one of your Prickly Vines to Enfeeble target enemy, reducing all damage that enemy deals by 20% for 10 seconds.\n\nCan be used during Global Cooldown.\n\nThe Prickly Vine withers upon completing it's cast of Enfeebling Rootsap."
+  },
+  "1054": {
+    "name": "Cure Ailment",
+    "tooltip": "Instant\n30yd range\n  82 Mana\n6.0s Cooldown\n\nRemove all Harmful Magic Effects from target ally."
+  },
+  "1057": {
+    "name": "Prickly Vine",
+    "tooltip": "Instant\n40yd range\n  18 Mana\n9.0s Cooldown\n\nSummon a Prickly Vine for 27 seconds to continuously fling thorns at target enemy, dealing 621 - 759 magic damage every 3 seconds.\n\nFor each Prickly Vine you have active, all Flutterfly Healing is increased by 3%.\n\nEach Prickly Vine spawns 1 Boomshroom when it withers."
+  },
+  "1059": {
+    "name": "Safe Haven",
+    "tooltip": "Instant\nSelf\n  117 Mana\n120.0s Cooldown\n\nPlace a Safe Haven in target location. For the next 15 seconds, all allies standing within the radius have 40% increased healing taken."
+  },
+  "1071": {
+    "name": "Hidden Trail",
+    "tooltip": "Instant\nSelf\n  18 Mana\n30.0s Cooldown\n\nYour Movement Speed is increased by 50% for 6 seconds.\n\nDemure\nUpon activating Hidden Trail your threat is reduced by 50% with all enemies.\n\nCan be used during Global Cooldown"
+  },
+  "1072": {
+    "name": "Life Petal",
+    "tooltip": "Instant\nSelf\n2 Charges 79 Mana\n60.0s Recharge\n\nA Life Petal sprouts up near you, healing one ally for 7,722 - 9,438 every 2 seconds for 14 seconds, preferring the ally with the lowest health.\n\nLife Petal's healing wanes over time, healing for less the longer it has been active.\n\nLife Petal gains Cooldown Acceleration equal to your Haste.\n\nLife Petal spawns 2 Boomshrooms when it withers."
+  },
+  "1075": {
+    "name": "Heart Bloom",
+    "tooltip": "Instant\nSelf\n  128 Mana\n45.0s Recharge\n\nConjure a Heart Bloom at your side that stores 7.5% of all Flutterfly healing you do inside it.\n\nEvery 2 seconds, the Heart Bloom releases a pulse, healing all allies within 4000 radius for an amount equal to the healing it has stored. Lasts 16 seconds.\n\nHeart Bloom spawns 3 Boomshrooms when it withers."
+  },
+  "1082": {
+    "name": "Twin Souls: Bulwark",
+    "tooltip": "Instant\nSelf\n\n180.0s Cooldown\n\nSplit your soul into the Sibling of Wind and the Sibling of Earth for up to 20 seconds. You are in control of the Sibling of Wind.\n\nSIBLING OF EARTH\nWhile active, the Sibling of Earth forces all enemies within a 1000 radius to attack it. The Sibling of Earth's Health (30,000) is equal to your maximum health, increased by 2% for every 1% Critical Strike, Haste, Expertise, and Spirit you have."
+  },
+  "1095": {
+    "name": "Taunt",
+    "tooltip": "Instant\n30yd range\n\n8.0s Cooldown\n\nTaunt the target, forcing it to attack you for 6 sec.\n\nCan be used during Global Cooldown"
+  },
+  "1107": {
+    "name": "Stone Stomp",
+    "tooltip": "Instant\nSelf\n\n120.0s Cooldown\n\nSend a shockwave through the ground in front of you, dealing 957 - 1,170 damage to enemies in its wake and Stunning them for 3 sec.\n\nCan be used during Global Cooldown"
+  },
+  "1115": {
+    "name": "Shatter Earth",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nLeap and slam the ground at a target location, dealing 3,906 - 4,774 damage to all enemies in the area and leaving an area of quaking earth for 6 seconds that deals 740 - 905 damage every 1 seconds to any enemy standing in in the effect."
+  },
+  "1116": {
+    "name": "Stagger",
+    "tooltip": "Instant\n5yd range\n\n12.0s Cooldown\n\nInterrupt the target's spellcasting and prevent it from casting for 4 sec.\nMust interrupt a spell, or it will have no effect.\n\nCan be used during Global Cooldown"
+  },
+  "1119": {
+    "name": "Serenity",
+    "tooltip": "Instant\nSelf\n\n10.0s Cooldown\n\nInstantly heal yourself for 2,520 - 3,080.\n\nEach time you Auto Attack an enemy, your Serenity gains +40% increased healing, stacking up to 50 times.\n\nCan be used during Global Cooldown"
+  },
+  "1122": {
+    "name": "Stone Shield",
+    "tooltip": "Instant\nSelf\n2 Charges\n30.0s Recharge\n\nSummon 3 protective stones around you that spin in a wide circle, dealing 707 - 864 physical damage 4 times to all nearby enemies.\n\nYour armor is increased by 20% for every 1 stone that is active on you, up to a maximum of 60% increased armor with 3 stones.\n\nWhile at least one stone is active, they soak 25% of all damage you take.\n\nEach stone has a health value (6,160) equal to 616% agility. Every 1% of Critical Strike, Haste, Expertise, and Spirit you have further increases the final amount by 2%.\n\nStone Shield gains Cooldown Acceleration equal to your Haste.\n\nCan be used during Global Cooldown"
+  },
+  "1123": {
+    "name": "Gust",
+    "tooltip": "Instant\nSelf\n2 Charges\n30.0s Recharge\n\nQuickly travel forward a short distance.\n\nCan be used during Global Cooldown"
+  },
+  "1125": {
+    "name": "Cyclone",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nCreate a Cyclone of strong winds that instantly pulls in all enemies within the radius to you.\n\nCan be used during Global Cooldown"
+  },
+  "1128": {
+    "name": "Enveloping Web",
+    "tooltip": "Instant\n5yd range\n\n30.0s Cooldown\n\nInstantly Stun target enemy for 4 seconds.\n\nCan be used during Global Cooldown."
+  },
+  "1133": {
+    "name": "Shadow Protection",
+    "tooltip": "Instant\nSelf\n\n30.0s Cooldown\n\nYou take 40% reduced damage for 4 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "1218": {
+    "name": "Unbreakable Will",
+    "tooltip": "Instant\nSelf\n\n30.0s Cooldown\n\nYou take 40% reduced damage for 4 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "1233": {
+    "name": "Focused Wrath",
+    "tooltip": "Instant\nSelf\n\n90.0s Cooldown\n\nYour next two casts of Skull Crusher or Hammer Storm cost 50% less Fury and deal 40% more damage.\n\nCan be used during Global Cooldown"
+  },
+  "1235": {
+    "name": "Thunder Call",
+    "tooltip": "Instant\nSelf\n\n45.0s Cooldown\n\nCall on thunder to charge your hammer with immense power, enhancing your abilities for 20 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "1241": {
+    "name": "Intimidate",
+    "tooltip": "Instant\nSelf\n\n120.0s Cooldown\n\nInstantly Fear up to 8 enemies near you for 12 seconds.\n\nIf an enemy afflicted by Fear takes damage equal to 30,000, they will break out of the effect. (Strength scaled)\n\nCan be used during Global Cooldown"
+  },
+  "1258": {
+    "name": "Flame Ward",
+    "tooltip": "Instant\nSelf\n\n30.0s Cooldown\n\nYou take 40% reduced damage for 4 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "1265": {
+    "name": "Fireflash",
+    "tooltip": "Instant\n30yd range\n\n24.0s Cooldown\n\nConjure a bright flash of fire in front of the target's eyes, causing them to become Disoriented for 30 seconds.\n\nDisorient\nDisoriented enemies are incapacitated, left to wander around aimlessly for the duration. Any damage dealt to a disoriented enemy will break the effect.\n\nCan be used during Global Cooldown"
+  },
+  "1302": {
+    "name": "Pathfinder's Resillience",
+    "tooltip": "Instant\nSelf\n\n30.0s Cooldown\n\nYou take 40% reduced damage for 4 seconds.\n\nCan be used during Global Cooldown"
+  },
+  "1304": {
+    "name": "Skystrider's Grace",
+    "tooltip": "Instant\nSelf\n\n120.0s Cooldown\n\nYour Haste is increased by +30% for 20 seconds.\n\nCan be used during Global Cooldown and while Casting or Channeling"
+  },
+  "1465": {
+    "name": "Grand Melee",
+    "tooltip": "Instant\nSelf\n\n120.0s Cooldown\n\nFor the next 10 seconds, Incite all enemies in a large radius around you, forcing them to only use Auto Attacks and only attack you.\n\nAll allies within the radius of Grand Melee take 20% reduced magic damage while it is active.\n\nCan be used during Global Cooldown"
+  },
+  "1468": {
+    "name": "Final Stratagem",
+    "tooltip": "Instant\nSelf\n\n180.0s Cooldown\n\nYour Energy and Combo Points are instantly refilled and all your Hero Ability cooldowns are reset.\n\nCan be used during Global Cooldown."
+  },
+  "1515": {
+    "name": "Siegebreaker",
+    "tooltip": "Instant\nSelf\n  100 Spirit\n\nFor the next 20 seconds, the cooldown reduction granted by your Veteran of War is doubled.\n\nWhile Siegebreakeris active, you take 25% reduced damage and your Shield Slam, Shield Throw and Shockwave abilities deal 25% increased damage.\n\nSPIRIT ABILITY\nWhen you activate your Spirit ability you gain Spirit of Heroism, granting +30% Haste for 20 sec."
+  },
+  "1623": {
+    "name": "Pyromania",
+    "tooltip": "Instant\n30yd range\n\n90.0s Cooldown\n\nInstantly adds an Engulfing Flames effect on the target, and apply it to up to 2 other nearby enemies. Enemies without an already active Engulfing Flames and with the highest amount of health will be highest priority.\n\nCan be used during Global Cooldown"
+  },
+  "1814": {
+    "name": "Intercession",
+    "tooltip": "Instant\nSelf\n  98 Mana\n300.0s Cooldown\n\nInstantly Silence all enemies in the target area for 7 seconds."
+  },
+  "1841": {
+    "name": "Sky Crash",
+    "tooltip": "Instant\nSelf\n2 Charges\n60.0s Recharge\n\nInstantly ascend to the skies in a beam of light and crash down at the targeted location, dealing 558 - 682 magical damage to enemies in the area.\n\nCan be used during Global Cooldown"
+  },
+  "1843": {
+    "name": "Taunt",
+    "tooltip": "Instant\n40yd range\n\n8.0s Cooldown\n\nTaunt the target, forcing it to attack you for 6 sec.\n\nCan be used during Global Cooldown"
+  },
+  "1844": {
+    "name": "Interrupt",
+    "tooltip": "Instant\n5yd range\n\n12.0s Cooldown\n\nInterrupt the target's spellcasting and prevent it from casting for 4 sec.\n\nMust interrupt a spell, or it will have no effect.\n\nCan be used during Global Cooldown"
+  },
+  "1848": {
+    "name": "Solar Shield",
+    "tooltip": "Instant\n30yd range\n  182 Mana\n15.0s Cooldown\n\nInstantly shield the target, absorbing up to 38,330 damage. The shield lasts for up to 8 seconds.\n\nWhile Solar Shield is active, the target takes 20% reduced damage.\n\nCan be used during Global Cooldown"
+  },
+  "1857": {
+    "name": "Ruptured Dawn",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nRupture the ground in front of you, dealing 702 - 858 magical damage to all enemies in a cone in front of you, Stunning them for 2 seconds and Pulling them to you.\n\nCan be used during Global Cooldown"
+  },
+  "1858": {
+    "name": "Blinding Slash",
+    "tooltip": "Instant\n5yd range\n\n6.0s Cooldown\n\nYour sword is infused with the light of sun power as you slash at target enemy, dealing 1,269 - 1,551 physical damage to them and other enemies near it.\n\nBLIND\nYou apply 1 stack of Blind to enemies hit by Blinding Slash for up to 8 seconds, causing their Auto Attacks to have an additional +20% chance to be Parried by you. Each time you Parry an enemy, 1 stack of Blind is consumed on that enemy.\n\nSWIFT REPRIEVAL\nBlinding Slash has a 15% chance to grant you 1 stack of Swift Reprieval, causing Brilliant Flare to turn into Brilliant Flash."
+  },
+  "1859": {
+    "name": "Shining Halo",
+    "tooltip": "Instant\nSelf\n  218 Mana\n30.0s Cooldown\n\nSunlight envelopes the ground at your feet, burning enemies within its area for 288 - 352 magical damage every 1.5 seconds over 12 seconds.\n\nYou take 20% reduced damage while standing in your Shining Halo.\n\nCan be used during Global Cooldown\n\nBRILLIANCE\nWhile Shining Halo is active, each Brilliant Flash you cast extends the duration of it by 2 seconds."
+  },
+  "1861": {
+    "name": "Omega Reprieval",
+    "tooltip": "Instant\nSelf\n\n60.0s Cooldown\n\nInstantly gain 2 stacks of Omega Reprieval, causing your Brilliant Flare to turn into Brilliant Flash with added enhancements when used to consume the 2 stacks.\n\nCan be used during Global Cooldown\n\nBrilliant Flash: Enhanced\nYour Brilliant Flash has 50% increased power on your Main Target and generates 12% maximum Mana for you.\n\nWhen cast on a friendly target, Brilliant Flash is also casted on all party members within a large range of that ally.\n\nWhen cast on an enemy, Brilliant Flash is also casted on all enemies within a large range of that enemy.\n\nBrilliant Flash consumes 1 stack of Omega Reprieval."
+  },
+  "1862": {
+    "name": "Solar Blades",
+    "tooltip": "Instant\n30yd range\n  55 Mana\n9.0s Cooldown\n\nConjure blades of pure sunlight to fall from above upon your target, dealing 1,674 - 2,046 magical damage to it and other enemies within a 700 radius.\n\nThe main target takes 100% more damage from Solar Blades.\n\nCan be used during Global Cooldown\n\nSWIFT REPRIEVAL\nSolar Blades has a 100% chance to grant you 1 stack of Swift Reprieval, causing Brilliant Flare to turn into Brilliant Flash."
+  },
+  "1863": {
+    "name": "Omnistrike",
+    "tooltip": "Instant\nSelf\n\n18.0s Cooldown\n\nSwing your sword in a large arc around you, dealing 2,538 - 3,102 physical damage to all enemies around you.\n\nGenerates 4 Spirit Points.\n\nSWIFT REPRIEVAL\nOmnistrike has a 30% chance to grant you 1 stack of Swift Reprieval, causing Brilliant Flare to turn into Brilliant Flash."
+  },
+  "1864": {
+    "name": "Time Skip",
+    "tooltip": "Instant\nSelf\n\n15.0s Cooldown\n\nInstantly teleport forward a short distance.\n\nCan be used during Global Cooldown and while casting or channeling"
+  },
+  "1876": {
+    "name": "Entropy's Claim",
+    "tooltip": "1.5s Cast\n30yd range\n  63 Mana\n20.0s Recharge\n\nErode the vitality of target enemy, dealing 2,002 - 2,447 magic damage every 1.5 seconds over 6 seconds as their life force begins to slip away.\n\nDEFERRED FATE: RELAY\n100% of any damage dealt by Entropy's Claim heals an ally within your Aura of Deferred Fate. The lowest health ally is preferred.\n\nEach time Entrropy's Claim deals damage, it Generates 4 Chrona ."
+  },
+  "1879": {
+    "name": "Revert Magic",
+    "tooltip": "Instant\n30yd range\n  80 Mana\n6.0s Cooldown\n\nRemove all Harmful Magic Effects from target ally."
+  },
+  "1890": {
+    "name": "Unfolding Doom",
+    "tooltip": "2.0s Cast\n30yd range\n  82 Mana\n45.0s Recharge\n\nDeliver a heavy strike of temporal energy to the target, dealing 3,240 - 3,960 magic damage. Unfolding Doom tears at the threads of their destiny, increasing all damage you deal to them by 20% for 20 seconds.\n\nDEFERRED FATE: RELAY\n100% of any damage dealt by Unfolding Doom heals an ally within your Aura of Deferred Fate. The lowest health ally is preferred.\n\nGenerates 20 Chrona."
+  },
+  "1917": {
+    "name": "Aura of Solace",
+    "tooltip": "Instant\nSelf\n  10 Mana\n3.0s Cooldown\n\nBurns all enemies within a large radius for 342 - 418 magical damage every 1.5 seconds while active and increases your Parry chance by +8%\n\nAura of Solace causes 10% of all damage taken by nearby allies to be redirected to you.\n\nCan be used during Global Cooldown\n\nCosts 10 Mana every 1.5 seconds while active."
+  },
+  "1926": {
+    "name": "Temporal Barrage",
+    "tooltip": "2.0s Channel\n30yd range\n  61 Mana\n12.0s Cooldown\n\nLaunch a series of bolts of temporal energy at a single target, each fracturing the flow of fate and turning the tide of battle in your favor.\n\nEach bolt of Temporal Barrage deals 2,052 - 2,508 magic damage to an enemy or 7,830 - 9,570 healing to an ally.\n\nCan move while channeling\n\nDEFERRED FATE: RELAY\n100% of any damage dealt by Temporal Barrage heals an ally within your Aura of Deferred Fate. The lowest health ally is preferred.\n\nGenerates 4 Chrona per bolt."
+  },
+  "1969": {
+    "name": "Fleeting Hour",
+    "tooltip": "Instant\nSelf\n  79 Mana\n20.0s Cooldown\n\nYou step into the flow of time itself, and it quickens at your touch, granting you +50% Cooldown Acceleration for 20 seconds.\n\nThe cooldown of Fleeting Hour does not count down until its active duration ends.\n\nCan be used during Global Cooldown and while casting or channeling"
+  }
+}

@@ -1,14 +1,25 @@
 (() => {
+  const RELICS_ORDER_TOKEN = '__relics__';
   const {
     CARD_SCALE_KEY,
     CARD_SCALE_MAX,
     CARD_SCALE_MIN,
     DEFAULT_CARD_SCALE,
+    DEFAULT_FRAME_GAP,
+    DEFAULT_ICONS_PER_ROW,
+    DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
+    DEFAULT_PANEL_OPACITY,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_LIMIT,
     DEFAULT_RECENT_SKILLS_PANEL_POSITION,
     DEFAULT_VISIBILITY_SETTINGS,
+    FRAME_GAP_MAX,
+    FRAME_GAP_MIN,
+    ICONS_PER_ROW_MAX,
+    ICONS_PER_ROW_MIN,
+    PANEL_OPACITY_MAX,
+    PANEL_OPACITY_MIN,
     PULL_PANEL_POSITION_KEY,
     RECENT_SKILLS_PANEL_POSITION_KEY,
     SKILL_SELECTIONS_KEY,
@@ -76,8 +87,12 @@
       const parsedClassId = String(Number(classId));
       if (!parsedClassId || parsedClassId === 'NaN') return;
       normalized[parsedClassId] = (Array.isArray(abilityIds) ? abilityIds : [])
-        .map((id) => String(Number(id)))
-        .filter((id) => id && id !== 'NaN');
+        .map((id) => {
+          if (String(id) === RELICS_ORDER_TOKEN) return RELICS_ORDER_TOKEN;
+          const normalizedId = String(Number(id));
+          return normalizedId && normalizedId !== 'NaN' ? normalizedId : null;
+        })
+        .filter((id): id is string => !!id);
     });
     return normalized;
   }
@@ -86,6 +101,28 @@
     const normalized = Number(value);
     if (!Number.isFinite(normalized)) return DEFAULT_CARD_SCALE;
     return Math.round(clamp(normalized, CARD_SCALE_MIN, CARD_SCALE_MAX) * 100) / 100;
+  }
+
+  function normalizeFrameGap(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_FRAME_GAP;
+    return Math.round(clamp(normalized, FRAME_GAP_MIN, FRAME_GAP_MAX));
+  }
+
+  function normalizeIconsPerRow(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_ICONS_PER_ROW;
+    return Math.round(clamp(normalized, ICONS_PER_ROW_MIN, ICONS_PER_ROW_MAX));
+  }
+
+  function normalizeLayoutDirection(value: unknown): LayoutDirection {
+    return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+  }
+
+  function normalizePanelOpacity(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_PANEL_OPACITY;
+    return Math.round(clamp(normalized, PANEL_OPACITY_MIN, PANEL_OPACITY_MAX) * 100) / 100;
   }
 
   function normalizeOverlaySettings(value: unknown): OverlaySettings {
@@ -97,6 +134,10 @@
       recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
       selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
       cardScale: normalizeCardScaleValue(source.cardScale),
+      frameGap: normalizeFrameGap(source.frameGap),
+      layoutDirection: normalizeLayoutDirection(source.layoutDirection),
+      panelOpacity: normalizePanelOpacity(source.panelOpacity),
+      iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
     };
   }
 
@@ -233,12 +274,28 @@
 
     return {
       normalizeCardScaleValue,
+      normalizeFrameGap,
+      normalizeIconsPerRow,
+      normalizeLayoutDirection,
+      normalizePanelOpacity,
       normalizePosition,
       normalizeRecentSkillsLimit,
       normalizeSkillSelections,
       normalizeVisibilitySettings,
       loadCardScale() {
         return normalizeCardScaleValue(getOverlaySettings().cardScale);
+      },
+      loadFrameGap() {
+        return normalizeFrameGap(getOverlaySettings().frameGap);
+      },
+      loadIconsPerRow() {
+        return normalizeIconsPerRow(getOverlaySettings().iconsPerRow);
+      },
+      loadLayoutDirection() {
+        return normalizeLayoutDirection(getOverlaySettings().layoutDirection);
+      },
+      loadPanelOpacity() {
+        return normalizePanelOpacity(getOverlaySettings().panelOpacity);
       },
       loadPositions() {
         if (playerPositionsCache && typeof playerPositionsCache === 'object') {
@@ -264,6 +321,18 @@
       },
       saveCardScale(cardScale: number) {
         saveOverlaySettingsPatch({ cardScale });
+      },
+      saveFrameGap(frameGap: number) {
+        saveOverlaySettingsPatch({ frameGap });
+      },
+      saveIconsPerRow(iconsPerRow: number) {
+        saveOverlaySettingsPatch({ iconsPerRow });
+      },
+      saveLayoutDirection(layoutDirection: LayoutDirection) {
+        saveOverlaySettingsPatch({ layoutDirection });
+      },
+      savePanelOpacity(panelOpacity: number) {
+        saveOverlaySettingsPatch({ panelOpacity });
       },
       savePositions(positions: PlayerPositions) {
         const normalized = normalizePlayerPositions(positions);
