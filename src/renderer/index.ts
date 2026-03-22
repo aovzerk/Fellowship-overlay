@@ -90,6 +90,7 @@ let lastWatchStatusMessage = '';
 let visibilitySettings: OverlayVisibilitySettings = settingsController.loadVisibilitySettings();
 let recentSkillsLimit = settingsController.loadRecentSkillsLimit();
 let playerCardRenderer: PlayerCardRenderer | null = null;
+let settingsModalOpen = false;
 
 function t(key: string): string {
   return translateText(currentLanguage, key);
@@ -325,13 +326,18 @@ async function ensureSkillCatalog(): Promise<void> {
   updateRecentSkillsPanelVisibility();
 }
 
-function openSettingsModal(): void {
+async function openSettingsModal(): Promise<void> {
   updateCardScaleUi();
   settingsModal.classList.remove('hidden');
+  settingsModalOpen = true;
+  await window.api.setSettingsModalOpen(true);
 }
 
-function closeSettingsModal(): void {
+async function closeSettingsModal(): Promise<void> {
   settingsModal.classList.add('hidden');
+  settingsModalOpen = false;
+  await window.api.setSettingsModalOpen(false);
+  await window.api.closeInteractiveModal();
 }
 
 function openSkillsModal(): void {
@@ -417,7 +423,9 @@ recentSkillsLimitInput.addEventListener('input', (event: Event) => {
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
-closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+closeSettingsModalBtn.addEventListener('click', () => {
+  void closeSettingsModal();
+});
 languageSelect.addEventListener('change', async (event: Event) => {
   const nextLanguage = (event.currentTarget as HTMLSelectElement).value === 'en' ? 'en' : 'ru';
   const result = await window.api.setLanguage(nextLanguage);
@@ -427,7 +435,9 @@ skillsModal.addEventListener('mousedown', (event: MouseEvent) => {
   if (event.target === skillsModal) closeSkillsModal();
 });
 settingsModal.addEventListener('mousedown', (event: MouseEvent) => {
-  if (event.target === settingsModal) closeSettingsModal();
+  if (event.target === settingsModal) {
+    void closeSettingsModal();
+  }
 });
 
 window.api.onWatchStatus((payload) => {
@@ -441,7 +451,12 @@ window.api.onOverlayMode((payload) => {
 });
 
 window.api.onOpenSettings(() => {
-  openSettingsModal();
+  void openSettingsModal();
+});
+
+window.api.onRequestCloseSettings(() => {
+  if (!settingsModalOpen) return;
+  void closeSettingsModal();
 });
 
 window.api.onLogData((payload) => {

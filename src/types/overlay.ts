@@ -355,6 +355,8 @@ export interface OverlayApi {
   pickLogFile(): Promise<PickDirectoryResult>;
   reloadCurrentFile(): Promise<ReloadFileResult>;
   toggleOverlayLock(): Promise<{ locked: boolean }>;
+  setSettingsModalOpen(open: boolean): Promise<{ ok: boolean }>;
+  closeInteractiveModal(): Promise<{ locked: boolean }>;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;
@@ -368,6 +370,7 @@ export interface OverlayApi {
   onOverlayMode(callback: (payload: OverlayModePayload) => void): void;
   onLanguageChanged(callback: (payload: LanguagePayload) => void): void;
   onOpenSettings(callback: (payload: OpenSettingsPayload) => void): void;
+  onRequestCloseSettings(callback: () => void): void;
 }
 
 export interface RendererConstantsApi {

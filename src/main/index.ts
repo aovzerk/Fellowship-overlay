@@ -47,6 +47,7 @@ interface OpenDialogResultLike {
 let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
+let settingsModalOpen = false;
 
 const SETTINGS_FILE: string = path.join(app.getPath('userData'), 'settings.json');
 const settingsStore: OverlaySettingsStore = createOverlaySettingsStore({ settingsFile: SETTINGS_FILE });
@@ -81,6 +82,8 @@ const logDirectoryService: LogDirectoryService = createLogDirectoryService({
 function openSettingsWindow(): void {
   if (!win) return;
   showWindow();
+  settingsModalOpen = true;
+  if (clickThroughEnabled) setClickThrough(false);
   const payload: OpenSettingsPayload = {
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
@@ -89,6 +92,19 @@ function openSettingsWindow(): void {
     language: settingsStore.getCurrentLanguage(),
   };
   win.webContents.send('open-settings', payload);
+}
+
+function setSettingsModalOpen(open: boolean): void {
+  settingsModalOpen = !!open;
+  if (settingsModalOpen && clickThroughEnabled) {
+    setClickThrough(false);
+  }
+}
+
+function closeInteractiveModal(): { locked: boolean } {
+  settingsModalOpen = false;
+  setClickThrough(true);
+  return { locked: !clickThroughEnabled };
 }
 
 const trayManager: TrayManager = createTrayManager({
@@ -198,12 +214,25 @@ app.whenReady().then(() => {
     void chooseLogDirectory();
   });
 
+  globalShortcut.register('F11', () => {
+    if (!win?.isVisible() || !settingsModalOpen) {
+      openSettingsWindow();
+      return;
+    }
+    win.webContents.send('request-close-settings');
+  });
+
   ipcMain.handle('pick-log-file', async (): Promise<PickDirectoryResult> => chooseLogDirectory());
   ipcMain.handle('reload-current-file', async () => logDirectoryService.reloadCurrentFile());
   ipcMain.handle('toggle-overlay-lock', async (): Promise<{ locked: boolean }> => {
     setClickThrough(!clickThroughEnabled);
     return { locked: !clickThroughEnabled };
   });
+  ipcMain.handle('set-settings-modal-open', async (_: unknown, open: boolean): Promise<{ ok: boolean }> => {
+    setSettingsModalOpen(!!open);
+    return { ok: true };
+  });
+  ipcMain.handle('close-interactive-modal', async (): Promise<{ locked: boolean }> => closeInteractiveModal());
   ipcMain.handle('get-current-file', async (): Promise<LogSourceInfo> => ({
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
