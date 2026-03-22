@@ -27,6 +27,12 @@ function getRelicMetaByAnyId(rawId: number | string | null | undefined): RelicMe
   };
 }
 
+function getPlayerEquippedRelicByAnyId(player: PlayerState, rawId: number | string | null | undefined): PlayerRelicState | null {
+  const canonicalId = getCanonicalRelicId(rawId);
+  if (canonicalId == null) return null;
+  return (player.relics || []).find((item) => item.id === canonicalId) || null;
+}
+
 function extractRelicsFromCombatantInfo(parts: string[]): RelicMeta[] {
   const found = new Map<number, RelicMeta>();
   for (const part of parts) {
@@ -71,9 +77,16 @@ function ensurePlayerRelic(player: PlayerState, relicLike: RelicMeta | number | 
 }
 
 function getEquippedRelicByAnyId(player: PlayerState, rawId: number | string | null | undefined): PlayerRelicState | null {
-  const meta = getRelicMetaByAnyId(rawId);
-  if (!meta) return null;
-  return ensurePlayerRelic(player, meta);
+  const relic = getPlayerEquippedRelicByAnyId(player, rawId);
+  if (!relic) return null;
+
+  const meta = getRelicMetaByAnyId(relic.id);
+  if (!meta) return relic;
+
+  relic.name = meta.name;
+  relic.icon = meta.icon;
+  relic.baseCooldown = meta.baseCooldown;
+  return relic;
 }
 
 function setPlayerRelics(player: PlayerState, relics: RelicMeta[]): void {
@@ -131,6 +144,7 @@ export {
   ensurePlayerRelic,
   extractRelicsFromCombatantInfo,
   getEquippedRelicByAnyId,
+  getPlayerEquippedRelicByAnyId,
   getRelicMetaByAnyId,
   markRelicUse,
   setPlayerRelics,
