@@ -523,7 +523,7 @@ export interface RecentSkillsPanelVisibilityArgs {
 
 export interface RenderRecentSkillsPanelArgs {
   currentLanguage: LanguageCode;
-  getCardWidthForIconCount(iconCount: number): number;
+  getCardWidthForIconCount(iconCount: number, iconsInRow?: number): number;
   recentSkills: RecentSkillActivation[];
   recentSkillsLimit: number;
   recentSkillsPanelEl: HTMLElement;
@@ -613,8 +613,8 @@ export interface InitializePanelArgs {
 }
 
 export interface RendererLayoutApi {
-  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number): void;
-  getCardWidthForIconCount(cardScale: number, iconCount: number): number;
+  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number, iconsPerRow?: number): void;
+  getCardWidthForIconCount(cardScale: number, iconCount: number, iconsPerRow?: number): number;
   getDefaultPosition(index: number): Point;
   getScaledMetrics(cardScale: number): {
     scale: number;
@@ -622,6 +622,7 @@ export interface RendererLayoutApi {
     iconGap: number;
     horizontalPadding: number;
     baseMinWidth: number;
+    borderAllowance: number;
   };
   initializePanel(args: InitializePanelArgs): void;
   makeCardDraggable(args: MakeCardDraggableArgs): void;
@@ -633,11 +634,14 @@ export interface PlayerCardRenderer {
 }
 
 export interface PlayerCardRendererDeps {
-  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number): void;
+  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number, iconsPerRow?: number): void;
   cardMap: Map<string, HTMLElement>;
   formatNumber(value: unknown): string;
   getCardScale(): number;
   getDefaultPosition(index: number): Point;
+  getFrameGap(): number;
+  getIconsPerRow(): number;
+  getLayoutDirection(): LayoutDirection;
   getLatestData(): FinalizedState | null;
   getOverlayLocked(): boolean;
   getPartySlotIndex(player: PlayerState, index?: number): number;
