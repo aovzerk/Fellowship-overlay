@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   pickLogFile: (): Promise<unknown> => ipcRenderer.invoke('pick-log-file'),
   reloadCurrentFile: (): Promise<unknown> => ipcRenderer.invoke('reload-current-file'),
   toggleOverlayLock: (): Promise<{ locked: boolean }> => ipcRenderer.invoke('toggle-overlay-lock'),
+  toggleOverlayVisibility: (): Promise<{ visible: boolean }> => ipcRenderer.invoke('toggle-overlay-visibility'),
   getCurrentFile: (): Promise<unknown> => ipcRenderer.invoke('get-current-file'),
   getSkillCatalog: (): Promise<unknown> => ipcRenderer.invoke('get-skill-catalog'),
   getLanguage: (): Promise<{ language: LanguageCode }> => ipcRenderer.invoke('get-language'),

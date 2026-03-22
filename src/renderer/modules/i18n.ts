@@ -9,6 +9,15 @@
       skills: 'Skills',
       language: 'Язык',
       cardSizeTitle: 'Размер карточки',
+      cardSizeLabel: 'Размер карточки',
+      frameGapTitle: 'Отступ между фреймами',
+      frameGapLabel: 'Отступ',
+      iconsPerRowTitle: 'Спелов в строке',
+      iconsPerRowLabel: 'Спелов в строке',
+      panelOpacity: 'Прозрачность подложки',
+      layoutDirection: 'Направление',
+      layoutVertical: 'Вертикально',
+      layoutHorizontal: 'Горизонтально',
       noFileSelected: 'Папка не выбрана',
       noWatching: 'Нет слежения',
       hudActive: 'HUD active',
@@ -20,6 +29,11 @@
       logSettings: 'Лог',
       overlaySettings: 'Оверлей',
       appearanceSettings: 'Внешний вид',
+      hotkeysSettings: 'Горячие клавиши',
+      hotkeyToggleInteraction: 'Переключить режим взаимодействия',
+      hotkeyPickLog: 'Выбрать лог',
+      hotkeyToggleVisibility: 'Показать или скрыть оверлей',
+      hotkeyOpenSettings: 'Открыть настройки',
       showParty: 'Показывать группу и кулдауны',
       showPull: 'Показывать информацию по пулам и %',
       showRecentSkills: 'Показывать последние скиллы',
@@ -46,6 +60,15 @@
       skills: 'Skills',
       language: 'Language',
       cardSizeTitle: 'Card size',
+      cardSizeLabel: 'Card size',
+      frameGapTitle: 'Frame gap',
+      frameGapLabel: 'Frame gap',
+      iconsPerRowTitle: 'Spells per row',
+      iconsPerRowLabel: 'Spells per row',
+      panelOpacity: 'Panel opacity',
+      layoutDirection: 'Direction',
+      layoutVertical: 'Vertical',
+      layoutHorizontal: 'Horizontal',
       noFileSelected: 'No folder selected',
       noWatching: 'Not watching',
       hudActive: 'HUD active',
@@ -57,6 +80,11 @@
       logSettings: 'Log',
       overlaySettings: 'Overlay',
       appearanceSettings: 'Appearance',
+      hotkeysSettings: 'Hotkeys',
+      hotkeyToggleInteraction: 'Toggle interaction mode',
+      hotkeyPickLog: 'Pick log',
+      hotkeyToggleVisibility: 'Show or hide overlay',
+      hotkeyOpenSettings: 'Open settings',
       showParty: 'Show party and cooldowns',
       showPull: 'Show pull and % info',
       showRecentSkills: 'Show recent skills',
@@ -88,13 +116,31 @@
   function applyTranslations(ctx: ApplyTranslationsContext): void {
     const {
       appearanceSettingsTitle,
+      cardSizeControls,
+      cardSizeLabel,
       currentLanguage,
       filePathEl,
+      frameGapControls,
+      frameGapLabel,
+      hotkeyOpenSettingsLabel,
+      hotkeyPickLogLabel,
+      hotkeyToggleInteractionLabel,
+      hotkeyToggleVisibilityLabel,
+      hotkeysSettingsTitle,
+      hudActive,
+      iconsPerRowControls,
+      iconsPerRowLabel,
       languageLabel,
       languageSelect,
+      layoutDirection,
+      layoutDirectionLabel,
+      layoutDirectionSelect,
+      lastWatchStatusMessage,
       latestData,
+      logSettingsTitle,
       overlayLocked,
       overlaySettingsTitle,
+      panelOpacityLabel,
       pickFileBtn,
       recentSkillsLimit,
       recentSkillsLimitInput,
@@ -122,8 +168,6 @@
       updateRecentSkillsPanelVisibility,
       visibilitySettings,
       watchStatusEl,
-      lastWatchStatusMessage,
-      logSettingsTitle,
     } = ctx;
 
     const translate = (key: string) => t(currentLanguage, key);
@@ -134,11 +178,21 @@
     logSettingsTitle.textContent = translate('logSettings');
     overlaySettingsTitle.textContent = translate('overlaySettings');
     appearanceSettingsTitle.textContent = translate('appearanceSettings');
+    if (hotkeysSettingsTitle) hotkeysSettingsTitle.textContent = translate('hotkeysSettings');
     pickFileBtn.textContent = translate('pickLog');
     reloadBtn.textContent = translate('reload');
     toggleLockBtn.textContent = overlayLocked ? translate('unlockOverlay') : translate('lockOverlay');
     skillsBtn.textContent = translate('skills');
     languageLabel.textContent = translate('language');
+    if (layoutDirectionLabel) layoutDirectionLabel.textContent = translate('layoutDirection');
+    if (cardSizeLabel) cardSizeLabel.textContent = translate('cardSizeLabel');
+    if (frameGapLabel) frameGapLabel.textContent = translate('frameGapLabel');
+    if (iconsPerRowLabel) iconsPerRowLabel.textContent = translate('iconsPerRowLabel');
+    if (panelOpacityLabel) panelOpacityLabel.textContent = translate('panelOpacity');
+    if (hotkeyToggleInteractionLabel) hotkeyToggleInteractionLabel.textContent = translate('hotkeyToggleInteraction');
+    if (hotkeyPickLogLabel) hotkeyPickLogLabel.textContent = translate('hotkeyPickLog');
+    if (hotkeyToggleVisibilityLabel) hotkeyToggleVisibilityLabel.textContent = translate('hotkeyToggleVisibility');
+    if (hotkeyOpenSettingsLabel) hotkeyOpenSettingsLabel.textContent = translate('hotkeyOpenSettings');
     if (showPartyToggleLabel) showPartyToggleLabel.textContent = translate('showParty');
     if (showPullToggleLabel) showPullToggleLabel.textContent = translate('showPull');
     if (showRecentSkillsToggleLabel) showRecentSkillsToggleLabel.textContent = translate('showRecentSkills');
@@ -148,8 +202,19 @@
     if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
     recentSkillsLimitInput.value = String(recentSkillsLimit);
     languageSelect.value = currentLanguage;
-    const sizeControls = document.querySelector<HTMLElement>('.size-controls');
-    if (sizeControls) sizeControls.title = translate('cardSizeTitle');
+
+    if (layoutDirectionSelect) {
+      layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
+      const verticalOption = layoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="vertical"]');
+      const horizontalOption = layoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="horizontal"]');
+      if (verticalOption) verticalOption.textContent = translate('layoutVertical');
+      if (horizontalOption) horizontalOption.textContent = translate('layoutHorizontal');
+    }
+
+    if (cardSizeControls) cardSizeControls.title = translate('cardSizeTitle');
+    if (frameGapControls) frameGapControls.title = translate('frameGapTitle');
+    if (iconsPerRowControls) iconsPerRowControls.title = translate('iconsPerRowTitle');
+
     if (!filePathEl.textContent || filePathEl.textContent === I18N.en.noFileSelected || filePathEl.textContent === I18N.ru.noFileSelected) {
       filePathEl.textContent = translate('noFileSelected');
     }
@@ -161,7 +226,7 @@
     renderPullInfo(latestData?.currentPull, latestData?.dungeon);
     renderRecentSkillsPanel(latestData?.recentSkills || []);
     if (!latestData?.players?.length) {
-      setHudActiveState(ctx.hudActive);
+      setHudActiveState(hudActive);
     } else {
       renderPlayers(latestData.players || []);
     }

@@ -3,6 +3,7 @@ import type {
   OverlaySettingsStore,
 } from '../../types/main-process';
 import type {
+  LayoutDirection,
   LanguageCode,
   OverlayPanelPositions,
   OverlaySettings,
@@ -19,9 +20,19 @@ const DEFAULT_LANGUAGE: LanguageCode = 'en';
 const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
 const DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point = { x: 16, y: 200 };
 const DEFAULT_RECENT_SKILLS_LIMIT = 7;
-const CARD_SCALE_MIN = 0.30;
+const CARD_SCALE_MIN = 0.75;
 const CARD_SCALE_MAX = 1.8;
 const DEFAULT_CARD_SCALE = 1;
+const FRAME_GAP_MIN = 0;
+const FRAME_GAP_MAX = 40;
+const DEFAULT_FRAME_GAP = 12;
+const PANEL_OPACITY_MIN = 0.2;
+const PANEL_OPACITY_MAX = 1;
+const DEFAULT_PANEL_OPACITY = 0.88;
+const ICONS_PER_ROW_MIN = 1;
+const ICONS_PER_ROW_MAX = 6;
+const DEFAULT_ICONS_PER_ROW = 3;
+const DEFAULT_LAYOUT_DIRECTION: LayoutDirection = 'vertical';
 const LOG_FILE_EXTENSIONS = new Set(['.txt', '.log']);
 
 const I18N: Record<LanguageCode, Record<string, string>> = {
@@ -132,6 +143,28 @@ function normalizeCardScale(value: unknown): number {
   return Math.round(clamp(normalized, CARD_SCALE_MIN, CARD_SCALE_MAX) * 100) / 100;
 }
 
+function normalizeFrameGap(value: unknown): number {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_FRAME_GAP;
+  return Math.round(clamp(normalized, FRAME_GAP_MIN, FRAME_GAP_MAX));
+}
+
+function normalizePanelOpacity(value: unknown): number {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_PANEL_OPACITY;
+  return Math.round(clamp(normalized, PANEL_OPACITY_MIN, PANEL_OPACITY_MAX) * 100) / 100;
+}
+
+function normalizeIconsPerRow(value: unknown): number {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_ICONS_PER_ROW;
+  return Math.round(clamp(normalized, ICONS_PER_ROW_MIN, ICONS_PER_ROW_MAX));
+}
+
+function normalizeLayoutDirection(value: unknown): LayoutDirection {
+  return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
+}
+
 function normalizeStoredPath(value: unknown): string | null {
   const normalized = String(value || '').trim();
   return normalized || null;
@@ -161,6 +194,10 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
     selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
     cardScale: normalizeCardScale(source.cardScale),
+    frameGap: normalizeFrameGap(source.frameGap),
+    layoutDirection: normalizeLayoutDirection(source.layoutDirection),
+    panelOpacity: normalizePanelOpacity(source.panelOpacity),
+    iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
   };
 }
 
@@ -265,12 +302,22 @@ export {
   CARD_SCALE_MAX,
   CARD_SCALE_MIN,
   DEFAULT_CARD_SCALE,
+  DEFAULT_FRAME_GAP,
+  DEFAULT_ICONS_PER_ROW,
+  DEFAULT_LAYOUT_DIRECTION,
   DEFAULT_LANGUAGE,
+  DEFAULT_PANEL_OPACITY,
   DEFAULT_PULL_PANEL_POSITION,
   DEFAULT_RECENT_SKILLS_LIMIT,
   DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+  FRAME_GAP_MAX,
+  FRAME_GAP_MIN,
   I18N,
+  ICONS_PER_ROW_MAX,
+  ICONS_PER_ROW_MIN,
   LOG_FILE_EXTENSIONS,
+  PANEL_OPACITY_MAX,
+  PANEL_OPACITY_MIN,
   clamp,
   createOverlaySettingsStore,
   normalizeLanguage,

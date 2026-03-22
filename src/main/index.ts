@@ -62,6 +62,16 @@ function hideToTray(): void {
   win.hide();
 }
 
+function toggleOverlayVisibility(): boolean {
+  if (!win) return false;
+  if (win.isVisible()) {
+    hideToTray();
+    return false;
+  }
+  showWindow();
+  return true;
+}
+
 function sendWatchStatus(ok: boolean, message: string): void {
   const payload: WatchStatusPayload = { ok: !!ok, message };
   win?.webContents.send('watch-status', payload);
@@ -198,12 +208,23 @@ app.whenReady().then(() => {
     void chooseLogDirectory();
   });
 
+  globalShortcut.register('F10', () => {
+    toggleOverlayVisibility();
+  });
+
+  globalShortcut.register('F11', () => {
+    openSettingsWindow();
+  });
+
   ipcMain.handle('pick-log-file', async (): Promise<PickDirectoryResult> => chooseLogDirectory());
   ipcMain.handle('reload-current-file', async () => logDirectoryService.reloadCurrentFile());
   ipcMain.handle('toggle-overlay-lock', async (): Promise<{ locked: boolean }> => {
     setClickThrough(!clickThroughEnabled);
     return { locked: !clickThroughEnabled };
   });
+  ipcMain.handle('toggle-overlay-visibility', async (): Promise<{ visible: boolean }> => ({
+    visible: toggleOverlayVisibility(),
+  }));
   ipcMain.handle('get-current-file', async (): Promise<LogSourceInfo> => ({
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
