@@ -17,7 +17,7 @@ import {
   extractNpcTemplateId,
   isBossTemplateId,
 } from './parser-dungeon';
-import { getPlayerEquippedRelicByAnyId } from './parser-relics';
+import { getPlayerEquippedRelicByAbilityId } from './parser-relics';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
 
@@ -292,7 +292,7 @@ function addRecentSkillActivation(
 ): void {
   if (!state || !player || !ts) return;
   if (abilityId == null && !abilityName) return;
-  if (getPlayerEquippedRelicByAnyId(player, abilityId)) return;
+  if (getPlayerEquippedRelicByAbilityId(player, abilityId)) return;
 
   const trackedPlayerId = state.recentSkillsPlayerId || null;
   if (!trackedPlayerId || player.id !== trackedPlayerId) return;

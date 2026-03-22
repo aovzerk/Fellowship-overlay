@@ -14,6 +14,12 @@ function getCanonicalRelicId(rawId: number | string | null | undefined): number 
   return RELIC_ITEM_MAPPING[key] || (RELICS[key] ? Number(key) : null);
 }
 
+function getCanonicalRelicAbilityId(rawId: number | string | null | undefined): number | null {
+  if (rawId == null) return null;
+  const key = String(rawId);
+  return RELICS[key] ? Number(key) : null;
+}
+
 function getRelicMetaByAnyId(rawId: number | string | null | undefined): RelicMeta | null {
   const canonicalId = getCanonicalRelicId(rawId);
   if (canonicalId == null) return null;
@@ -31,6 +37,12 @@ function getPlayerEquippedRelicByAnyId(player: PlayerState, rawId: number | stri
   const canonicalId = getCanonicalRelicId(rawId);
   if (canonicalId == null) return null;
   return (player.relics || []).find((item) => item.id === canonicalId) || null;
+}
+
+function getPlayerEquippedRelicByAbilityId(player: PlayerState, rawAbilityId: number | string | null | undefined): PlayerRelicState | null {
+  const canonicalAbilityId = getCanonicalRelicAbilityId(rawAbilityId);
+  if (canonicalAbilityId == null) return null;
+  return (player.relics || []).find((item) => item.id === canonicalAbilityId) || null;
 }
 
 function extractRelicsFromCombatantInfo(parts: string[]): RelicMeta[] {
@@ -89,6 +101,19 @@ function getEquippedRelicByAnyId(player: PlayerState, rawId: number | string | n
   return relic;
 }
 
+function getEquippedRelicByAbilityId(player: PlayerState, rawAbilityId: number | string | null | undefined): PlayerRelicState | null {
+  const relic = getPlayerEquippedRelicByAbilityId(player, rawAbilityId);
+  if (!relic) return null;
+
+  const meta = getRelicMetaByAnyId(relic.id);
+  if (!meta) return relic;
+
+  relic.name = meta.name;
+  relic.icon = meta.icon;
+  relic.baseCooldown = meta.baseCooldown;
+  return relic;
+}
+
 function setPlayerRelics(player: PlayerState, relics: RelicMeta[]): void {
   player.relics = [];
   relics.forEach((relic) => ensurePlayerRelic(player, relic));
@@ -102,7 +127,7 @@ function getRelicCooldownModifier(player: PlayerState): number {
 }
 
 function markRelicUse(player: PlayerState, abilityId: number | null, ts: string | null | undefined): PlayerRelicState | null {
-  const relic = getEquippedRelicByAnyId(player, abilityId);
+  const relic = getEquippedRelicByAbilityId(player, abilityId);
   if (!relic || !ts) return null;
   const modifier = getRelicCooldownModifier(player);
   relic.cooldownModifier = modifier;
@@ -143,7 +168,9 @@ export {
   computeRelicCooldownState,
   ensurePlayerRelic,
   extractRelicsFromCombatantInfo,
+  getEquippedRelicByAbilityId,
   getEquippedRelicByAnyId,
+  getPlayerEquippedRelicByAbilityId,
   getPlayerEquippedRelicByAnyId,
   getRelicMetaByAnyId,
   markRelicUse,
