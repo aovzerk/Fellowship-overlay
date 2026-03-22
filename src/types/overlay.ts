@@ -1,6 +1,8 @@
 export type Nullable<T> = T | null;
 export type LanguageCode = 'en' | 'ru';
 export type LayoutDirection = 'vertical' | 'horizontal';
+export type RecentSkillsLayoutDirection = 'vertical' | 'horizontal';
+export type RecentSkillsGrowthDirection = 'left' | 'right' | 'up' | 'down';
 
 export interface Point {
   x: number;
@@ -35,6 +37,9 @@ export interface OverlaySettings {
   layoutDirection: LayoutDirection;
   panelOpacity: number;
   iconsPerRow: number;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsTrackCount: number;
 }
 
 export interface LogSourceInfo {
@@ -396,6 +401,8 @@ export interface RendererConstantsApi {
   ICONS_PER_ROW_MAX: number;
   PANEL_OPACITY_MIN: number;
   PANEL_OPACITY_MAX: number;
+  RECENT_SKILLS_TRACK_COUNT_MIN: number;
+  RECENT_SKILLS_TRACK_COUNT_MAX: number;
   DEFAULT_PULL_PANEL_POSITION: Point;
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
@@ -405,6 +412,9 @@ export interface RendererConstantsApi {
   DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
   DEFAULT_PANEL_OPACITY: number;
   DEFAULT_ICONS_PER_ROW: number;
+  DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: RecentSkillsLayoutDirection;
+  DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION: RecentSkillsGrowthDirection;
+  DEFAULT_RECENT_SKILLS_TRACK_COUNT: number;
   DEFAULT_OVERLAY_SETTINGS: OverlaySettings;
 }
 
@@ -446,9 +456,18 @@ export interface ApplyTranslationsContext {
   overlaySettingsTitle: HTMLElement;
   panelOpacityLabel: HTMLElement | null;
   pickFileBtn: HTMLButtonElement;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsGrowthDirectionLabel: HTMLElement | null;
+  recentSkillsGrowthDirectionSelect: HTMLSelectElement | null;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsLayoutDirectionLabel: HTMLElement | null;
+  recentSkillsLayoutDirectionSelect: HTMLSelectElement | null;
   recentSkillsLimit: number;
   recentSkillsLimitInput: HTMLInputElement;
   recentSkillsLimitLabel: HTMLElement;
+  recentSkillsTrackCount: number;
+  recentSkillsTrackCountControls: HTMLElement | null;
+  recentSkillsTrackCountLabel: HTMLElement | null;
   reloadBtn: HTMLButtonElement;
   renderPlayers(players?: FinalizedState['players']): void;
   renderPullInfo(currentPull: CurrentPullSummary | null | undefined, dungeon: FinalizedDungeonState | null | undefined): void;
@@ -500,6 +519,9 @@ export interface RecentSkillsPanelVisibilityArgs {
 export interface RenderRecentSkillsPanelArgs {
   currentLanguage: LanguageCode;
   getCardWidthForIconCount(iconCount: number, iconsInRow?: number): number;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsTrackCount: number;
   recentSkills: RecentSkillActivation[];
   recentSkillsLimit: number;
   recentSkillsPanelEl: HTMLElement;
@@ -536,6 +558,9 @@ export interface OverlaySettingsController {
   normalizePanelOpacity(value: unknown): number;
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
+  normalizeRecentSkillsGrowthDirection(value: unknown): RecentSkillsGrowthDirection;
+  normalizeRecentSkillsLayoutDirection(value: unknown): RecentSkillsLayoutDirection;
+  normalizeRecentSkillsTrackCount(value: unknown): number;
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
   loadCardScale(): number;
@@ -545,8 +570,11 @@ export interface OverlaySettingsController {
   loadPanelOpacity(): number;
   loadPositions(): PlayerPositions;
   loadPullPanelPosition(): Point;
+  loadRecentSkillsGrowthDirection(): RecentSkillsGrowthDirection;
+  loadRecentSkillsLayoutDirection(): RecentSkillsLayoutDirection;
   loadRecentSkillsLimit(): number;
   loadRecentSkillsPanelPosition(): Point;
+  loadRecentSkillsTrackCount(): number;
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
   saveCardScale(cardScale: number): void;
@@ -556,8 +584,11 @@ export interface OverlaySettingsController {
   savePanelOpacity(panelOpacity: number): void;
   savePositions(positions: PlayerPositions): void;
   savePullPanelPosition(position: Point): void;
+  saveRecentSkillsGrowthDirection(growthDirection: RecentSkillsGrowthDirection): void;
+  saveRecentSkillsLayoutDirection(layoutDirection: RecentSkillsLayoutDirection): void;
   saveRecentSkillsLimit(recentSkillsLimit: number): void;
   saveRecentSkillsPanelPosition(position: Point): void;
+  saveRecentSkillsTrackCount(trackCount: number): void;
   saveSkillSelections(selectedSkillsByClass: SkillSelectionMap): void;
   saveVisibilitySettings(visibilitySettings: OverlayVisibilitySettings): void;
 }

@@ -58,6 +58,30 @@
                 <input id="recentSkillsLimitInput" type="number" min="1" max="20" step="1" value="7" />
               </label>
             </div>
+            <div class="settings-row">
+              <label class="layout-control interactive" for="recentSkillsLayoutDirectionSelect">
+                <span id="recentSkillsLayoutDirectionLabel">Ориентация панели последних скиллов</span>
+                <select id="recentSkillsLayoutDirectionSelect">
+                  <option value="horizontal">Горизонтально</option>
+                  <option value="vertical">Вертикально</option>
+                </select>
+              </label>
+              <label class="layout-control interactive" for="recentSkillsGrowthDirectionSelect">
+                <span id="recentSkillsGrowthDirectionLabel">Рост панели последних скиллов</span>
+                <select id="recentSkillsGrowthDirectionSelect">
+                  <option value="right">Вправо</option>
+                  <option value="left">Влево</option>
+                </select>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="size-controls interactive" id="recentSkillsTrackCountControls">
+                <button id="recentSkillsTrackCountDownBtn" type="button">-</button>
+                <span id="recentSkillsTrackCountValue">3</span>
+                <button id="recentSkillsTrackCountUpBtn" type="button">+</button>
+              </div>
+              <span id="recentSkillsTrackCountLabel" class="settings-note settings-note-inline">Строк</span>
+            </div>
             <div class="settings-row settings-row-inline">
               <span id="hudStatus" class="settings-note">HUD active</span>
             </div>
