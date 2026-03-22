@@ -324,6 +324,55 @@ button:hover {
   margin-bottom: 10px;
 }
 
+.skill-order-title {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.skill-order-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: grab;
+}
+
+.order-item-name {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-item.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.order-item.drag-over {
+  border-color: rgba(95, 210, 255, 0.9);
+  background: rgba(95, 210, 255, 0.12);
+}
+
+.order-drag-hint {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 1px;
+  opacity: 0.45;
+}
+
 .skill-options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

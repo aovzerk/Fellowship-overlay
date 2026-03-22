@@ -1,4 +1,5 @@
 (() => {
+  const RELICS_ORDER_TOKEN = '__relics__';
   const {
     CARD_SCALE_KEY,
     CARD_SCALE_MAX,
@@ -86,8 +87,12 @@
       const parsedClassId = String(Number(classId));
       if (!parsedClassId || parsedClassId === 'NaN') return;
       normalized[parsedClassId] = (Array.isArray(abilityIds) ? abilityIds : [])
-        .map((id) => String(Number(id)))
-        .filter((id) => id && id !== 'NaN');
+        .map((id) => {
+          if (String(id) === RELICS_ORDER_TOKEN) return RELICS_ORDER_TOKEN;
+          const normalizedId = String(Number(id));
+          return normalizedId && normalizedId !== 'NaN' ? normalizedId : null;
+        })
+        .filter((id): id is string => !!id);
     });
     return normalized;
   }

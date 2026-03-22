@@ -8,6 +8,7 @@
   };
 
   const PARTY_GROUP_KEY = 'party-group';
+  const RELICS_ORDER_TOKEN = '__relics__';
   const TANK_CLASS_IDS = new Set([22, 13, 25]);
   const HEALER_CLASS_IDS = new Set([24, 14, 20]);
 
@@ -71,13 +72,30 @@
   }
 
   function getSelectedSkillEntriesForClass(skillCatalog: SkillCatalog, selectedSkillsByClass: SkillSelectionMap, classId: number | null): SkillCatalogAbility[] {
+    const orderedTokens = getOrderedTokensForClass(selectedSkillsByClass, classId).filter((token) => token !== RELICS_ORDER_TOKEN);
+    if (!orderedTokens.length) return [];
     const normalizedClassId = String(Number(classId || 0));
-    const selectedAbilityIds = selectedSkillsByClass[normalizedClassId] || [];
-    if (!selectedAbilityIds.length) return [];
     const classEntry = (skillCatalog.classes || []).find((entry) => String(entry.id) === normalizedClassId);
     if (!classEntry) return [];
-    const wanted = new Set(selectedAbilityIds.map((id) => String(Number(id))));
-    return (classEntry.abilities || []).filter((ability) => wanted.has(String(ability.id)));
+    const abilityMap = new Map((classEntry.abilities || []).map((ability) => [String(ability.id), ability]));
+    return orderedTokens.map((token) => abilityMap.get(token)).filter((ability): ability is SkillCatalogAbility => !!ability);
+  }
+
+  function getOrderedTokensForClass(selectedSkillsByClass: SkillSelectionMap, classId: number | null): string[] {
+    const normalizedClassId = String(Number(classId || 0));
+    const raw = Array.isArray(selectedSkillsByClass[normalizedClassId]) ? selectedSkillsByClass[normalizedClassId] : [];
+    const seen = new Set<string>();
+    const tokens: string[] = [];
+
+    raw.forEach((token) => {
+      const normalizedToken = String(token) === RELICS_ORDER_TOKEN ? RELICS_ORDER_TOKEN : String(Number(token));
+      if (!normalizedToken || normalizedToken === 'NaN' || seen.has(normalizedToken)) return;
+      seen.add(normalizedToken);
+      tokens.push(normalizedToken);
+    });
+
+    if (!seen.has(RELICS_ORDER_TOKEN)) tokens.push(RELICS_ORDER_TOKEN);
+    return tokens;
   }
 
   function getSkillCooldownModifier(player: PlayerState): number {
@@ -252,7 +270,22 @@
       const last = player.spirit || history[history.length - 1] || null;
       const classColor = player.classColor || '#6b7280';
       const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass());
-      const displayIcons: DisplayIcon[] = [...trackedSkills, ...(player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }))];
+      const trackedSkillMap = new Map(trackedSkills.map((skill) => [String(skill.id), skill]));
+      const relicIcons = (player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }));
+      const displayIcons: DisplayIcon[] = [];
+      let relicsInserted = false;
+
+      getOrderedTokensForClass(getSelectedSkillsByClass(), player.classId).forEach((token) => {
+        if (token === RELICS_ORDER_TOKEN) {
+          displayIcons.push(...relicIcons);
+          relicsInserted = true;
+          return;
+        }
+        const trackedSkill = trackedSkillMap.get(token);
+        if (trackedSkill) displayIcons.push(trackedSkill);
+      });
+
+      if (!relicsInserted) displayIcons.push(...relicIcons);
       applyCardLayout(card, getCardScale(), displayIcons.length, getIconsPerRow());
 
       const playerName = card.querySelector<HTMLElement>('.player-name');
