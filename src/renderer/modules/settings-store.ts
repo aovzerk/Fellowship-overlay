@@ -155,77 +155,7 @@
     });
   }
 
-  function getLocalStorageJson<T>(key: string, fallback: T): T {
-    try {
-      return (JSON.parse(localStorage.getItem(key) || 'null') ?? fallback) as T;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function loadLegacySettingsFromLocalStorage(): Partial<OverlaySettings> {
-    const legacySettings: Partial<OverlaySettings> = {};
-
-    const playerPositions = normalizePlayerPositions(getLocalStorageJson(STORAGE_KEY, {}));
-    if (Object.keys(playerPositions).length) legacySettings.playerPositions = playerPositions;
-
-    const visibilityRaw = getLocalStorageJson<Record<string, unknown> | null>(VISIBILITY_SETTINGS_KEY, null);
-    const hasLegacyVisibilitySettings =
-      visibilityRaw &&
-      typeof visibilityRaw === 'object' &&
-      !Array.isArray(visibilityRaw) &&
-      (
-        typeof visibilityRaw.showParty === 'boolean' ||
-        typeof visibilityRaw.showPull === 'boolean' ||
-        typeof visibilityRaw.showRecentSkills === 'boolean' ||
-        visibilityRaw.recentSkillsLimit !== undefined
-      );
-
-    if (hasLegacyVisibilitySettings) {
-      legacySettings.visibilitySettings = normalizeVisibilitySettings(visibilityRaw);
-      if (visibilityRaw.recentSkillsLimit !== undefined) {
-        legacySettings.recentSkillsLimit = normalizeRecentSkillsLimit(visibilityRaw.recentSkillsLimit);
-      }
-    }
-
-    const pullPosition = getLocalStorageJson<unknown>(PULL_PANEL_POSITION_KEY, null);
-    const recentSkillsPosition = getLocalStorageJson<unknown>(RECENT_SKILLS_PANEL_POSITION_KEY, null);
-    if (pullPosition || recentSkillsPosition) {
-      legacySettings.panelPositions = {
-        pullInfo: normalizePosition(pullPosition, DEFAULT_PULL_PANEL_POSITION),
-        recentSkills: normalizePosition(recentSkillsPosition, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
-      };
-    }
-
-    const selectedSkillsByClass = normalizeSkillSelections(getLocalStorageJson(SKILL_SELECTIONS_KEY, {}));
-    if (Object.keys(selectedSkillsByClass).length) legacySettings.selectedSkillsByClass = selectedSkillsByClass;
-
-    const cardScaleRaw = Number(localStorage.getItem(CARD_SCALE_KEY));
-    if (Number.isFinite(cardScaleRaw)) {
-      legacySettings.cardScale = normalizeCardScaleValue(cardScaleRaw);
-    }
-
-    return legacySettings;
-  }
-
-  function clearLegacyLocalStorage(): void {
-    [
-      STORAGE_KEY,
-      SKILL_SELECTIONS_KEY,
-      CARD_SCALE_KEY,
-      PULL_PANEL_POSITION_KEY,
-      RECENT_SKILLS_PANEL_POSITION_KEY,
-      VISIBILITY_SETTINGS_KEY,
-    ].forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch {}
-    });
-  }
-
   function loadOverlaySettings(api: OverlayApi): OverlaySettings {
-    let persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
-
     try {
       const response = api?.getOverlaySettingsSync?.();
       const rawSettings =
@@ -233,23 +163,10 @@
           ? (response.settings && typeof response.settings === 'object' ? response.settings : response)
           : DEFAULT_OVERLAY_SETTINGS;
 
-      persistedSettings = normalizeOverlaySettings(rawSettings);
+      return normalizeOverlaySettings(rawSettings);
     } catch {
-      persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
+      return normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
     }
-
-    const legacySettings = loadLegacySettingsFromLocalStorage();
-    const hasLegacySettings = Object.keys(legacySettings).length > 0;
-    if (!hasLegacySettings) {
-      return persistedSettings;
-    }
-
-    const mergedSettings = mergeOverlaySettings(persistedSettings, legacySettings);
-    if (JSON.stringify(mergedSettings) !== JSON.stringify(persistedSettings)) {
-      api?.saveOverlaySettings?.(mergedSettings).catch(() => {});
-    }
-    clearLegacyLocalStorage();
-    return mergedSettings;
   }
 
   function createOverlaySettingsController(api: OverlayApi): OverlaySettingsController {
