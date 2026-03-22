@@ -11,9 +11,12 @@
     DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
     DEFAULT_PANEL_OPACITY,
+    DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_LIMIT,
+    DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
     DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+    DEFAULT_RECENT_SKILLS_TRACK_COUNT,
     DEFAULT_VISIBILITY_SETTINGS,
     FRAME_GAP_MAX,
     FRAME_GAP_MIN,
@@ -21,6 +24,8 @@
     ICONS_PER_ROW_MIN,
     PANEL_OPACITY_MAX,
     PANEL_OPACITY_MIN,
+    RECENT_SKILLS_TRACK_COUNT_MAX,
+    RECENT_SKILLS_TRACK_COUNT_MIN,
     PULL_PANEL_POSITION_KEY,
     RECENT_SKILLS_PANEL_POSITION_KEY,
     SKILL_SELECTIONS_KEY,
@@ -135,6 +140,22 @@
     };
   }
 
+  function normalizeRecentSkillsLayoutDirection(value: unknown): 'vertical' | 'horizontal' {
+    return String(value || '').toLowerCase() === 'vertical' ? 'vertical' : 'horizontal';
+  }
+
+  function normalizeRecentSkillsGrowthDirection(value: unknown): 'left' | 'right' | 'up' | 'down' {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized === 'left' || normalized === 'up' || normalized === 'down') return normalized;
+    return DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION;
+  }
+
+  function normalizeRecentSkillsTrackCount(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_RECENT_SKILLS_TRACK_COUNT;
+    return Math.round(clamp(normalized, RECENT_SKILLS_TRACK_COUNT_MIN, RECENT_SKILLS_TRACK_COUNT_MAX));
+  }
+
   function normalizePanelOpacity(value: unknown): number {
     const normalized = Number(value);
     if (!Number.isFinite(normalized)) return DEFAULT_PANEL_OPACITY;
@@ -154,6 +175,9 @@
       layoutDirection: normalizeLayoutDirection(source.layoutDirection),
       panelOpacity: normalizePanelOpacity(source.panelOpacity),
       iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+      recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
+      recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
+      recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
       hotkeys: normalizeHotkeys(source.hotkeys),
     };
   }
@@ -215,6 +239,9 @@
       normalizePanelOpacity,
       normalizePosition,
       normalizeRecentSkillsLimit,
+      normalizeRecentSkillsGrowthDirection,
+      normalizeRecentSkillsLayoutDirection,
+      normalizeRecentSkillsTrackCount,
       normalizeSkillSelections,
       normalizeVisibilitySettings,
       loadCardScale() {
@@ -235,6 +262,12 @@
       loadPanelOpacity() {
         return normalizePanelOpacity(getOverlaySettings().panelOpacity);
       },
+      loadRecentSkillsGrowthDirection() {
+        return normalizeRecentSkillsGrowthDirection(getOverlaySettings().recentSkillsGrowthDirection);
+      },
+      loadRecentSkillsLayoutDirection() {
+        return normalizeRecentSkillsLayoutDirection(getOverlaySettings().recentSkillsLayoutDirection);
+      },
       loadPositions() {
         if (playerPositionsCache && typeof playerPositionsCache === 'object') {
           return playerPositionsCache;
@@ -247,6 +280,9 @@
       },
       loadRecentSkillsLimit() {
         return normalizeRecentSkillsLimit(getOverlaySettings().recentSkillsLimit);
+      },
+      loadRecentSkillsTrackCount() {
+        return normalizeRecentSkillsTrackCount(getOverlaySettings().recentSkillsTrackCount);
       },
       loadRecentSkillsPanelPosition() {
         return normalizePosition(getOverlaySettings().panelPositions?.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION);
@@ -290,12 +326,21 @@
       saveRecentSkillsLimit(recentSkillsLimit: number) {
         saveOverlaySettingsPatch({ recentSkillsLimit });
       },
+      saveRecentSkillsGrowthDirection(recentSkillsGrowthDirection: 'left' | 'right' | 'up' | 'down') {
+        saveOverlaySettingsPatch({ recentSkillsGrowthDirection });
+      },
+      saveRecentSkillsLayoutDirection(recentSkillsLayoutDirection: 'vertical' | 'horizontal') {
+        saveOverlaySettingsPatch({ recentSkillsLayoutDirection });
+      },
       saveRecentSkillsPanelPosition(position: Point) {
         saveOverlaySettingsPatch({
           panelPositions: {
             recentSkills: normalizePosition(position, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
           } as OverlayPanelPositions,
         });
+      },
+      saveRecentSkillsTrackCount(recentSkillsTrackCount: number) {
+        saveOverlaySettingsPatch({ recentSkillsTrackCount });
       },
       saveSkillSelections(selectedSkillsByClass: SkillSelectionMap) {
         saveOverlaySettingsPatch({ selectedSkillsByClass: normalizeSkillSelections(selectedSkillsByClass) });

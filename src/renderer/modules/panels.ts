@@ -1,5 +1,5 @@
 (() => {
-  const { clamp, escapeHtml, formatPercent, formatTimeShort, toAssetSrc } = window.OverlayRendererFormatters;
+  const { clamp, escapeHtml, formatPercent, toAssetSrc } = window.OverlayRendererFormatters;
 
   function getDefaultSkillIcon(): string {
     return 'game-data/heroes/Default/default_skill.jpg';
@@ -34,6 +34,9 @@
   function renderRecentSkillsPanel({
     currentLanguage,
     getCardWidthForIconCount,
+    recentSkillsGrowthDirection,
+    recentSkillsLayoutDirection,
+    recentSkillsTrackCount,
     recentSkills,
     recentSkillsLimit,
     recentSkillsPanelEl,
@@ -57,6 +60,7 @@
         </div>
         <div class="pull-empty">${escapeHtml(translate('noRecentSkills'))}</div>
       `;
+      recentSkillsPanelEl.style.width = '';
       updateRecentSkillsPanelVisibility();
       return;
     }
@@ -73,6 +77,16 @@
     const row = recentSkillsPanelEl.querySelector<HTMLElement>('.recent-skills-row');
     if (!row) return;
 
+    const trackCount = clamp(Number(recentSkillsTrackCount || 3), 1, 6);
+    const isHorizontal = recentSkillsLayoutDirection === 'horizontal';
+    const primaryCount = Math.max(1, Math.min(trackCount, items.length));
+    const rowCount = isHorizontal
+      ? primaryCount
+      : Math.max(1, Math.ceil(items.length / primaryCount));
+    const columnCount = isHorizontal
+      ? Math.max(1, Math.ceil(items.length / rowCount))
+      : primaryCount;
+
     const fragment = document.createDocumentFragment();
     items.forEach((item, index) => {
       const chip = document.createElement('div');
@@ -83,12 +97,15 @@
       if (!icon) return;
       icon.src = toAssetSrc(item.icon || getDefaultSkillIcon());
       icon.alt = escapeHtml(item.abilityName || 'Skill');
-      const timeLabel = formatTimeShort(currentLanguage, item.ts);
-      chip.title = `${item.playerName || translate('unknown')} — ${item.abilityName || translate('unknown')}${timeLabel ? ` — ${timeLabel}` : ''}`;
       fragment.appendChild(chip);
     });
+
     row.appendChild(fragment);
-    recentSkillsPanelEl.style.width = `${getCardWidthForIconCount(items.length)}px`;
+    row.dataset.layout = recentSkillsLayoutDirection;
+    row.dataset.growth = recentSkillsGrowthDirection;
+    row.style.setProperty('--recent-skills-columns', String(columnCount));
+    row.style.setProperty('--recent-skills-rows', String(rowCount));
+    recentSkillsPanelEl.style.width = `${getCardWidthForIconCount(columnCount, columnCount)}px`;
     updateRecentSkillsPanelVisibility();
   }
 
