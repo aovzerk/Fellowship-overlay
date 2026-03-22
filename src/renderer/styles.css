@@ -443,15 +443,16 @@ button:hover {
   position: fixed;
   left: 16px;
   top: 12px;
-  min-width: 240px;
-  max-width: 320px;
-  padding: 10px 12px;
+  min-width: calc(300px * var(--card-scale));
+  max-width: calc(380px * var(--card-scale));
+  padding: calc(10px * var(--card-scale)) calc(12px * var(--card-scale));
+  box-sizing: border-box;
 }
 
 .pull-title {
-  font-size: 15px;
+  font-size: calc(20px * var(--card-scale));
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: calc(8px * var(--card-scale));
 }
 
 .pull-drag-handle {
@@ -460,15 +461,15 @@ button:hover {
 
 .pull-stats {
   display: grid;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: calc(6px * var(--card-scale));
+  margin-bottom: calc(8px * var(--card-scale));
 }
 
 .pull-stat {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
+  gap: calc(12px * var(--card-scale));
+  font-size: calc(18px * var(--card-scale));
 }
 
 .pull-stat span {
@@ -477,14 +478,14 @@ button:hover {
 
 .pull-mob-list {
   display: grid;
-  gap: 4px;
+  gap: calc(4px * var(--card-scale));
 }
 
 .pull-mob {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  font-size: 13px;
+  gap: calc(10px * var(--card-scale));
+  font-size: calc(18px * var(--card-scale));
 }
 
 .pull-mob.dead {
@@ -493,13 +494,13 @@ button:hover {
 }
 
 .pull-empty {
-  font-size: 13px;
+  font-size: calc(13px * var(--card-scale));
   opacity: 0.72;
 }
 
 
 .pull-note {
-  font-size: 12px;
+  font-size: calc(15px * var(--card-scale));
   opacity: 0.92;
 }
 
