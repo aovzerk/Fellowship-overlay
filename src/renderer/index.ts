@@ -149,8 +149,8 @@ function getPartySlotIndex(player: { id: string } | null | undefined, index = 0)
   return index;
 }
 
-function getCardWidthForIconCount(iconCount: number): number {
-  return getCardWidthForIconCountShared(cardScale, iconCount);
+function getCardWidthForIconCount(iconCount: number, iconsInRow = iconsPerRow): number {
+  return getCardWidthForIconCountShared(cardScale, iconCount, iconsInRow);
 }
 
 function setLanguage(language: LanguageCode | string | null | undefined): void {
@@ -474,6 +474,9 @@ playerCardRenderer = createPlayerCardRenderer({
   formatNumber,
   getCardScale: () => cardScale,
   getDefaultPosition,
+  getFrameGap: () => frameGap,
+  getIconsPerRow: () => iconsPerRow,
+  getLayoutDirection: () => layoutDirection,
   getLatestData: () => latestData,
   getOverlayLocked: () => overlayLocked,
   getPartySlotIndex,
@@ -577,6 +580,7 @@ window.api.onWatchStatus((payload) => {
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
+  rerenderPlayersIfNeeded();
 });
 
 window.api.onOpenSettings(() => {
