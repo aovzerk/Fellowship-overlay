@@ -19,9 +19,10 @@ const DEFAULT_LANGUAGE: LanguageCode = 'en';
 const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
 const DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point = { x: 16, y: 200 };
 const DEFAULT_RECENT_SKILLS_LIMIT = 7;
+const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false };
 const CARD_SCALE_MIN = 0.30;
 const CARD_SCALE_MAX = 1.8;
-const DEFAULT_CARD_SCALE = 1;
+const DEFAULT_CARD_SCALE = 0.7;
 const LOG_FILE_EXTENSIONS = new Set(['.txt', '.log']);
 
 const I18N: Record<LanguageCode, Record<string, string>> = {
@@ -99,9 +100,15 @@ function normalizePanelPositions(value: unknown): OverlayPanelPositions {
 function normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings {
   const source = asRecord(value);
   return {
-    showParty: source.showParty !== false,
-    showPull: source.showPull !== false,
-    showRecentSkills: source.showRecentSkills !== false,
+    showParty: typeof source.showParty === 'boolean'
+      ? source.showParty
+      : DEFAULT_VISIBILITY_SETTINGS.showParty,
+    showPull: typeof source.showPull === 'boolean'
+      ? source.showPull
+      : DEFAULT_VISIBILITY_SETTINGS.showPull,
+    showRecentSkills: typeof source.showRecentSkills === 'boolean'
+      ? source.showRecentSkills
+      : DEFAULT_VISIBILITY_SETTINGS.showRecentSkills,
   };
 }
 
