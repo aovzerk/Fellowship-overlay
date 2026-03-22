@@ -1,18 +1,18 @@
-const fs = require('fs');
-const path = require('path');
-const { nativeImage } = require('electron');
-const { fromProjectRoot } = require('./project-paths');
+import * as fs from 'fs';
+import { nativeImage } from 'electron';
+import { fromProjectRoot } from './project-paths';
+import { getDefaultRelicIconPath } from '../services/game-database';
 
-function getAppIconPath() {
-  const iconCandidates = [
+function getAppIconPath(): string | null {
+  const iconCandidates: Array<string | null> = [
     fromProjectRoot('icons', 'icon.ico'),
     fromProjectRoot('icon.ico'),
     fromProjectRoot('tray.png'),
-    fromProjectRoot('icons_trink', 'empty.png'),
+    getDefaultRelicIconPath(),
   ];
 
   for (const iconPath of iconCandidates) {
-    if (fs.existsSync(iconPath)) {
+    if (iconPath && fs.existsSync(iconPath)) {
       return iconPath;
     }
   }
@@ -20,12 +20,12 @@ function getAppIconPath() {
   return null;
 }
 
-function getTrayIcon() {
-  const iconCandidates = [
+function getTrayIcon(): unknown {
+  const iconCandidates: string[] = [
     getAppIconPath(),
     fromProjectRoot('tray.png'),
-    fromProjectRoot('icons_trink', 'empty.png'),
-  ].filter(Boolean);
+    getDefaultRelicIconPath(),
+  ].filter(Boolean) as string[];
 
   for (const iconPath of iconCandidates) {
     if (fs.existsSync(iconPath)) {
@@ -39,7 +39,7 @@ function getTrayIcon() {
   return nativeImage.createEmpty();
 }
 
-module.exports = {
+export {
   getAppIconPath,
   getTrayIcon,
 };

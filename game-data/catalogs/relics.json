@@ -3,52 +3,52 @@
     "186": {
       "name": "Sanctuary",
       "base_cooldown": 180,
-      "icon": "icons_trink/Sanctuary.jpg"
+      "icon": "game-data/relics/Sanctuary.jpg"
     },
     "188": {
       "name": "Restore Mana",
       "base_cooldown": 120,
-      "icon": "icons_trink/Restore_Mana.jpg"
+      "icon": "game-data/relics/Restore_Mana.jpg"
     },
     "1952": {
       "name": "Obsidian Skin",
       "base_cooldown": 60,
-      "icon": "icons_trink/Obsidian_Skin.jpg"
+      "icon": "game-data/relics/Obsidian_Skin.jpg"
     },
     "1478": {
       "name": "Chickenize",
       "base_cooldown": 180,
-      "icon": "icons_trink/Chickenize.jpg"
+      "icon": "game-data/relics/Chickenize.jpg"
     },
     "187": {
       "name": "Major Dispel",
       "base_cooldown": 120,
-      "icon": "icons_trink/Major_Dispel.jpg"
+      "icon": "game-data/relics/Major_Dispel.jpg"
     },
     "185": {
       "name": "Bloodrite Drums",
       "base_cooldown": 90,
-      "icon": "icons_trink/Bloodrite_Drums.jpg"
+      "icon": "game-data/relics/Bloodrite_Drums.jpg"
     },
     "1486": {
       "name": "Major Invisibility",
       "base_cooldown": 360,
-      "icon": "icons_trink/Major_Invisibility.jpg"
+      "icon": "game-data/relics/Major_Invisibility.jpg"
     },
     "1504": {
       "name": "Conjure Portal",
       "base_cooldown": 120,
-      "icon": "icons_trink/Conjure_Portal.jpg"
+      "icon": "game-data/relics/Conjure_Portal.jpg"
     },
     "22": {
       "name": "Revive",
       "base_cooldown": 300,
-      "icon": "icons_trink/Revive.jpg"
+      "icon": "game-data/relics/Revive.jpg"
     },
     "189": {
       "name": "Rejuvenate",
       "base_cooldown": 120,
-      "icon": "icons_trink/Rejuvenate.jpg"
+      "icon": "game-data/relics/Rejuvenate.jpg"
     }
   },
   "item_mapping": {

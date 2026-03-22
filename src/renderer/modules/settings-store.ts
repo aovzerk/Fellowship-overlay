@@ -1,0 +1,302 @@
+(() => {
+  const {
+    CARD_SCALE_KEY,
+    CARD_SCALE_MAX,
+    CARD_SCALE_MIN,
+    DEFAULT_CARD_SCALE,
+    DEFAULT_OVERLAY_SETTINGS,
+    DEFAULT_PULL_PANEL_POSITION,
+    DEFAULT_RECENT_SKILLS_LIMIT,
+    DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+    DEFAULT_VISIBILITY_SETTINGS,
+    PULL_PANEL_POSITION_KEY,
+    RECENT_SKILLS_PANEL_POSITION_KEY,
+    SKILL_SELECTIONS_KEY,
+    STORAGE_KEY,
+    VISIBILITY_SETTINGS_KEY,
+  } = window.OverlayRendererConstants;
+  const { clamp } = window.OverlayRendererFormatters;
+
+  function normalizePosition(value: unknown, fallback: Point = { x: 0, y: 0 }): Point {
+    const source = value as Partial<Point> | null | undefined;
+    const x = Number(source?.x);
+    const y = Number(source?.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return { x: Math.round(Number(fallback?.x || 0)), y: Math.round(Number(fallback?.y || 0)) };
+    }
+    return { x: Math.round(x), y: Math.round(y) };
+  }
+
+  function normalizePlayerPositions(value: unknown): PlayerPositions {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    const normalized: PlayerPositions = {};
+    Object.entries(value).forEach(([key, position]) => {
+      const source = position as Partial<Point> | null | undefined;
+      const x = Number(source?.x);
+      const y = Number(source?.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      normalized[String(key)] = { x: Math.round(x), y: Math.round(y) };
+    });
+    return normalized;
+  }
+
+  function normalizePanelPositions(value: unknown): OverlayPanelPositions {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<OverlayPanelPositions> : {};
+    return {
+      pullInfo: normalizePosition(source.pullInfo, DEFAULT_PULL_PANEL_POSITION),
+      recentSkills: normalizePosition(source.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+    };
+  }
+
+  function normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<OverlayVisibilitySettings> : {};
+    return {
+      showParty: typeof source.showParty === 'boolean'
+        ? source.showParty
+        : DEFAULT_VISIBILITY_SETTINGS.showParty,
+      showPull: typeof source.showPull === 'boolean'
+        ? source.showPull
+        : DEFAULT_VISIBILITY_SETTINGS.showPull,
+      showRecentSkills: typeof source.showRecentSkills === 'boolean'
+        ? source.showRecentSkills
+        : DEFAULT_VISIBILITY_SETTINGS.showRecentSkills,
+    };
+  }
+
+  function normalizeRecentSkillsLimit(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_RECENT_SKILLS_LIMIT;
+    return Math.round(clamp(normalized, 1, 20));
+  }
+
+  function normalizeSkillSelections(value: unknown): SkillSelectionMap {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    const normalized: SkillSelectionMap = {};
+    Object.entries(value).forEach(([classId, abilityIds]) => {
+      const parsedClassId = String(Number(classId));
+      if (!parsedClassId || parsedClassId === 'NaN') return;
+      normalized[parsedClassId] = (Array.isArray(abilityIds) ? abilityIds : [])
+        .map((id) => String(Number(id)))
+        .filter((id) => id && id !== 'NaN');
+    });
+    return normalized;
+  }
+
+  function normalizeCardScaleValue(value: unknown): number {
+    const normalized = Number(value);
+    if (!Number.isFinite(normalized)) return DEFAULT_CARD_SCALE;
+    return Math.round(clamp(normalized, CARD_SCALE_MIN, CARD_SCALE_MAX) * 100) / 100;
+  }
+
+  function normalizeOverlaySettings(value: unknown): OverlaySettings {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<OverlaySettings> : {};
+    return {
+      playerPositions: normalizePlayerPositions(source.playerPositions),
+      panelPositions: normalizePanelPositions(source.panelPositions),
+      visibilitySettings: normalizeVisibilitySettings(source.visibilitySettings),
+      recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
+      selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
+      cardScale: normalizeCardScaleValue(source.cardScale),
+    };
+  }
+
+  function mergeOverlaySettings(baseSettings: unknown, partialSettings: unknown): OverlaySettings {
+    const base = normalizeOverlaySettings(baseSettings);
+    const partial = partialSettings && typeof partialSettings === 'object' && !Array.isArray(partialSettings) ? partialSettings as Partial<OverlaySettings> : {};
+    return normalizeOverlaySettings({
+      ...base,
+      ...partial,
+      panelPositions: {
+        ...base.panelPositions,
+        ...(partial.panelPositions && typeof partial.panelPositions === 'object' ? partial.panelPositions : {}),
+      },
+      visibilitySettings: {
+        ...base.visibilitySettings,
+        ...(partial.visibilitySettings && typeof partial.visibilitySettings === 'object' ? partial.visibilitySettings : {}),
+      },
+      playerPositions: partial.playerPositions === undefined ? base.playerPositions : partial.playerPositions,
+      selectedSkillsByClass: partial.selectedSkillsByClass === undefined ? base.selectedSkillsByClass : partial.selectedSkillsByClass,
+    });
+  }
+
+  function getLocalStorageJson<T>(key: string, fallback: T): T {
+    try {
+      return (JSON.parse(localStorage.getItem(key) || 'null') ?? fallback) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function loadLegacySettingsFromLocalStorage(): Partial<OverlaySettings> {
+    const legacySettings: Partial<OverlaySettings> = {};
+
+    const playerPositions = normalizePlayerPositions(getLocalStorageJson(STORAGE_KEY, {}));
+    if (Object.keys(playerPositions).length) legacySettings.playerPositions = playerPositions;
+
+    const visibilityRaw = getLocalStorageJson<Record<string, unknown> | null>(VISIBILITY_SETTINGS_KEY, null);
+    const hasLegacyVisibilitySettings =
+      visibilityRaw &&
+      typeof visibilityRaw === 'object' &&
+      !Array.isArray(visibilityRaw) &&
+      (
+        typeof visibilityRaw.showParty === 'boolean' ||
+        typeof visibilityRaw.showPull === 'boolean' ||
+        typeof visibilityRaw.showRecentSkills === 'boolean' ||
+        visibilityRaw.recentSkillsLimit !== undefined
+      );
+
+    if (hasLegacyVisibilitySettings) {
+      legacySettings.visibilitySettings = normalizeVisibilitySettings(visibilityRaw);
+      if (visibilityRaw.recentSkillsLimit !== undefined) {
+        legacySettings.recentSkillsLimit = normalizeRecentSkillsLimit(visibilityRaw.recentSkillsLimit);
+      }
+    }
+
+    const pullPosition = getLocalStorageJson<unknown>(PULL_PANEL_POSITION_KEY, null);
+    const recentSkillsPosition = getLocalStorageJson<unknown>(RECENT_SKILLS_PANEL_POSITION_KEY, null);
+    if (pullPosition || recentSkillsPosition) {
+      legacySettings.panelPositions = {
+        pullInfo: normalizePosition(pullPosition, DEFAULT_PULL_PANEL_POSITION),
+        recentSkills: normalizePosition(recentSkillsPosition, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+      };
+    }
+
+    const selectedSkillsByClass = normalizeSkillSelections(getLocalStorageJson(SKILL_SELECTIONS_KEY, {}));
+    if (Object.keys(selectedSkillsByClass).length) legacySettings.selectedSkillsByClass = selectedSkillsByClass;
+
+    const cardScaleRaw = Number(localStorage.getItem(CARD_SCALE_KEY));
+    if (Number.isFinite(cardScaleRaw)) {
+      legacySettings.cardScale = normalizeCardScaleValue(cardScaleRaw);
+    }
+
+    return legacySettings;
+  }
+
+  function clearLegacyLocalStorage(): void {
+    [
+      STORAGE_KEY,
+      SKILL_SELECTIONS_KEY,
+      CARD_SCALE_KEY,
+      PULL_PANEL_POSITION_KEY,
+      RECENT_SKILLS_PANEL_POSITION_KEY,
+      VISIBILITY_SETTINGS_KEY,
+    ].forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+    });
+  }
+
+  function loadOverlaySettings(api: OverlayApi): OverlaySettings {
+    let persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
+
+    try {
+      const response = api?.getOverlaySettingsSync?.();
+      const rawSettings =
+        response && typeof response === 'object' && !Array.isArray(response)
+          ? (response.settings && typeof response.settings === 'object' ? response.settings : response)
+          : DEFAULT_OVERLAY_SETTINGS;
+
+      persistedSettings = normalizeOverlaySettings(rawSettings);
+    } catch {
+      persistedSettings = normalizeOverlaySettings(DEFAULT_OVERLAY_SETTINGS);
+    }
+
+    const legacySettings = loadLegacySettingsFromLocalStorage();
+    const hasLegacySettings = Object.keys(legacySettings).length > 0;
+    if (!hasLegacySettings) {
+      return persistedSettings;
+    }
+
+    const mergedSettings = mergeOverlaySettings(persistedSettings, legacySettings);
+    if (JSON.stringify(mergedSettings) !== JSON.stringify(persistedSettings)) {
+      api?.saveOverlaySettings?.(mergedSettings).catch(() => {});
+    }
+    clearLegacyLocalStorage();
+    return mergedSettings;
+  }
+
+  function createOverlaySettingsController(api: OverlayApi): OverlaySettingsController {
+    let overlaySettingsCache = loadOverlaySettings(api);
+    let playerPositionsCache = overlaySettingsCache.playerPositions;
+
+    function getOverlaySettings(): OverlaySettings {
+      overlaySettingsCache = mergeOverlaySettings(DEFAULT_OVERLAY_SETTINGS, overlaySettingsCache || {});
+      return overlaySettingsCache;
+    }
+
+    function saveOverlaySettingsPatch(patch: Partial<OverlaySettings>): OverlaySettings {
+      overlaySettingsCache = mergeOverlaySettings(getOverlaySettings(), patch);
+      api?.saveOverlaySettings?.(overlaySettingsCache).catch(() => {});
+      return overlaySettingsCache;
+    }
+
+    return {
+      normalizeCardScaleValue,
+      normalizePosition,
+      normalizeRecentSkillsLimit,
+      normalizeSkillSelections,
+      normalizeVisibilitySettings,
+      loadCardScale() {
+        return normalizeCardScaleValue(getOverlaySettings().cardScale);
+      },
+      loadPositions() {
+        if (playerPositionsCache && typeof playerPositionsCache === 'object') {
+          return playerPositionsCache;
+        }
+        playerPositionsCache = normalizePlayerPositions(getOverlaySettings().playerPositions);
+        return playerPositionsCache;
+      },
+      loadPullPanelPosition() {
+        return normalizePosition(getOverlaySettings().panelPositions?.pullInfo, DEFAULT_PULL_PANEL_POSITION);
+      },
+      loadRecentSkillsLimit() {
+        return normalizeRecentSkillsLimit(getOverlaySettings().recentSkillsLimit);
+      },
+      loadRecentSkillsPanelPosition() {
+        return normalizePosition(getOverlaySettings().panelPositions?.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION);
+      },
+      loadSkillSelections() {
+        return normalizeSkillSelections(getOverlaySettings().selectedSkillsByClass);
+      },
+      loadVisibilitySettings() {
+        return normalizeVisibilitySettings(getOverlaySettings().visibilitySettings);
+      },
+      saveCardScale(cardScale: number) {
+        saveOverlaySettingsPatch({ cardScale });
+      },
+      savePositions(positions: PlayerPositions) {
+        const normalized = normalizePlayerPositions(positions);
+        playerPositionsCache = normalized;
+        saveOverlaySettingsPatch({ playerPositions: normalized });
+      },
+      savePullPanelPosition(position: Point) {
+        saveOverlaySettingsPatch({
+          panelPositions: {
+            pullInfo: normalizePosition(position, DEFAULT_PULL_PANEL_POSITION),
+          } as OverlayPanelPositions,
+        });
+      },
+      saveRecentSkillsLimit(recentSkillsLimit: number) {
+        saveOverlaySettingsPatch({ recentSkillsLimit });
+      },
+      saveRecentSkillsPanelPosition(position: Point) {
+        saveOverlaySettingsPatch({
+          panelPositions: {
+            recentSkills: normalizePosition(position, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+          } as OverlayPanelPositions,
+        });
+      },
+      saveSkillSelections(selectedSkillsByClass: SkillSelectionMap) {
+        saveOverlaySettingsPatch({ selectedSkillsByClass: normalizeSkillSelections(selectedSkillsByClass) });
+      },
+      saveVisibilitySettings(visibilitySettings: OverlayVisibilitySettings) {
+        saveOverlaySettingsPatch({ visibilitySettings: normalizeVisibilitySettings(visibilitySettings) });
+      },
+    };
+  }
+
+  window.OverlayRendererSettings = {
+    createOverlaySettingsController,
+  };
+})();
