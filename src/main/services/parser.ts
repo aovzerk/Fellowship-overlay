@@ -18,6 +18,7 @@ import {
 import {
   extractRelicsFromCombatantInfo,
   markRelicUse,
+  resetPlayerRelicCooldowns,
   setPlayerRelics,
 } from './parser-relics';
 import {
@@ -111,6 +112,10 @@ function processLine(state: ParserState, line: string): void {
       state.dungeon.extra = { chestCount: toNumber(parts[10]) };
       state.collectingDungeonParty = false;
       state.bossFight = createBossFightState();
+      state.players.forEach((player) => {
+        resetPlayerRelicCooldowns(player);
+        player.spiritRegenPerSecond = 0;
+      });
       break;
     }
     case 'ZONE_CHANGE': {
