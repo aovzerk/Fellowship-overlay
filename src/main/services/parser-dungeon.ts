@@ -88,6 +88,9 @@ function createBossFightState(): BossFightState {
 function createDungeonState(): DungeonState {
   return {
     startedAt: null,
+    timeCorrectionMs: 0,
+    timeCorrectionServerTs: null,
+    timeCorrectionClientTs: null,
     endedAt: null,
     name: null,
     id: null,

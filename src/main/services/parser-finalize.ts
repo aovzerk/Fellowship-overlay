@@ -24,7 +24,9 @@ function finalizeState(state: ParserState): FinalizedState {
     ])
     .filter((x): x is number => x != null)
     .reduce((max, x) => Math.max(max, x), 0);
-  const cooldownNowMs = Math.max(Date.now(), latestLogTs || 0);
+  const timeCorrectionMs = Number(state.dungeon?.timeCorrectionMs || 0);
+  const correctedClientNowMs = Date.now() + timeCorrectionMs;
+  const cooldownNowMs = Math.max(correctedClientNowMs, latestLogTs || 0);
   const hidePlayersUntilPartyResolved = shouldHidePlayersUntilPartyResolved(state);
 
   const encounters: FinalizedEncounter[] = state.encounters.map((encounter) => {
@@ -91,6 +93,9 @@ function finalizeState(state: ParserState): FinalizedState {
   return {
     dungeon: {
       startedAt: state.dungeon.startedAt,
+      timeCorrectionMs: state.dungeon.timeCorrectionMs,
+      timeCorrectionServerTs: state.dungeon.timeCorrectionServerTs,
+      timeCorrectionClientTs: state.dungeon.timeCorrectionClientTs,
       endedAt: state.dungeon.endedAt,
       name: state.dungeon.name,
       id: state.dungeon.id,
@@ -105,6 +110,9 @@ function finalizeState(state: ParserState): FinalizedState {
       killCount: Number(state.dungeon?.data?.killcount) || null,
       completedPercent: Number(state.dungeon?.completedPercent || 0),
     },
+    timeCorrectionMs,
+    timeCorrectionServerTs: state.dungeon.timeCorrectionServerTs,
+    timeCorrectionClientTs: state.dungeon.timeCorrectionClientTs,
     players,
     recentSkills,
     recentSkillsPlayerId,

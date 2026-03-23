@@ -272,6 +272,9 @@ export interface DungeonData {
 
 export interface DungeonState {
   startedAt: string | null;
+  timeCorrectionMs: number;
+  timeCorrectionServerTs: string | null;
+  timeCorrectionClientTs: string | null;
   endedAt: string | null;
   name: string | null;
   id: number | null;
@@ -329,6 +332,9 @@ export type FinalizedDungeonState = Omit<DungeonState, 'countedNpcDeaths' | 'chi
 
 export interface FinalizedState {
   dungeon: FinalizedDungeonState;
+  timeCorrectionMs: number;
+  timeCorrectionServerTs: string | null;
+  timeCorrectionClientTs: string | null;
   players: Array<PlayerState & {
     abilities: SerializedAbilityStat[];
     combatAbilities: SerializedAbilityStat[];
