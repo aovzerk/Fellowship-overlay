@@ -4,7 +4,7 @@ Lightweight in-game overlay for tracking party members, relics, Spirit values, s
 
 ## Join the Community
 
-**Discord community:** [https://discord.gg/5vzksrnxW8](https://discord.gg/5vzksrnxW8)
+**Discord community:** [https://discord.gg/82BeHyQEeR](https://discord.gg/82BeHyQEeR)
 
 ## Features
 
