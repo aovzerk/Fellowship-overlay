@@ -2,6 +2,10 @@
 
 Lightweight in-game overlay for tracking party members, relics, and Spirit values in real time using combat logs.
 
+## Join the Community
+
+**Discord community:** [https://discord.gg/5vzksrnxW8](https://discord.gg/5vzksrnxW8)
+
 ## Features
 
 - Real-time player tracking from log file
@@ -36,3 +40,4 @@ Lightweight in-game overlay for tracking party members, relics, and Spirit value
 npm i          # install dependencies
 npm start      # run in development mode
 npm run dist   # build application
+```
