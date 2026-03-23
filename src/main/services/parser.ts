@@ -33,6 +33,7 @@ import {
   extractSpiritFromResourceList,
   extractSpiritStatFromCombatantInfo,
   getActorKey,
+  getPlayerSpiritMax,
   isNpcId,
   isPlayerId,
   noteBossNpcInLine,
@@ -60,6 +61,10 @@ function processLine(state: ParserState, line: string): void {
 
   const ts = parts[0];
   const event = parts[1] || null;
+
+  if (ts) {
+    state.latestLogTs = ts;
+  }
 
   if (event) {
     state.rawCounters.set(event, (state.rawCounters.get(event) || 0) + 1);
@@ -143,8 +148,16 @@ function processLine(state: ParserState, line: string): void {
         const spiritStatValue = extractSpiritStatFromCombatantInfo(parts[8]);
         if (spiritStatValue != null) {
           player.spiritStatValue = spiritStatValue;
-          player.spiritRegenPerSecond = 0.35 + (spiritStatValue / 100);
+          player.spiritRegenPerSecond = 0.3 + (spiritStatValue / 100);
         }
+
+        const combatantSpirit = extractSpiritFromResourceList(parts);
+        if (combatantSpirit) {
+          addSpiritSnapshot(player, ts, combatantSpirit.current, getPlayerSpiritMax(player), null, 'COMBATANT_INFO');
+        } else if (player.spirit) {
+          addSpiritSnapshot(player, ts, player.spirit.current, getPlayerSpiritMax(player), player.spirit.abilityId, player.spirit.abilityName);
+        }
+
         if (state.collectingDungeonParty) {
           state.dungeonPartyIds.add(unitId);
           if (!state.recentSkillsPlayerId) {
@@ -202,7 +215,8 @@ function processLine(state: ParserState, line: string): void {
           markNpcChickenized(state, ts, targetId, targetName);
         }
         const spirit = extractSpiritFromResourceList(parts);
-        if (spirit) addSpiritSnapshot(player, ts, spirit.current, spirit.max, abilityId, abilityName);
+        if (spirit) addSpiritSnapshot(player, ts, spirit.current, getPlayerSpiritMax(player), abilityId, abilityName);
+        else if (player.spirit) addSpiritSnapshot(player, ts, player.spirit.current, getPlayerSpiritMax(player), abilityId, abilityName);
       }
       break;
     }

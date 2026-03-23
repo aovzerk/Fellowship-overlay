@@ -132,6 +132,7 @@ function isLikelyCombatAbility(ability: Partial<AbilityStat> | null | undefined)
 function createState(): ParserState {
   return {
     dungeon: createDungeonState(),
+    latestLogTs: null,
     players: new Map<string, PlayerState>(),
     encounters: [],
     currentEncounter: null,
@@ -197,6 +198,18 @@ function setPlayerStones(player: PlayerState, raw: unknown): void {
     green: values[2] || 0,
     white: values[1] || 0,
   };
+}
+
+
+function getSpiritMaxFromBlueStone(blueStone: unknown): number {
+  const blue = Number(blueStone || 0);
+  if (blue >= 1200) return 135;
+  if (blue > 120) return 110;
+  return 100;
+}
+
+function getPlayerSpiritMax(player: PlayerState): number {
+  return getSpiritMaxFromBlueStone(player?.stones?.blue);
 }
 
 function parseBracketNumberValues(raw: unknown): number[] {
@@ -453,13 +466,24 @@ function addSpiritSnapshot(
   abilityId: number | null = null,
   abilityName: string | null = null,
 ): void {
+  const normalizedMax = Math.max(0, getPlayerSpiritMax(player) || max || 0);
+  const normalizedCurrent = Math.max(0, Math.min(normalizedMax || max || 0, Number(current || 0)));
   const last = player.spirit || null;
 
-  if (last && last.current === current && last.max === max) {
+  if (last && last.current === normalizedCurrent && last.max === normalizedMax) {
+    if (last.ts !== ts) {
+      player.spirit = { ...last, ts } as SpiritSnapshot;
+    }
     return;
   }
 
-  player.spirit = { ts, current, max, abilityId, abilityName } as SpiritSnapshot;
+  player.spirit = {
+    ts,
+    current: normalizedCurrent,
+    max: normalizedMax,
+    abilityId,
+    abilityName,
+  } as SpiritSnapshot;
 }
 
 function buildUsesPerBoss(player: PlayerState, encounters: EncounterState[]): UsesPerBossEntry[] {
@@ -519,6 +543,7 @@ export {
   ensurePlayer,
   extractSpiritFromResourceList,
   extractSpiritStatFromCombatantInfo,
+  getPlayerSpiritMax,
   getActorKey,
   isLikelyCombatAbility,
   isNpcId,
