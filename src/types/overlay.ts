@@ -112,6 +112,10 @@ export interface SpiritSnapshot {
   abilityName: string | null;
 }
 
+export interface SpiritResourceState {
+  latestLogTs: string | null;
+}
+
 export interface AbilityStat {
   id: number | null;
   name: string | null;
@@ -177,6 +181,8 @@ export interface PlayerState {
   abilities: Map<string, AbilityStat> | SerializedAbilityStat[];
   spirit: SpiritSnapshot | null;
   spiritHistory?: SpiritSnapshot[];
+  spiritStatValue?: number | null;
+  spiritRegenPerSecond?: number;
   relics: PlayerRelicState[];
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];
@@ -311,6 +317,7 @@ export interface NpcDeathEntry {
 
 export interface ParserState {
   dungeon: DungeonState;
+  latestLogTs: string | null;
   players: Map<string, PlayerState>;
   encounters: EncounterState[];
   currentEncounter: EncounterState | null;
@@ -332,6 +339,7 @@ export type FinalizedDungeonState = Omit<DungeonState, 'countedNpcDeaths' | 'chi
 
 export interface FinalizedState {
   dungeon: FinalizedDungeonState;
+  latestLogTs: string | null;
   timeCorrectionMs: number;
   timeCorrectionServerTs: string | null;
   timeCorrectionClientTs: string | null;

@@ -55,6 +55,71 @@
     container.appendChild(fragment);
   }
 
+
+  function getEffectiveNowMs(latestData: FinalizedState | null): number {
+    const correctedClientNowMs = Date.now() + Number(latestData?.timeCorrectionMs || 0);
+    const latestLogTsMs = Date.parse(String(latestData?.latestLogTs || ''));
+    return Math.max(correctedClientNowMs, Number.isFinite(latestLogTsMs) ? latestLogTsMs : 0);
+  }
+
+  function getSpiritMaxByBlueStone(blueStone: unknown): number {
+    const blue = Number(blueStone || 0);
+    if (blue >= 1200) return 135;
+    if (blue > 120) return 110;
+    return 100;
+  }
+
+  function buildDisplayedSpiritSnapshot(player: PlayerState, spiritSnapshot: SpiritSnapshot | null, nowMs: number): SpiritSnapshot | null {
+    if (!spiritSnapshot) return null;
+
+    const spiritRegenPerSecond = Number(player?.spiritRegenPerSecond || 0);
+    const snapshotTsMs = Date.parse(String(spiritSnapshot.ts || ''));
+    const spiritMax = getSpiritMaxByBlueStone(player?.stones?.blue);
+    if (!Number.isFinite(snapshotTsMs)) {
+      return {
+        ...spiritSnapshot,
+        max: spiritMax,
+        current: Math.min(spiritMax, Number(spiritSnapshot.current || 0)),
+      };
+    }
+
+    if (spiritRegenPerSecond <= 0) {
+      return {
+        ...spiritSnapshot,
+        max: spiritMax,
+        current: Math.min(spiritMax, Number(spiritSnapshot.current || 0)),
+      };
+    }
+
+    const elapsedMs = Math.max(0, nowMs - snapshotTsMs);
+    if (!elapsedMs) {
+      return {
+        ...spiritSnapshot,
+        max: spiritMax,
+        current: Math.min(spiritMax, Number(spiritSnapshot.current || 0)),
+      };
+    }
+
+    const estimatedCurrent = Math.min(
+      spiritMax,
+      Number(spiritSnapshot.current || 0) + ((elapsedMs / 1000) * spiritRegenPerSecond),
+    );
+
+    if (!Number.isFinite(estimatedCurrent) || estimatedCurrent <= Number(spiritSnapshot.current || 0)) {
+      return {
+        ...spiritSnapshot,
+        max: spiritMax,
+        current: Math.min(spiritMax, Number(spiritSnapshot.current || 0)),
+      };
+    }
+
+    return {
+      ...spiritSnapshot,
+      max: spiritMax,
+      current: estimatedCurrent,
+    };
+  }
+
   function getSpiritHighlight(player: PlayerState, spiritSnapshot: SpiritSnapshot | null): string {
     const currentSpirit = Number(spiritSnapshot?.current || 0);
     const blueStone = Number(player?.stones?.blue || 0);
@@ -185,8 +250,9 @@
       const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
       const last = player.spirit || history[history.length - 1] || null;
       const classColor = player.classColor || '#6b7280';
-      const correctedNowMs = Date.now() + Number(getLatestData()?.timeCorrectionMs || 0);
-      const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), correctedNowMs);
+      const effectiveNowMs = getEffectiveNowMs(getLatestData());
+      const displaySpirit = buildDisplayedSpiritSnapshot(player, last, effectiveNowMs);
+      const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), effectiveNowMs);
       const displayIcons: DisplayIcon[] = [...trackedSkills, ...(player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }))];
       applyCardLayout(card, getCardScale(), displayIcons.length);
 
@@ -200,9 +266,9 @@
       playerName.textContent = player.name || t('unknown');
       playerClass.textContent = player.className || t('unknown');
       playerClass.style.color = classColor;
-      spiritEl.textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
+      spiritEl.textContent = displaySpirit ? `${formatNumber(displaySpirit.current)} / ${formatNumber(displaySpirit.max)}` : '-';
       spiritEl.classList.remove('spirit-glow-blue');
-      const spiritHighlightClass = getSpiritHighlight(player, last);
+      const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
       updateIconNodes(relicsBlock, displayIcons);
     }
@@ -257,7 +323,7 @@
         renderRecentSkillsPanel(latestData?.recentSkills || []);
         return;
       }
-      const now = Date.now() + Number(latestData?.timeCorrectionMs || 0);
+      const now = getEffectiveNowMs(latestData);
       latestData.players.forEach((player) => {
         const card = cardMap.get(player.id);
         if (!card) return;

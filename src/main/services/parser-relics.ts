@@ -137,6 +137,17 @@ function markRelicUse(player: PlayerState, abilityId: number | null, ts: string 
   return relic;
 }
 
+function resetPlayerRelicCooldowns(player: PlayerState): void {
+  (player.relics || []).forEach((relic) => {
+    relic.cooldownModifier = getRelicCooldownModifier(player);
+    relic.effectiveCooldown = Math.max(0, Math.round((Number(relic.baseCooldown) || 0) * relic.cooldownModifier));
+    relic.lastUsedAt = null;
+    relic.cooldownEndsAt = null;
+    relic.cooldownRemainingMs = 0;
+    relic.isReady = true;
+  });
+}
+
 function computeRelicCooldownState(player: PlayerState, nowMs: number): PlayerRelicState[] {
   const modifier = getRelicCooldownModifier(player);
   return (player.relics || []).map((relic) => {
@@ -174,5 +185,6 @@ export {
   getPlayerEquippedRelicByAnyId,
   getRelicMetaByAnyId,
   markRelicUse,
+  resetPlayerRelicCooldowns,
   setPlayerRelics,
 };

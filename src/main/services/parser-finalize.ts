@@ -17,13 +17,14 @@ function shouldHidePlayersUntilPartyResolved(state: ParserState): boolean {
 }
 
 function finalizeState(state: ParserState): FinalizedState {
-  const latestLogTs = [...state.players.values()]
+  const derivedLatestLogTs = [...state.players.values()]
     .flatMap((player) => [
       parseTs(player.spirit?.ts),
       ...(player.relics || []).map((x) => parseTs(x.lastUsedAt)),
     ])
     .filter((x): x is number => x != null)
     .reduce((max, x) => Math.max(max, x), 0);
+  const latestLogTs = Math.max(parseTs(state.latestLogTs) || 0, derivedLatestLogTs || 0);
   const timeCorrectionMs = Number(state.dungeon?.timeCorrectionMs || 0);
   const correctedClientNowMs = Date.now() + timeCorrectionMs;
   const cooldownNowMs = Math.max(correctedClientNowMs, latestLogTs || 0);
@@ -91,6 +92,7 @@ function finalizeState(state: ParserState): FinalizedState {
     });
 
   return {
+    latestLogTs: latestLogTs ? new Date(latestLogTs).toISOString() : (state.latestLogTs || null),
     dungeon: {
       startedAt: state.dungeon.startedAt,
       timeCorrectionMs: state.dungeon.timeCorrectionMs,
