@@ -48,12 +48,20 @@ let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
 
-function resolveSettingsFilePath(): string {
-  const settingsDirectory = app.isPackaged
+function resolveSettingsDirectory(): string {
+  const portableExecutableDir = String(process.env.PORTABLE_EXECUTABLE_DIR || '').trim();
+
+  if (portableExecutableDir) {
+    return portableExecutableDir;
+  }
+
+  return app.isPackaged
     ? path.dirname(app.getPath('exe'))
     : fromProjectRoot();
+}
 
-  return path.join(settingsDirectory, 'settings.json');
+function resolveSettingsFilePath(): string {
+  return path.join(resolveSettingsDirectory(), 'settings.json');
 }
 
 const SETTINGS_FILE: string = resolveSettingsFilePath();
