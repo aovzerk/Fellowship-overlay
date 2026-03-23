@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --win nsis",
+    "dist": "npm run build && electron-builder --win=portable",
     "build": "tsc",
     "lint": "eslint ."
   },
@@ -34,7 +34,7 @@
     ],
     "asar": true,
     "win": {
-      "target": ["nsis"],
+      "target": ["portable"],
       "artifactName": "Fellowship-Overlay-Setup-${version}.${ext}",
       "icon": "icons/icon.ico"
     },
@@ -46,6 +46,9 @@
       "installerIcon": "icons/icon.ico",
       "uninstallerIcon": "icons/icon.ico",
       "installerHeaderIcon": "icons/icon.ico"
+    },
+    "portable": {
+      "artifactName": "Fellowship Overlay.exe"
     }
   }
 }
