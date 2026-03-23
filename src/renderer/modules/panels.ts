@@ -14,6 +14,7 @@
   }
 
   function resolveRecentSkillIcon(skillCatalog: SkillCatalog, entry: RecentSkillActivation | null | undefined): string {
+    if (entry?.icon) return entry.icon;
     const catalogEntry = getAbilityCatalogEntry(skillCatalog, entry?.classId ?? null, entry?.abilityId ?? null);
     return catalogEntry?.icon || getDefaultSkillIcon();
   }
