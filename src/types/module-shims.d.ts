@@ -21,3 +21,8 @@ declare module 'electron' {
   export const screen: any;
   export const Tray: any;
 }
+declare module 'worker_threads' {
+  export const parentPort: any;
+  export const workerData: any;
+  export const Worker: any;
+}
