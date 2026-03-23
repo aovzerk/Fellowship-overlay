@@ -170,6 +170,8 @@ function ensurePlayer(state: ParserState, id: string, name: string | null | unde
         green: 0,
         white: 0,
       },
+      spiritStatValue: null,
+      spiritRegenPerSecond: 0,
     });
   }
 
@@ -195,6 +197,24 @@ function setPlayerStones(player: PlayerState, raw: unknown): void {
     green: values[2] || 0,
     white: values[1] || 0,
   };
+}
+
+function parseBracketNumberValues(raw: unknown): number[] {
+  if (typeof raw !== 'string' || !raw.startsWith('[') || !raw.endsWith(']')) {
+    return [];
+  }
+
+  return raw
+    .slice(1, -1)
+    .split(',')
+    .map((value) => toNumber(String(value).trim()))
+    .filter((value): value is number => value != null);
+}
+
+function extractSpiritStatFromCombatantInfo(raw: unknown): number | null {
+  const values = parseBracketNumberValues(raw);
+  if (!values.length) return null;
+  return values[values.length - 1] ?? null;
 }
 
 function setPlayerClass(player: PlayerState, classId: number | null): void {
@@ -498,6 +518,7 @@ export {
   createState,
   ensurePlayer,
   extractSpiritFromResourceList,
+  extractSpiritStatFromCombatantInfo,
   getActorKey,
   isLikelyCombatAbility,
   isNpcId,

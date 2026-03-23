@@ -30,6 +30,7 @@ import {
   createState,
   ensurePlayer,
   extractSpiritFromResourceList,
+  extractSpiritStatFromCombatantInfo,
   getActorKey,
   isNpcId,
   isPlayerId,
@@ -134,6 +135,11 @@ function processLine(state: ParserState, line: string): void {
         setPlayerClass(player, classId);
         setPlayerStones(player, parts[10]);
         setPlayerRelics(player, extractRelicsFromCombatantInfo(parts));
+        const spiritStatValue = extractSpiritStatFromCombatantInfo(parts[8]);
+        if (spiritStatValue != null) {
+          player.spiritStatValue = spiritStatValue;
+          player.spiritRegenPerSecond = 0.35 + (spiritStatValue / 100);
+        }
         if (state.collectingDungeonParty) {
           state.dungeonPartyIds.add(unitId);
           if (!state.recentSkillsPlayerId) {

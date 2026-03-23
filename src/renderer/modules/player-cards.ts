@@ -55,6 +55,33 @@
     container.appendChild(fragment);
   }
 
+  function buildDisplayedSpiritSnapshot(player: PlayerState, spiritSnapshot: SpiritSnapshot | null, nowMs: number): SpiritSnapshot | null {
+    if (!spiritSnapshot) return null;
+
+    const spiritRegenPerSecond = Number(player?.spiritRegenPerSecond || 0);
+    const snapshotTsMs = Date.parse(String(spiritSnapshot.ts || ''));
+    if (!Number.isFinite(snapshotTsMs) || spiritRegenPerSecond <= 0) {
+      return spiritSnapshot;
+    }
+
+    const elapsedMs = Math.max(0, nowMs - snapshotTsMs);
+    if (!elapsedMs) return spiritSnapshot;
+
+    const estimatedCurrent = Math.min(
+      Number(spiritSnapshot.max || 0),
+      Number(spiritSnapshot.current || 0) + ((elapsedMs / 1000) * spiritRegenPerSecond),
+    );
+
+    if (!Number.isFinite(estimatedCurrent) || estimatedCurrent <= Number(spiritSnapshot.current || 0)) {
+      return spiritSnapshot;
+    }
+
+    return {
+      ...spiritSnapshot,
+      current: estimatedCurrent,
+    };
+  }
+
   function getSpiritHighlight(player: PlayerState, spiritSnapshot: SpiritSnapshot | null): string {
     const currentSpirit = Number(spiritSnapshot?.current || 0);
     const blueStone = Number(player?.stones?.blue || 0);
@@ -186,6 +213,7 @@
       const last = player.spirit || history[history.length - 1] || null;
       const classColor = player.classColor || '#6b7280';
       const correctedNowMs = Date.now() + Number(getLatestData()?.timeCorrectionMs || 0);
+      const displaySpirit = buildDisplayedSpiritSnapshot(player, last, correctedNowMs);
       const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), correctedNowMs);
       const displayIcons: DisplayIcon[] = [...trackedSkills, ...(player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }))];
       applyCardLayout(card, getCardScale(), displayIcons.length);
@@ -200,9 +228,9 @@
       playerName.textContent = player.name || t('unknown');
       playerClass.textContent = player.className || t('unknown');
       playerClass.style.color = classColor;
-      spiritEl.textContent = last ? `${formatNumber(last.current)} / ${formatNumber(last.max)}` : '-';
+      spiritEl.textContent = displaySpirit ? `${formatNumber(displaySpirit.current)} / ${formatNumber(displaySpirit.max)}` : '-';
       spiritEl.classList.remove('spirit-glow-blue');
-      const spiritHighlightClass = getSpiritHighlight(player, last);
+      const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
       updateIconNodes(relicsBlock, displayIcons);
     }

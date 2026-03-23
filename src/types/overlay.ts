@@ -177,6 +177,8 @@ export interface PlayerState {
   abilities: Map<string, AbilityStat> | SerializedAbilityStat[];
   spirit: SpiritSnapshot | null;
   spiritHistory?: SpiritSnapshot[];
+  spiritStatValue?: number | null;
+  spiritRegenPerSecond?: number;
   relics: PlayerRelicState[];
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];
