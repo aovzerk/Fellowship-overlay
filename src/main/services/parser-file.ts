@@ -6,8 +6,9 @@ import { loadDungeonDataByName } from './parser-dungeon';
 import { splitLogLine, unquote } from './parser-state';
 
 const READ_STREAM_CHUNK_SIZE = 1024 * 1024;
-const REVERSE_SEARCH_CHUNK_SIZE = 1024 * 1024;
 const RECENT_DUNGEONS_TO_SCAN = 2;
+const TAIL_SCAN_INITIAL_SIZE = 4 * 1024 * 1024;
+const TAIL_SCAN_MAX_SIZE = 64 * 1024 * 1024;
 
 async function processFileRange(
   filePath: string,
@@ -65,70 +66,87 @@ function getLineDungeonBoundaryKind(line: string): 'start' | 'zone' | null {
 
 function chooseRecentDungeonParseOffset(boundaryOffsets: number[], fallbackZoneOffset: number | null): number {
   if (boundaryOffsets.length >= RECENT_DUNGEONS_TO_SCAN) {
-    return boundaryOffsets[RECENT_DUNGEONS_TO_SCAN - 1];
+    return boundaryOffsets[Math.max(0, boundaryOffsets.length - RECENT_DUNGEONS_TO_SCAN)];
   }
   if (boundaryOffsets.length > 0) {
-    return boundaryOffsets[boundaryOffsets.length - 1];
+    return boundaryOffsets[0];
   }
   return fallbackZoneOffset ?? 0;
+}
+
+function nextLineStartOffset(buffer: any, index: number): number {
+  const newlineIndex = buffer.indexOf(0x0a, index);
+  if (newlineIndex === -1) return 0;
+  return newlineIndex + 1;
+}
+
+function findBoundaryOffsetsInBuffer(
+  buffer: any,
+  absoluteStart: number,
+): { starts: number[]; fallbackZoneOffset: number | null } {
+  const starts: number[] = [];
+  let fallbackZoneOffset: number | null = null;
+  let lineStart = 0;
+
+  for (let i = 0; i <= buffer.length; i += 1) {
+    const isLineEnd = i === buffer.length || buffer[i] === 0x0a;
+    if (!isLineEnd) continue;
+
+    let lineEnd = i;
+    if (lineEnd > lineStart && buffer[lineEnd - 1] === 0x0d) {
+      lineEnd -= 1;
+    }
+
+    if (lineEnd > lineStart) {
+      const lineBuffer = buffer.subarray(lineStart, lineEnd);
+      if (lineBuffer.includes('|DUNGEON_START|') || lineBuffer.includes('|ZONE_CHANGE|')) {
+        const kind = getLineDungeonBoundaryKind(lineBuffer.toString('utf8'));
+        if (kind === 'start') {
+          starts.push(absoluteStart + lineStart);
+        } else if (kind === 'zone' && fallbackZoneOffset == null) {
+          fallbackZoneOffset = absoluteStart + lineStart;
+        }
+      }
+    }
+
+    lineStart = i + 1;
+  }
+
+  return { starts, fallbackZoneOffset };
 }
 
 async function findRecentDungeonParseOffset(filePath: string, fileSize: number): Promise<number> {
   if (!fileSize) return 0;
 
   const handle = await fs.promises.open(filePath, 'r');
-  const boundaryOffsets: number[] = [];
-  let fallbackZoneOffset: number | null = null;
-  let carry: BufferLike = Buffer.alloc(0);
-
-  const processLineBuffer = (lineBuffer: BufferLike, lineStartOffset: number): boolean => {
-    if (!lineBuffer?.length) return false;
-
-    let line = lineBuffer.toString('utf8');
-    if (line.endsWith('\r')) line = line.slice(0, -1);
-
-    const kind = getLineDungeonBoundaryKind(line);
-    if (!kind) return false;
-
-    if (kind === 'start') {
-      boundaryOffsets.push(lineStartOffset);
-      return boundaryOffsets.length >= RECENT_DUNGEONS_TO_SCAN;
-    }
-
-    if (fallbackZoneOffset == null) fallbackZoneOffset = lineStartOffset;
-    return false;
-  };
 
   try {
-    let position = fileSize;
+    let scanSize = Math.min(TAIL_SCAN_INITIAL_SIZE, fileSize);
 
-    while (position > 0 && boundaryOffsets.length < RECENT_DUNGEONS_TO_SCAN) {
-      const toRead = Math.min(REVERSE_SEARCH_CHUNK_SIZE, position);
-      position -= toRead;
+    while (true) {
+      const windowStart = Math.max(0, fileSize - scanSize);
+      const windowSize = fileSize - windowStart;
 
-      const buffer = Buffer.allocUnsafe(toRead);
-      const { bytesRead } = await handle.read(buffer, 0, toRead, position);
+      const buffer = Buffer.allocUnsafe(windowSize);
+      const { bytesRead } = await handle.read(buffer, 0, windowSize, windowStart);
       const chunk = buffer.subarray(0, bytesRead);
-      const combined = carry.length ? Buffer.concat([chunk, carry]) : chunk;
 
-      let lineEnd = combined.length;
-      let newlineIndex = combined.lastIndexOf(0x0a, lineEnd - 1);
+      const sliceStart = windowStart > 0 ? nextLineStartOffset(chunk, 0) : 0;
+      const slicedChunk = sliceStart > 0 ? chunk.subarray(sliceStart) : chunk;
+      const absoluteSliceStart = windowStart + sliceStart;
 
-      while (newlineIndex !== -1) {
-        const lineBuffer = combined.subarray(newlineIndex + 1, lineEnd);
-        const shouldStop = processLineBuffer(lineBuffer, position + newlineIndex + 1);
-        if (shouldStop) return chooseRecentDungeonParseOffset(boundaryOffsets, fallbackZoneOffset);
+      const { starts, fallbackZoneOffset } = findBoundaryOffsetsInBuffer(slicedChunk, absoluteSliceStart);
 
-        lineEnd = newlineIndex;
-        newlineIndex = combined.lastIndexOf(0x0a, lineEnd - 1);
+      if (starts.length >= RECENT_DUNGEONS_TO_SCAN || windowStart === 0) {
+        return chooseRecentDungeonParseOffset(starts, fallbackZoneOffset);
       }
 
-      carry = combined.subarray(0, lineEnd);
+      if (scanSize >= TAIL_SCAN_MAX_SIZE) {
+        return chooseRecentDungeonParseOffset(starts, fallbackZoneOffset) || absoluteSliceStart;
+      }
+
+      scanSize = Math.min(fileSize, Math.max(scanSize * 2, TAIL_SCAN_INITIAL_SIZE));
     }
-
-    if (carry.length) processLineBuffer(carry, 0);
-
-    return chooseRecentDungeonParseOffset(boundaryOffsets, fallbackZoneOffset);
   } finally {
     await handle.close();
   }

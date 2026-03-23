@@ -23,7 +23,7 @@ import type {
 import { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { parseCombatLog } from './services/parser';
+import { disposeParserWorker, parseCombatLog } from './services/parser-runner';
 import { getSkillCatalog } from './services/skill-catalog';
 import { getAppIconPath, getTrayIcon } from './utils/icons';
 import { fromProjectRoot } from './utils/project-paths';
@@ -258,6 +258,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   logDirectoryService.stopWatching();
+  void disposeParserWorker();
   globalShortcut.unregisterAll();
 });
 

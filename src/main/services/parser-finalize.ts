@@ -90,7 +90,18 @@ function finalizeState(state: ParserState): FinalizedState {
 
   return {
     dungeon: {
-      ...state.dungeon,
+      startedAt: state.dungeon.startedAt,
+      endedAt: state.dungeon.endedAt,
+      name: state.dungeon.name,
+      id: state.dungeon.id,
+      difficulty: state.dungeon.difficulty,
+      affixes: state.dungeon.affixes,
+      success: state.dungeon.success,
+      durationMs: state.dungeon.durationMs,
+      completionSeconds: state.dungeon.completionSeconds,
+      deaths: state.dungeon.deaths,
+      extra: state.dungeon.extra,
+      data: state.dungeon.data,
       killCount: Number(state.dungeon?.data?.killcount) || null,
       completedPercent: Number(state.dungeon?.completedPercent || 0),
     },
