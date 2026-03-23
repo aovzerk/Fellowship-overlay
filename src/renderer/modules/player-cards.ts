@@ -82,13 +82,13 @@
     return 1;
   }
 
-  function buildTrackedSkillCooldowns(player: PlayerState, skillCatalog: SkillCatalog, selectedSkillsByClass: SkillSelectionMap): DisplayIcon[] {
+  function buildTrackedSkillCooldowns(player: PlayerState, skillCatalog: SkillCatalog, selectedSkillsByClass: SkillSelectionMap, nowMs: number): DisplayIcon[] {
     const selectedSkills = getSelectedSkillEntriesForClass(skillCatalog, selectedSkillsByClass, player.classId);
     if (!selectedSkills.length) return [];
 
     const abilityList = Array.isArray(player.abilities) ? player.abilities : [];
     const abilityMap = new Map(abilityList.map((ability) => [String(Number(ability.id)), ability]));
-    const now = Date.now();
+    const now = nowMs;
     const cooldownModifier = getSkillCooldownModifier(player);
 
     return selectedSkills.map((skill) => {
@@ -185,7 +185,8 @@
       const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
       const last = player.spirit || history[history.length - 1] || null;
       const classColor = player.classColor || '#6b7280';
-      const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass());
+      const correctedNowMs = Date.now() + Number(getLatestData()?.timeCorrectionMs || 0);
+      const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), correctedNowMs);
       const displayIcons: DisplayIcon[] = [...trackedSkills, ...(player.relics || []).map((relic) => ({ ...relic, key: `relic-${relic.id}` }))];
       applyCardLayout(card, getCardScale(), displayIcons.length);
 
@@ -256,7 +257,7 @@
         renderRecentSkillsPanel(latestData?.recentSkills || []);
         return;
       }
-      const now = Date.now();
+      const now = Date.now() + Number(latestData?.timeCorrectionMs || 0);
       latestData.players.forEach((player) => {
         const card = cardMap.get(player.id);
         if (!card) return;

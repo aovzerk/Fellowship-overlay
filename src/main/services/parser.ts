@@ -72,8 +72,18 @@ function processLine(state: ParserState, line: string): void {
   switch (event) {
     case 'DUNGEON_START': {
       const dungeonName = String(unquote(parts[2]) || '');
+      const clientTs = parts[7] || null;
+      const serverTsMs = Date.parse(String(ts || ''));
+      const clientTsMs = Date.parse(String(clientTs || ''));
+      const timeCorrectionMs = Number.isFinite(serverTsMs) && Number.isFinite(clientTsMs)
+        ? serverTsMs - clientTsMs
+        : 0;
+
       resetDungeonScope(state);
       state.dungeon.startedAt = ts;
+      state.dungeon.timeCorrectionMs = timeCorrectionMs;
+      state.dungeon.timeCorrectionServerTs = ts || null;
+      state.dungeon.timeCorrectionClientTs = clientTs;
       state.dungeon.endedAt = null;
       state.dungeon.name = dungeonName;
       state.dungeon.id = toNumber(parts[3]);
