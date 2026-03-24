@@ -1,0 +1,63 @@
+{
+  "map": "Silken Hollow",
+  "zone_id": 24,
+  "killcount": 168,
+  "bossesID": [92],
+  "mobs": {
+    "132": {
+      "name": "Bully Basher",
+      "score": 4,
+      "percent": 2.38
+    },
+    "131": {
+      "name": "Facestabber",
+      "score": 2,
+      "percent": 1.19
+    },
+    "130": {
+      "name": "Shinchopper",
+      "score": 1,
+      "percent": 0.60
+    },
+    "268": {
+      "name": "Carrion Horror",
+      "score": 5,
+      "percent": 2.98
+    },
+    "267": {
+      "name": "Eggbearer",
+      "score": 2,
+      "percent": 1.19
+    },
+    "91": {
+      "name": "Gravesnare Kidnapper",
+      "score": 4,
+      "percent": 2.38
+    },
+    "90": {
+      "name": "Rotheart Recluse",
+      "score": 3,
+      "percent": 1.79
+    },
+    "89": {
+      "name": "Spiderling",
+      "score": 0,
+      "percent": 0.00
+    },
+    "266": {
+      "name": "Venomdrinker",
+      "score": 3,
+      "percent": 1.79
+    },
+    "13": {
+      "name": "Frenzied Looter",
+      "score": 1,
+      "percent": 0.60
+    },
+    "92": {
+      "name": "Vexira, Mother of Nightmares",
+      "score": 0,
+      "percent": 0.00
+    }
+  }
+}

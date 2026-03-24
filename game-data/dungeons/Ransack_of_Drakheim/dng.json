@@ -1,0 +1,98 @@
+{
+  "map": "Ransack of Drakheim",
+  "zone_id": 23,
+  "killcount": 260,
+  "bossesID": [18, 28, 25],
+  "mobs": {
+    "18": {
+      "name": "Auga Handhafi the Blind",
+      "score": 0,
+      "percent": 0.00
+    },
+    "28": {
+      "name": "Chilgar the Drowned",
+      "score": 0,
+      "percent": 0.00
+    },
+    "25": {
+      "name": "Fodir Kaldur",
+      "score": 0,
+      "percent": 0.00
+    },
+    "10": {
+      "name": "Ashen Arsonist",
+      "score": 3,
+      "percent": 1.15
+    },
+    "34": {
+      "name": "Bleakfrost Mystic",
+      "score": 4,
+      "percent": 1.54
+    },
+    "33": {
+      "name": "Bleakfrost Slaver",
+      "score": 3,
+      "percent": 1.15
+    },
+    "15": {
+      "name": "Coldbrine Fiend",
+      "score": 3,
+      "percent": 1.15
+    },
+    "14": {
+      "name": "Craven Hiisi",
+      "score": 1,
+      "percent": 0.38
+    },
+    "13`": {
+      "name": "Frenzied Looter",
+      "score": 1,
+      "percent": 0.38
+    },
+    "269": {
+      "name": "Grasping Pillar",
+      "score": 0,
+      "percent": 0.00
+    },
+    "24": {
+      "name": "Ice Tomb",
+      "score": 0,
+      "percent": 0.00
+    },
+    "11": {
+      "name": "Icebite Reaver",
+      "score": 5,
+      "percent": 1.92
+    },
+    "23": {
+      "name": "Kaldurson Eldsupptok",
+      "score": 15,
+      "percent": 5.77
+    },
+    "22": {
+      "name": "Kaldurson Isilagður",
+      "score": 15,
+      "percent": 5.77
+    },
+    "32": {
+      "name": "Nightmist Cutthroat",
+      "score": 3,
+      "percent": 1.15
+    },
+    "29": {
+      "name": "Nightmist Whisperer",
+      "score": 15,
+      "percent": 5.77
+    },
+    "12": {
+      "name": "Pillager",
+      "score": 2,
+      "percent": 0.77
+    },
+    "30": {
+      "name": "Shadow of Ulmorgat",
+      "score": 5,
+      "percent": 1.92
+    }
+  }
+}

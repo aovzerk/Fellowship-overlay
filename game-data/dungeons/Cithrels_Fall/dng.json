@@ -1,0 +1,63 @@
+{
+  "map": "Cithrel's Fall",
+  "zone_id": 7,
+  "killcount": 188,
+  "bossesID": [169, 170, 168],
+  "mobs": {
+    "169": {
+      "name": "Ancient Koros",
+      "score": 0,
+      "percent": 0.00
+    },
+    "168": {
+      "name": "Noor, The Betrayer",
+      "score": 0,
+      "percent": 0.00
+    },
+    "170": {
+      "name": "Cithrel",
+      "score": 0,
+      "percent": 0.00
+    },
+    "166": {
+      "name": "Blade of Cithrel",
+      "score": 3,
+      "percent": 1.60
+    },
+    "167": {
+      "name": "Corrupter",
+      "score": 5,
+      "percent": 2.66
+    },
+    "163": {
+      "name": "Deceitful Scholar",
+      "score": 5,
+      "percent": 2.66
+    },
+    "165": {
+      "name": "Eldrin Recruit",
+      "score": 2,
+      "percent": 1.06
+    },
+    "164": {
+      "name": "Eldrin Sentinel",
+      "score": 3,
+      "percent": 1.60
+    },
+    "161": {
+      "name": "Ice Shardling",
+      "score": 1,
+      "percent": 0.53
+    },
+    "160": {
+      "name": "Spellbound Golem",
+      "score": 4,
+      "percent": 2.13
+    },
+    "162": {
+      "name": "Tundra Stalker",
+      "score": 2,
+      "percent": 1.06
+    }
+  }
+}

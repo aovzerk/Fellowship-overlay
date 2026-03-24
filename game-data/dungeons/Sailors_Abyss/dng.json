@@ -1,0 +1,53 @@
+{
+  "map": "Sailor's Abyss",
+  "zone_id": 15,
+  "killcount": 131,
+  "bossesID": [105],
+  "mobs": {
+    "94": {
+      "name": "Water Elemental",
+      "score": 3,
+      "percent": 2.29
+    },
+    "97": {
+      "name": "Hollowed Corsair",
+      "score": 5,
+      "percent": 3.82
+    },
+    "98": {
+      "name": "Fading Raider",
+      "score": 2,
+      "percent": 1.53
+    },
+    "99": {
+      "name": "Deepbound Magi",
+      "score": 5,
+      "percent": 3.82
+    },
+    "100": {
+      "name": "Forgotten Soul",
+      "score": 1,
+      "percent": 0.76
+    },
+    "102": {
+      "name": "Tormented Spectre",
+      "score": 2,
+      "percent": 1.53
+    },
+    "103": {
+      "name": "Vengeful Shade",
+      "score": 3,
+      "percent": 2.29
+    },
+    "104": {
+      "name": "Witchreef Lasher",
+      "score": 1,
+      "percent": 0.76
+    },
+    "105": {
+      "name": "Sinthara",
+      "score": 0,
+      "percent": 0.00
+    }
+  }
+}
