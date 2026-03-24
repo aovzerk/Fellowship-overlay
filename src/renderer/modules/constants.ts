@@ -5,25 +5,14 @@
   const PULL_PANEL_POSITION_KEY = 'overlay-pull-panel-position-v1';
   const RECENT_SKILLS_PANEL_POSITION_KEY = 'overlay-recent-skills-panel-position-v1';
   const VISIBILITY_SETTINGS_KEY = 'overlay-visibility-settings-v2';
-  const CARD_SCALE_MIN = 0.75;
+  const CARD_SCALE_MIN = 0.30;
   const CARD_SCALE_MAX = 1.8;
   const CARD_SCALE_STEP = 0.05;
-  const FRAME_GAP_MIN = 0;
-  const FRAME_GAP_MAX = 40;
-  const FRAME_GAP_STEP = 2;
-  const ICONS_PER_ROW_MIN = 1;
-  const ICONS_PER_ROW_MAX = 6;
-  const PANEL_OPACITY_MIN = 0.2;
-  const PANEL_OPACITY_MAX = 1;
   const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
   const DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point = { x: 16, y: 200 };
   const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false };
   const DEFAULT_RECENT_SKILLS_LIMIT = 7;
   const DEFAULT_CARD_SCALE = 1;
-  const DEFAULT_FRAME_GAP = 12;
-  const DEFAULT_LAYOUT_DIRECTION: 'vertical' | 'horizontal' = 'vertical';
-  const DEFAULT_PANEL_OPACITY = 0.88;
-  const DEFAULT_ICONS_PER_ROW = 3;
   const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
     playerPositions: {},
     panelPositions: {
@@ -34,10 +23,6 @@
     recentSkillsLimit: DEFAULT_RECENT_SKILLS_LIMIT,
     selectedSkillsByClass: {},
     cardScale: DEFAULT_CARD_SCALE,
-    frameGap: DEFAULT_FRAME_GAP,
-    layoutDirection: DEFAULT_LAYOUT_DIRECTION,
-    panelOpacity: DEFAULT_PANEL_OPACITY,
-    iconsPerRow: DEFAULT_ICONS_PER_ROW,
   };
 
   window.OverlayRendererConstants = {
@@ -45,19 +30,8 @@
     CARD_SCALE_MAX,
     CARD_SCALE_MIN,
     CARD_SCALE_STEP,
-    FRAME_GAP_MAX,
-    FRAME_GAP_MIN,
-    FRAME_GAP_STEP,
-    ICONS_PER_ROW_MAX,
-    ICONS_PER_ROW_MIN,
-    PANEL_OPACITY_MAX,
-    PANEL_OPACITY_MIN,
     DEFAULT_CARD_SCALE,
-    DEFAULT_FRAME_GAP,
-    DEFAULT_ICONS_PER_ROW,
-    DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
-    DEFAULT_PANEL_OPACITY,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_LIMIT,
     DEFAULT_RECENT_SKILLS_PANEL_POSITION,

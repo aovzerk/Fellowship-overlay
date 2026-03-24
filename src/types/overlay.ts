@@ -1,6 +1,5 @@
 export type Nullable<T> = T | null;
 export type LanguageCode = 'en' | 'ru';
-export type LayoutDirection = 'vertical' | 'horizontal';
 
 export interface Point {
   x: number;
@@ -31,10 +30,6 @@ export interface OverlaySettings {
   recentSkillsLimit: number;
   selectedSkillsByClass: SkillSelectionMap;
   cardScale: number;
-  frameGap: number;
-  layoutDirection: LayoutDirection;
-  panelOpacity: number;
-  iconsPerRow: number;
 }
 
 export interface LogSourceInfo {
@@ -374,7 +369,6 @@ export interface OverlayApi {
   pickLogFile(): Promise<PickDirectoryResult>;
   reloadCurrentFile(): Promise<ReloadFileResult>;
   toggleOverlayLock(): Promise<{ locked: boolean }>;
-  toggleOverlayVisibility(): Promise<{ visible: boolean }>;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;
@@ -400,22 +394,11 @@ export interface RendererConstantsApi {
   CARD_SCALE_MIN: number;
   CARD_SCALE_MAX: number;
   CARD_SCALE_STEP: number;
-  FRAME_GAP_MIN: number;
-  FRAME_GAP_MAX: number;
-  FRAME_GAP_STEP: number;
-  ICONS_PER_ROW_MIN: number;
-  ICONS_PER_ROW_MAX: number;
-  PANEL_OPACITY_MIN: number;
-  PANEL_OPACITY_MAX: number;
   DEFAULT_PULL_PANEL_POSITION: Point;
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
   DEFAULT_RECENT_SKILLS_LIMIT: number;
   DEFAULT_CARD_SCALE: number;
-  DEFAULT_FRAME_GAP: number;
-  DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
-  DEFAULT_PANEL_OPACITY: number;
-  DEFAULT_ICONS_PER_ROW: number;
   DEFAULT_OVERLAY_SETTINGS: OverlaySettings;
 }
 
@@ -431,31 +414,16 @@ export interface RendererFormattersApi {
 
 export interface ApplyTranslationsContext {
   appearanceSettingsTitle: HTMLElement;
-  cardSizeControls: HTMLElement | null;
-  cardSizeLabel: HTMLElement | null;
   currentLanguage: LanguageCode;
   filePathEl: HTMLElement;
-  frameGapControls: HTMLElement | null;
-  frameGapLabel: HTMLElement | null;
-  hotkeyOpenSettingsLabel: HTMLElement | null;
-  hotkeyPickLogLabel: HTMLElement | null;
-  hotkeyToggleInteractionLabel: HTMLElement | null;
-  hotkeyToggleVisibilityLabel: HTMLElement | null;
-  hotkeysSettingsTitle: HTMLElement | null;
   hudActive: boolean;
-  iconsPerRowControls: HTMLElement | null;
-  iconsPerRowLabel: HTMLElement | null;
   languageLabel: HTMLElement;
   languageSelect: HTMLSelectElement;
-  layoutDirection: LayoutDirection;
-  layoutDirectionLabel: HTMLElement | null;
-  layoutDirectionSelect: HTMLSelectElement | null;
   lastWatchStatusMessage: string;
   latestData: FinalizedState | null;
   logSettingsTitle: HTMLElement;
   overlayLocked: boolean;
   overlaySettingsTitle: HTMLElement;
-  panelOpacityLabel: HTMLElement | null;
   pickFileBtn: HTMLButtonElement;
   recentSkillsLimit: number;
   recentSkillsLimitInput: HTMLInputElement;
@@ -541,19 +509,11 @@ export interface RendererPanelsApi {
 
 export interface OverlaySettingsController {
   normalizeCardScaleValue(value: unknown): number;
-  normalizeFrameGap(value: unknown): number;
-  normalizeIconsPerRow(value: unknown): number;
-  normalizeLayoutDirection(value: unknown): LayoutDirection;
-  normalizePanelOpacity(value: unknown): number;
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
   loadCardScale(): number;
-  loadFrameGap(): number;
-  loadIconsPerRow(): number;
-  loadLayoutDirection(): LayoutDirection;
-  loadPanelOpacity(): number;
   loadPositions(): PlayerPositions;
   loadPullPanelPosition(): Point;
   loadRecentSkillsLimit(): number;
@@ -561,10 +521,6 @@ export interface OverlaySettingsController {
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
   saveCardScale(cardScale: number): void;
-  saveFrameGap(frameGap: number): void;
-  saveIconsPerRow(iconsPerRow: number): void;
-  saveLayoutDirection(layoutDirection: LayoutDirection): void;
-  savePanelOpacity(panelOpacity: number): void;
   savePositions(positions: PlayerPositions): void;
   savePullPanelPosition(position: Point): void;
   saveRecentSkillsLimit(recentSkillsLimit: number): void;
