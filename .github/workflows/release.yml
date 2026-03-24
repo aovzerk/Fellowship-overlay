@@ -1,0 +1,46 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build portable app
+        run: npm run dist
+
+      - name: Check artifact
+        shell: pwsh
+        run: |
+          if (!(Test-Path "release/Fellowship Overlay.exe")) {
+            Write-Error "Artifact not found: release/Fellowship Overlay.exe"
+            exit 1
+          }
+
+      - name: Create GitHub Release and upload exe
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release create $tag "release/Fellowship Overlay.exe" `
+            --title $tag `
+            --generate-notes
