@@ -1,6 +1,6 @@
 {
   "name": "fellowship-overlay",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Fellowship overlay",
   "main": "dist/main/index.js",
   "author": "AOV",
