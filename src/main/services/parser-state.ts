@@ -17,7 +17,7 @@ import {
   extractNpcTemplateId,
   isBossTemplateId,
 } from './parser-dungeon';
-import { DEFAULT_SKILL_ICON_REL_PATH, getBestAbilityAsset } from './game-database';
+import { DEFAULT_SKILL_ICON_REL_PATH, getBestAbilityAsset, isMountAbilityId } from './game-database';
 import { getPlayerEquippedRelicByAbilityId } from './parser-relics';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
@@ -329,6 +329,7 @@ function addRecentSkillActivation(
   if (!state || !player || !ts) return;
   if (abilityId == null && !abilityName) return;
   if (getPlayerEquippedRelicByAbilityId(player, abilityId)) return;
+  if (abilityId != null && isMountAbilityId(abilityId)) return;
 
   const trackedPlayerId = state.recentSkillsPlayerId || null;
   if (!trackedPlayerId || player.id !== trackedPlayerId) return;

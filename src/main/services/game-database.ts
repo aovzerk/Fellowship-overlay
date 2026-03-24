@@ -22,6 +22,10 @@ export interface RawRelicData {
   item_mapping?: Record<string, number>;
 }
 
+export interface RawMountsData {
+  mounts?: number[];
+}
+
 export interface HeroAbilityAsset {
   name: string;
   icon: string | null;
@@ -39,6 +43,7 @@ const SKILLS_FILE_NAME = 'skills.json';
 const DUNGEON_FILE_NAME = 'dng.json';
 const DEFAULT_SKILL_ICON_REL_PATH = path.posix.join(GAME_DATA_ROOT_DIR, 'heroes', 'Default', 'default_skill.jpg');
 const DEFAULT_RELIC_ICON_REL_PATH = path.posix.join(GAME_DATA_ROOT_DIR, 'relics', 'empty.jpg');
+const MOUNTS_FILE_NAME = 'mounts.json';
 
 function normalizeName(raw: unknown): string {
   return String(raw || '')
@@ -94,6 +99,8 @@ function getDungeonFilePath(dungeonName: string): string {
 
 let relicDataCache: RawRelicData | null = null;
 let skillDataCache: SkillDataMap | null = null;
+let mountsDataCache: RawMountsData | null = null;
+let mountIdSetCache: Set<number> | null = null;
 let heroFoldersCache: Map<string, HeroFolderInfo> | null = null;
 const heroAbilityAssetCache = new Map<string, HeroAbilityAsset | null>();
 const dungeonDataCache = new Map<string, DungeonData | null>();
@@ -110,6 +117,30 @@ function getSkillData(): SkillDataMap {
     skillDataCache = readJsonFile<SkillDataMap>(getCatalogPath(SKILLS_FILE_NAME), {});
   }
   return skillDataCache;
+}
+
+function getMountsData(): RawMountsData {
+  if (!mountsDataCache) {
+    mountsDataCache = readJsonFile<RawMountsData>(getGameDataPath(GAME_DATA_MOUNTS_DIR, MOUNTS_FILE_NAME), {} as RawMountsData);
+  }
+  return mountsDataCache;
+}
+
+function getMountAbilityIdSet(): Set<number> {
+  if (!mountIdSetCache) {
+    mountIdSetCache = new Set(
+      (getMountsData().mounts || [])
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value)),
+    );
+  }
+  return mountIdSetCache;
+}
+
+function isMountAbilityId(abilityId: unknown): boolean {
+  const normalizedAbilityId = Number(abilityId);
+  if (!Number.isFinite(normalizedAbilityId)) return false;
+  return getMountAbilityIdSet().has(normalizedAbilityId);
 }
 
 function getHeroFolders(): Map<string, HeroFolderInfo> {
@@ -209,6 +240,7 @@ export {
   getHeroAbilityAsset,
   getHeroFolders,
   getDefaultRelicIconPath,
+  getMountsData,
   getHeroesRootPath,
   getMountAbilityAsset,
   getMountsRootPath,
@@ -217,6 +249,7 @@ export {
   getSkillData,
   getWeaponAbilityAsset,
   getWeaponsRootPath,
+  isMountAbilityId,
   loadDungeonDataByName,
   normalizeName,
 };
