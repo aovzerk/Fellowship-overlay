@@ -138,7 +138,31 @@ button:hover {
 }
 
 .floating-card {
+  position: relative;
+}
+
+.party-group {
   position: fixed;
+  left: 16px;
+  top: 64px;
+  display: flex;
+  gap: var(--party-gap);
+  pointer-events: auto;
+  transform-origin: top left;
+}
+
+.party-group.layout-horizontal {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.party-group.layout-vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.party-group.drag-enabled {
+  cursor: move;
 }
 
 .player-card {
@@ -149,7 +173,6 @@ button:hover {
 
 .player-header {
   margin-bottom: calc(8px * var(--card-scale));
-  cursor: move;
 }
 
 .player-name {
@@ -196,9 +219,10 @@ button:hover {
 
 .relics-block {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: calc(8px * var(--card-scale));
   align-items: center;
+  justify-content: center;
 }
 
 .relic-chip {
