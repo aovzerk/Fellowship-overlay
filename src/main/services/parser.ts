@@ -30,10 +30,9 @@ import {
   createEncounter,
   createState,
   ensurePlayer,
-  extractSpiritFromResourceList,
+  extractSpiritFromResourcePart,
   extractSpiritStatFromCombatantInfo,
   getActorKey,
-  getPlayerSpiritMax,
   isNpcId,
   isPlayerId,
   noteBossNpcInLine,
@@ -52,6 +51,25 @@ const MAX_STORED_ENCOUNTERS = 2;
 const MAX_STORED_NPC_DEATHS = 400;
 const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
 const parserCache = new Map<string, ParserCacheEntry>();
+
+function updateSpiritFromResourcePart(
+  state: ParserState,
+  playerId: string | null | undefined,
+  playerName: string | null | undefined,
+  ts: string,
+  raw: unknown,
+  abilityId: number | null = null,
+  abilityName: string | null = null,
+): boolean {
+  if (!isPlayerId(playerId)) return false;
+
+  const spirit = extractSpiritFromResourcePart(raw);
+  if (!spirit) return false;
+
+  const player = ensurePlayer(state, playerId, playerName);
+  addSpiritSnapshot(player, ts, spirit.current, spirit.max, abilityId, abilityName);
+  return true;
+}
 
 function processLine(state: ParserState, line: string): void {
   if (!line || !line.trim()) return;
@@ -151,13 +169,6 @@ function processLine(state: ParserState, line: string): void {
           player.spiritRegenPerSecond = 0.3 + (spiritStatValue / 100);
         }
 
-        const combatantSpirit = extractSpiritFromResourceList(parts);
-        if (combatantSpirit) {
-          addSpiritSnapshot(player, ts, combatantSpirit.current, getPlayerSpiritMax(player), null, 'COMBATANT_INFO');
-        } else if (player.spirit) {
-          addSpiritSnapshot(player, ts, player.spirit.current, getPlayerSpiritMax(player), player.spirit.abilityId, player.spirit.abilityName);
-        }
-
         if (state.collectingDungeonParty) {
           state.dungeonPartyIds.add(unitId);
           if (!state.recentSkillsPlayerId) {
@@ -198,14 +209,20 @@ function processLine(state: ParserState, line: string): void {
       state.bossFight = createBossFightState();
       break;
     }
-    case 'ABILITY_ACTIVATED': {
+    case 'ABILITY_ACTIVATED':
+    case 'ABILITY_CAST_START':
+    case 'ABILITY_CAST_SUCCESS':
+    case 'ABILITY_CAST_FAIL':
+    case 'ABILITY_CHANNEL_START':
+    case 'ABILITY_CHANNEL_SUCCESS':
+    case 'ABILITY_CHANNEL_FAIL': {
       const sourceId = parts[2];
       const sourceName = String(unquote(parts[3]) || '');
       const abilityId = toNumber(parts[4]);
       const abilityName = String(unquote(parts[5]) || '');
       const targetId = parts[7];
       const targetName = String(unquote(parts[8]) || '');
-      if (isPlayerId(sourceId) && abilityName) {
+      if (event === 'ABILITY_ACTIVATED' && isPlayerId(sourceId) && abilityName) {
         const player = ensurePlayer(state, sourceId, sourceName);
         addAbilityStat(player, abilityId, abilityName, 'activation', 0, ts);
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, 'activation', 0, ts);
@@ -214,10 +231,19 @@ function processLine(state: ParserState, line: string): void {
         if (isChickenizeAbility(abilityId, abilityName) && isNpcId(targetId)) {
           markNpcChickenized(state, ts, targetId, targetName);
         }
-        const spirit = extractSpiritFromResourceList(parts);
-        if (spirit) addSpiritSnapshot(player, ts, spirit.current, getPlayerSpiritMax(player), abilityId, abilityName);
-        else if (player.spirit) addSpiritSnapshot(player, ts, player.spirit.current, getPlayerSpiritMax(player), abilityId, abilityName);
       }
+      updateSpiritFromResourcePart(state, sourceId, sourceName, ts, parts[15], abilityId, abilityName);
+      break;
+    }
+    case 'EVENT_INVALID': {
+      const sourceId = parts[2];
+      const sourceName = String(unquote(parts[3]) || '');
+      const targetId = parts[4];
+      const targetName = String(unquote(parts[5]) || '');
+      const abilityId = toNumber(parts[6]);
+      const abilityName = String(unquote(parts[7]) || '');
+      updateSpiritFromResourcePart(state, sourceId, sourceName, ts, parts[22], abilityId, abilityName);
+      updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[29], abilityId, abilityName);
       break;
     }
     case 'ABILITY_DAMAGE':
@@ -242,10 +268,12 @@ function processLine(state: ParserState, line: string): void {
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, 'damage', amount);
         if (state.currentEncounter) addToMapNumber(state.currentEncounter.damageByPlayer, getActorKey(sourceId, sourceName), amount);
       }
+      updateSpiritFromResourcePart(state, sourceId, sourceName, ts, parts[22], abilityId, abilityName);
       if (isPlayerId(targetId)) {
         const player = ensurePlayer(state, targetId, targetName);
         player.damageTaken += amount;
       }
+      updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[29], abilityId, abilityName);
       break;
     }
     case 'ABILITY_HEAL':
@@ -266,11 +294,14 @@ function processLine(state: ParserState, line: string): void {
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, 'healing', amount);
         if (state.currentEncounter) addToMapNumber(state.currentEncounter.healingByPlayer, getActorKey(sourceId, sourceName), amount);
       }
+      updateSpiritFromResourcePart(state, sourceId, sourceName, ts, parts[22], abilityId, abilityName);
       if (isPlayerId(targetId)) ensurePlayer(state, targetId, targetName);
+      updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[29], abilityId, abilityName);
       break;
     }
     case 'EFFECT_APPLIED':
-    case 'EFFECT_REFRESHED': {
+    case 'EFFECT_REFRESHED':
+    case 'EFFECT_REMOVED': {
       const sourceId = parts[2];
       const sourceName = String(unquote(parts[3]) || '');
       const targetId = parts[4];
@@ -282,6 +313,7 @@ function processLine(state: ParserState, line: string): void {
       if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
         markNpcChickenized(state, ts, targetId, targetName);
       }
+      updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[17], abilityId, abilityName);
       break;
     }
     case 'UNIT_DEATH': {

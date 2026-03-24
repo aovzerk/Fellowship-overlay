@@ -62,7 +62,7 @@ function finalizeState(state: ParserState): FinalizedState {
       const combatAbilities = abilities.filter(isLikelyCombatAbility);
       return {
         ...player,
-        spiritHistory: player.spirit ? [{ ...player.spirit }] : [],
+        spiritHistory: Array.isArray(player.spiritHistory) ? player.spiritHistory.map((snapshot) => ({ ...snapshot })) : [],
         relics: computeRelicCooldownState(player, cooldownNowMs),
         abilities,
         combatAbilities,
