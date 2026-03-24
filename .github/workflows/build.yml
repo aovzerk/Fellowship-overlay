@@ -22,5 +22,5 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build portable app
-        run: npm run dist
+      - name: Build app
+        run: npm run build
