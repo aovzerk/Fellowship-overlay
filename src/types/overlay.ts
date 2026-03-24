@@ -1,5 +1,9 @@
 export type Nullable<T> = T | null;
 export type LanguageCode = 'en' | 'ru';
+export type LayoutDirection = 'vertical' | 'horizontal';
+export type HotkeyAction = 'toggleInteraction' | 'pickLog' | 'toggleVisibility' | 'openSettings';
+export type RecentSkillsLayoutDirection = 'vertical' | 'horizontal';
+export type RecentSkillsGrowthDirection = 'left' | 'right' | 'up' | 'down';
 
 export interface Point {
   x: number;
@@ -20,6 +24,13 @@ export interface OverlayPanelPositions {
   recentSkills: Point;
 }
 
+export interface OverlayHotkeys {
+  toggleInteraction: string;
+  pickLog: string;
+  toggleVisibility: string;
+  openSettings: string;
+}
+
 export interface OverlaySettings {
   language?: LanguageCode;
   logDirectoryPath?: string | null;
@@ -30,6 +41,14 @@ export interface OverlaySettings {
   recentSkillsLimit: number;
   selectedSkillsByClass: SkillSelectionMap;
   cardScale: number;
+  frameGap: number;
+  layoutDirection: LayoutDirection;
+  panelOpacity: number;
+  iconsPerRow: number;
+  hotkeys: OverlayHotkeys;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsTrackCount: number;
 }
 
 export interface LogSourceInfo {
@@ -369,6 +388,9 @@ export interface OverlayApi {
   pickLogFile(): Promise<PickDirectoryResult>;
   reloadCurrentFile(): Promise<ReloadFileResult>;
   toggleOverlayLock(): Promise<{ locked: boolean }>;
+  toggleOverlayVisibility(): Promise<{ visible: boolean }>;
+  setSettingsModalOpen(open: boolean): Promise<{ ok: boolean }>;
+  closeInteractiveModal(): Promise<{ locked: boolean }>;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;
@@ -382,6 +404,7 @@ export interface OverlayApi {
   onOverlayMode(callback: (payload: OverlayModePayload) => void): void;
   onLanguageChanged(callback: (payload: LanguagePayload) => void): void;
   onOpenSettings(callback: (payload: OpenSettingsPayload) => void): void;
+  onRequestCloseSettings(callback: () => void): void;
 }
 
 export interface RendererConstantsApi {
@@ -394,11 +417,28 @@ export interface RendererConstantsApi {
   CARD_SCALE_MIN: number;
   CARD_SCALE_MAX: number;
   CARD_SCALE_STEP: number;
+  FRAME_GAP_MIN: number;
+  FRAME_GAP_MAX: number;
+  FRAME_GAP_STEP: number;
+  ICONS_PER_ROW_MIN: number;
+  ICONS_PER_ROW_MAX: number;
+  PANEL_OPACITY_MIN: number;
+  PANEL_OPACITY_MAX: number;
+  RECENT_SKILLS_TRACK_COUNT_MIN: number;
+  RECENT_SKILLS_TRACK_COUNT_MAX: number;
   DEFAULT_PULL_PANEL_POSITION: Point;
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
   DEFAULT_RECENT_SKILLS_LIMIT: number;
   DEFAULT_CARD_SCALE: number;
+  DEFAULT_FRAME_GAP: number;
+  DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
+  DEFAULT_PANEL_OPACITY: number;
+  DEFAULT_ICONS_PER_ROW: number;
+  DEFAULT_HOTKEYS: OverlayHotkeys;
+  DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: RecentSkillsLayoutDirection;
+  DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION: RecentSkillsGrowthDirection;
+  DEFAULT_RECENT_SKILLS_TRACK_COUNT: number;
   DEFAULT_OVERLAY_SETTINGS: OverlaySettings;
 }
 
@@ -414,20 +454,44 @@ export interface RendererFormattersApi {
 
 export interface ApplyTranslationsContext {
   appearanceSettingsTitle: HTMLElement;
+  cardSizeControls: HTMLElement | null;
+  cardSizeLabel: HTMLElement | null;
   currentLanguage: LanguageCode;
   filePathEl: HTMLElement;
+  frameGapControls: HTMLElement | null;
+  frameGapLabel: HTMLElement | null;
+  hotkeyOpenSettingsLabel: HTMLElement | null;
+  hotkeyPickLogLabel: HTMLElement | null;
+  hotkeyToggleInteractionLabel: HTMLElement | null;
+  hotkeyToggleVisibilityLabel: HTMLElement | null;
+  hotkeysSettingsTitle: HTMLElement | null;
   hudActive: boolean;
+  iconsPerRowControls: HTMLElement | null;
+  iconsPerRowLabel: HTMLElement | null;
   languageLabel: HTMLElement;
   languageSelect: HTMLSelectElement;
+  layoutDirection: LayoutDirection;
+  layoutDirectionLabel: HTMLElement | null;
+  layoutDirectionSelect: HTMLSelectElement | null;
   lastWatchStatusMessage: string;
   latestData: FinalizedState | null;
   logSettingsTitle: HTMLElement;
   overlayLocked: boolean;
   overlaySettingsTitle: HTMLElement;
+  panelOpacityLabel: HTMLElement | null;
   pickFileBtn: HTMLButtonElement;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsGrowthDirectionLabel: HTMLElement | null;
+  recentSkillsGrowthDirectionSelect: HTMLSelectElement | null;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsLayoutDirectionLabel: HTMLElement | null;
+  recentSkillsLayoutDirectionSelect: HTMLSelectElement | null;
   recentSkillsLimit: number;
   recentSkillsLimitInput: HTMLInputElement;
   recentSkillsLimitLabel: HTMLElement;
+  recentSkillsTrackCount: number;
+  recentSkillsTrackCountControls: HTMLElement | null;
+  recentSkillsTrackCountLabel: HTMLElement | null;
   reloadBtn: HTMLButtonElement;
   renderPlayers(players?: FinalizedState['players']): void;
   renderPullInfo(currentPull: CurrentPullSummary | null | undefined, dungeon: FinalizedDungeonState | null | undefined): void;
@@ -478,7 +542,10 @@ export interface RecentSkillsPanelVisibilityArgs {
 
 export interface RenderRecentSkillsPanelArgs {
   currentLanguage: LanguageCode;
-  getCardWidthForIconCount(iconCount: number): number;
+  getCardWidthForIconCount(iconCount: number, iconsInRow?: number): number;
+  recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
+  recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
+  recentSkillsTrackCount: number;
   recentSkills: RecentSkillActivation[];
   recentSkillsLimit: number;
   recentSkillsPanelEl: HTMLElement;
@@ -509,22 +576,46 @@ export interface RendererPanelsApi {
 
 export interface OverlaySettingsController {
   normalizeCardScaleValue(value: unknown): number;
+  normalizeFrameGap(value: unknown): number;
+  normalizeIconsPerRow(value: unknown): number;
+  normalizeLayoutDirection(value: unknown): LayoutDirection;
+  normalizePanelOpacity(value: unknown): number;
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
+  normalizeRecentSkillsGrowthDirection(value: unknown): RecentSkillsGrowthDirection;
+  normalizeRecentSkillsLayoutDirection(value: unknown): RecentSkillsLayoutDirection;
+  normalizeRecentSkillsTrackCount(value: unknown): number;
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
+  normalizeHotkeys(value: unknown): OverlayHotkeys;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
   loadCardScale(): number;
+  loadFrameGap(): number;
+  loadIconsPerRow(): number;
+  loadLayoutDirection(): LayoutDirection;
+  loadPanelOpacity(): number;
+  loadHotkeys(): OverlayHotkeys;
   loadPositions(): PlayerPositions;
   loadPullPanelPosition(): Point;
+  loadRecentSkillsGrowthDirection(): RecentSkillsGrowthDirection;
+  loadRecentSkillsLayoutDirection(): RecentSkillsLayoutDirection;
   loadRecentSkillsLimit(): number;
   loadRecentSkillsPanelPosition(): Point;
+  loadRecentSkillsTrackCount(): number;
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
   saveCardScale(cardScale: number): void;
+  saveFrameGap(frameGap: number): void;
+  saveIconsPerRow(iconsPerRow: number): void;
+  saveLayoutDirection(layoutDirection: LayoutDirection): void;
+  savePanelOpacity(panelOpacity: number): void;
+  saveHotkeys(hotkeys: OverlayHotkeys): void;
   savePositions(positions: PlayerPositions): void;
   savePullPanelPosition(position: Point): void;
+  saveRecentSkillsGrowthDirection(growthDirection: RecentSkillsGrowthDirection): void;
+  saveRecentSkillsLayoutDirection(layoutDirection: RecentSkillsLayoutDirection): void;
   saveRecentSkillsLimit(recentSkillsLimit: number): void;
   saveRecentSkillsPanelPosition(position: Point): void;
+  saveRecentSkillsTrackCount(trackCount: number): void;
   saveSkillSelections(selectedSkillsByClass: SkillSelectionMap): void;
   saveVisibilitySettings(visibilitySettings: OverlayVisibilitySettings): void;
 }
@@ -553,8 +644,8 @@ export interface InitializePanelArgs {
 }
 
 export interface RendererLayoutApi {
-  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number): void;
-  getCardWidthForIconCount(cardScale: number, iconCount: number): number;
+  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number, iconsPerRow?: number): void;
+  getCardWidthForIconCount(cardScale: number, iconCount: number, iconsPerRow?: number): number;
   getDefaultPosition(index: number): Point;
   getScaledMetrics(cardScale: number): {
     scale: number;
@@ -562,6 +653,7 @@ export interface RendererLayoutApi {
     iconGap: number;
     horizontalPadding: number;
     baseMinWidth: number;
+    borderAllowance: number;
   };
   initializePanel(args: InitializePanelArgs): void;
   makeCardDraggable(args: MakeCardDraggableArgs): void;
@@ -573,11 +665,14 @@ export interface PlayerCardRenderer {
 }
 
 export interface PlayerCardRendererDeps {
-  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number): void;
+  applyCardLayout(card: HTMLElement, cardScale: number, iconCount?: number, iconsPerRow?: number): void;
   cardMap: Map<string, HTMLElement>;
   formatNumber(value: unknown): string;
   getCardScale(): number;
   getDefaultPosition(index: number): Point;
+  getFrameGap(): number;
+  getIconsPerRow(): number;
+  getLayoutDirection(): LayoutDirection;
   getLatestData(): FinalizedState | null;
   getOverlayLocked(): boolean;
   getPartySlotIndex(player: PlayerState, index?: number): number;

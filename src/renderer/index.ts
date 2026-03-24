@@ -19,9 +19,33 @@ const pickFileBtn = mustElement<HTMLButtonElement>('pickFileBtn');
 const reloadBtn = mustElement<HTMLButtonElement>('reloadBtn');
 const toggleLockBtn = mustElement<HTMLButtonElement>('toggleLockBtn');
 const skillsBtn = mustElement<HTMLButtonElement>('skillsBtn');
+const hotkeysSettingsTitle = mustElement<HTMLElement>('hotkeysSettingsTitle');
+const hotkeyToggleInteractionLabel = mustElement<HTMLElement>('hotkeyToggleInteractionLabel');
+const hotkeyPickLogLabel = mustElement<HTMLElement>('hotkeyPickLogLabel');
+const hotkeyToggleVisibilityLabel = mustElement<HTMLElement>('hotkeyToggleVisibilityLabel');
+const hotkeyOpenSettingsLabel = mustElement<HTMLElement>('hotkeyOpenSettingsLabel');
+const hotkeyToggleInteractionBtn = mustElement<HTMLButtonElement>('hotkeyToggleInteractionBtn');
+const hotkeyPickLogBtn = mustElement<HTMLButtonElement>('hotkeyPickLogBtn');
+const hotkeyToggleVisibilityBtn = mustElement<HTMLButtonElement>('hotkeyToggleVisibilityBtn');
+const hotkeyOpenSettingsBtn = mustElement<HTMLButtonElement>('hotkeyOpenSettingsBtn');
+const hotkeyStatusEl = mustElement<HTMLElement>('hotkeyStatus');
+const frameGapDownBtn = mustElement<HTMLButtonElement>('frameGapDownBtn');
+const frameGapUpBtn = mustElement<HTMLButtonElement>('frameGapUpBtn');
+const frameGapValueEl = mustElement<HTMLElement>('frameGapValue');
+const frameGapControls = mustElement<HTMLElement>('frameGapControls');
+const iconsPerRowDownBtn = mustElement<HTMLButtonElement>('iconsPerRowDownBtn');
+const iconsPerRowUpBtn = mustElement<HTMLButtonElement>('iconsPerRowUpBtn');
+const iconsPerRowValueEl = mustElement<HTMLElement>('iconsPerRowValue');
+const iconsPerRowControls = mustElement<HTMLElement>('iconsPerRowControls');
+const panelOpacitySlider = mustElement<HTMLInputElement>('panelOpacitySlider');
+const panelOpacityValueEl = mustElement<HTMLElement>('panelOpacityValue');
+const panelOpacityLabel = mustElement<HTMLElement>('panelOpacityLabel');
+const layoutDirectionSelect = mustElement<HTMLSelectElement>('layoutDirectionSelect');
+const layoutDirectionLabel = mustElement<HTMLElement>('layoutDirectionLabel');
 const cardSizeDownBtn = mustElement<HTMLButtonElement>('cardSizeDownBtn');
 const cardSizeUpBtn = mustElement<HTMLButtonElement>('cardSizeUpBtn');
 const cardSizeValueEl = mustElement<HTMLElement>('cardSizeValue');
+const cardSizeControls = mustElement<HTMLElement>('cardSizeControls');
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
@@ -43,8 +67,28 @@ const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle')
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
+const recentSkillsLayoutDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsLayoutDirectionSelect');
+const recentSkillsLayoutDirectionLabel = mustElement<HTMLElement>('recentSkillsLayoutDirectionLabel');
+const recentSkillsGrowthDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsGrowthDirectionSelect');
+const recentSkillsGrowthDirectionLabel = mustElement<HTMLElement>('recentSkillsGrowthDirectionLabel');
+const recentSkillsTrackCountDownBtn = mustElement<HTMLButtonElement>('recentSkillsTrackCountDownBtn');
+const recentSkillsTrackCountUpBtn = mustElement<HTMLButtonElement>('recentSkillsTrackCountUpBtn');
+const recentSkillsTrackCountValueEl = mustElement<HTMLElement>('recentSkillsTrackCountValue');
+const recentSkillsTrackCountControls = mustElement<HTMLElement>('recentSkillsTrackCountControls');
+const recentSkillsTrackCountLabel = mustElement<HTMLElement>('recentSkillsTrackCountLabel');
 
-const { CARD_SCALE_STEP } = window.OverlayRendererConstants;
+const {
+  CARD_SCALE_STEP,
+  DEFAULT_HOTKEYS,
+  DEFAULT_FRAME_GAP,
+  DEFAULT_ICONS_PER_ROW,
+  DEFAULT_LAYOUT_DIRECTION,
+  DEFAULT_PANEL_OPACITY,
+  DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
+  DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
+  DEFAULT_RECENT_SKILLS_TRACK_COUNT,
+  FRAME_GAP_STEP,
+} = window.OverlayRendererConstants;
 const {
   applyTranslations: applyTranslationsShared,
   setLogSourceText: setLogSourceTextShared,
@@ -85,14 +129,110 @@ let hudActive = true;
 let skillCatalog: SkillCatalog = { classes: [] };
 let selectedSkillsByClass: SkillSelectionMap = settingsController.loadSkillSelections();
 let cardScale = settingsController.loadCardScale();
+let frameGap = settingsController.loadFrameGap();
+let iconsPerRow = settingsController.loadIconsPerRow();
+let panelOpacity = settingsController.loadPanelOpacity();
+let layoutDirection = settingsController.loadLayoutDirection();
+let hotkeys = settingsController.loadHotkeys();
 let currentLanguage: LanguageCode = 'en';
 let lastWatchStatusMessage = '';
 let visibilitySettings: OverlayVisibilitySettings = settingsController.loadVisibilitySettings();
 let recentSkillsLimit = settingsController.loadRecentSkillsLimit();
+let recentSkillsLayoutDirection = settingsController.loadRecentSkillsLayoutDirection();
+let recentSkillsGrowthDirection = settingsController.loadRecentSkillsGrowthDirection();
+let recentSkillsTrackCount = settingsController.loadRecentSkillsTrackCount();
 let playerCardRenderer: PlayerCardRenderer | null = null;
+let settingsModalOpen = false;
+let listeningHotkeyAction: HotkeyAction | null = null;
 
 function t(key: string): string {
   return translateText(currentLanguage, key);
+}
+
+function formatHotkeyLabel(accelerator: string): string {
+  return String(accelerator || '')
+    .split('+')
+    .map((part) => {
+      if (part === 'CommandOrControl') return 'Ctrl';
+      if (part === 'Super') return 'Win';
+      return part;
+    })
+    .join('+');
+}
+
+function setHotkeyStatus(messageKey: string = 'hotkeyHint'): void {
+  hotkeyStatusEl.textContent = t(messageKey);
+}
+
+function updateHotkeyButtons(): void {
+  hotkeyToggleInteractionBtn.textContent = formatHotkeyLabel(hotkeys.toggleInteraction);
+  hotkeyPickLogBtn.textContent = formatHotkeyLabel(hotkeys.pickLog);
+  hotkeyToggleVisibilityBtn.textContent = formatHotkeyLabel(hotkeys.toggleVisibility);
+  hotkeyOpenSettingsBtn.textContent = formatHotkeyLabel(hotkeys.openSettings);
+
+  hotkeyToggleInteractionBtn.classList.toggle('listening', listeningHotkeyAction === 'toggleInteraction');
+  hotkeyPickLogBtn.classList.toggle('listening', listeningHotkeyAction === 'pickLog');
+  hotkeyToggleVisibilityBtn.classList.toggle('listening', listeningHotkeyAction === 'toggleVisibility');
+  hotkeyOpenSettingsBtn.classList.toggle('listening', listeningHotkeyAction === 'openSettings');
+
+  if (listeningHotkeyAction === 'toggleInteraction') hotkeyToggleInteractionBtn.textContent = '...';
+  if (listeningHotkeyAction === 'pickLog') hotkeyPickLogBtn.textContent = '...';
+  if (listeningHotkeyAction === 'toggleVisibility') hotkeyToggleVisibilityBtn.textContent = '...';
+  if (listeningHotkeyAction === 'openSettings') hotkeyOpenSettingsBtn.textContent = '...';
+}
+
+function keyEventToAccelerator(event: KeyboardEvent): string | null {
+  if (event.key === 'Escape') return '__cancel__';
+
+  let baseKey = '';
+  if (/^F([1-9]|1\d|2[0-4])$/i.test(event.key)) {
+    baseKey = event.key.toUpperCase();
+  } else if (/^Key[A-Z]$/.test(event.code)) {
+    baseKey = event.code.slice(3);
+  } else if (/^Digit\d$/.test(event.code)) {
+    baseKey = event.code.slice(5);
+  } else if (event.code === 'Space') {
+    baseKey = 'Space';
+  } else if (event.key === 'ArrowUp') {
+    baseKey = 'Up';
+  } else if (event.key === 'ArrowDown') {
+    baseKey = 'Down';
+  } else if (event.key === 'ArrowLeft') {
+    baseKey = 'Left';
+  } else if (event.key === 'ArrowRight') {
+    baseKey = 'Right';
+  } else if (event.key === 'Tab') {
+    baseKey = 'Tab';
+  } else if (event.key === 'Enter') {
+    baseKey = 'Enter';
+  }
+
+  if (!baseKey) return null;
+
+  const modifiers: string[] = [];
+  if (event.ctrlKey) modifiers.push('CommandOrControl');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (event.metaKey) modifiers.push('Super');
+  return [...modifiers, baseKey].join('+');
+}
+
+function saveHotkeys(nextHotkeys: OverlayHotkeys): void {
+  hotkeys = settingsController.normalizeHotkeys(nextHotkeys);
+  settingsController.saveHotkeys(hotkeys);
+  updateHotkeyButtons();
+  setHotkeyStatus();
+}
+
+function beginHotkeyCapture(action: HotkeyAction): void {
+  listeningHotkeyAction = action;
+  updateHotkeyButtons();
+  setHotkeyStatus('hotkeyListening');
+}
+
+function endHotkeyCapture(): void {
+  listeningHotkeyAction = null;
+  updateHotkeyButtons();
 }
 
 function setLogSourceText(source: { filePath?: string | null; directoryPath?: string | null } | null | undefined): void {
@@ -118,8 +258,8 @@ function getPartySlotIndex(player: { id: string } | null | undefined, index = 0)
   return index;
 }
 
-function getCardWidthForIconCount(iconCount: number): number {
-  return getCardWidthForIconCountShared(cardScale, iconCount);
+function getCardWidthForIconCount(iconCount: number, iconsInRow = iconsPerRow): number {
+  return getCardWidthForIconCountShared(cardScale, iconCount, iconsInRow);
 }
 
 function setLanguage(language: LanguageCode | string | null | undefined): void {
@@ -147,6 +287,9 @@ function renderRecentSkillsPanel(recentSkills: RecentSkillActivation[] = []): vo
   renderRecentSkillsPanelShared({
     currentLanguage,
     getCardWidthForIconCount,
+    recentSkillsLayoutDirection,
+    recentSkillsGrowthDirection,
+    recentSkillsTrackCount,
     recentSkills,
     recentSkillsLimit,
     recentSkillsPanelEl,
@@ -239,6 +382,50 @@ function updateCardScaleUi(): void {
   cardSizeValueEl.textContent = `${Math.round(cardScale * 100)}%`;
 }
 
+function applyAppearanceVariables(): void {
+  overlayRoot.style.setProperty('--party-gap', `${frameGap}px`);
+  overlayRoot.style.setProperty('--panel-bg-alpha', String(panelOpacity));
+  overlayRoot.dataset.layoutDirection = layoutDirection;
+  overlayRoot.dataset.iconsPerRow = String(iconsPerRow);
+}
+
+function updateFrameGapUi(): void {
+  frameGapValueEl.textContent = `${frameGap}px`;
+}
+
+function updateIconsPerRowUi(): void {
+  iconsPerRowValueEl.textContent = String(iconsPerRow);
+}
+
+function updatePanelOpacityUi(): void {
+  const percent = Math.round(panelOpacity * 100);
+  panelOpacitySlider.value = String(percent);
+  panelOpacityValueEl.textContent = `${percent}%`;
+}
+
+function updateLayoutDirectionUi(): void {
+  layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
+}
+
+function updateRecentSkillsLayoutUi(): void {
+  recentSkillsLayoutDirectionSelect.value = recentSkillsLayoutDirection;
+  const isHorizontal = recentSkillsLayoutDirection === 'horizontal';
+  recentSkillsGrowthDirectionSelect.innerHTML = isHorizontal
+    ? `<option value="right">${escapeHtml(t('growthRight'))}</option><option value="left">${escapeHtml(t('growthLeft'))}</option>`
+    : `<option value="down">${escapeHtml(t('growthDown'))}</option><option value="up">${escapeHtml(t('growthUp'))}</option>`;
+  const normalizedGrowth = settingsController.normalizeRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  recentSkillsGrowthDirection = isHorizontal
+    ? (normalizedGrowth === 'left' ? 'left' : 'right')
+    : (normalizedGrowth === 'up' ? 'up' : 'down');
+  recentSkillsGrowthDirectionSelect.value = recentSkillsGrowthDirection;
+  recentSkillsTrackCountValueEl.textContent = String(recentSkillsTrackCount);
+  recentSkillsTrackCountLabel.textContent = isHorizontal ? t('recentSkillsTrackCountRows') : t('recentSkillsTrackCountColumns');
+}
+
+function rerenderPlayersIfNeeded(): void {
+  if (latestData?.players) renderPlayers(latestData.players);
+}
+
 function setCardScale(nextScale: number): void {
   const normalized = settingsController.normalizeCardScaleValue(nextScale);
   if (normalized === cardScale) return;
@@ -246,6 +433,83 @@ function setCardScale(nextScale: number): void {
   settingsController.saveCardScale(cardScale);
   updateCardScaleUi();
   if (latestData?.players) renderPlayers(latestData.players);
+}
+
+function setFrameGap(nextValue: unknown): void {
+  const normalized = settingsController.normalizeFrameGap(nextValue);
+  if (normalized === frameGap) return;
+  frameGap = normalized;
+  settingsController.saveFrameGap(frameGap);
+  applyAppearanceVariables();
+  updateFrameGapUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setIconsPerRow(nextValue: unknown): void {
+  const normalized = settingsController.normalizeIconsPerRow(nextValue);
+  if (normalized === iconsPerRow) return;
+  iconsPerRow = normalized;
+  settingsController.saveIconsPerRow(iconsPerRow);
+  applyAppearanceVariables();
+  updateIconsPerRowUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setPanelOpacity(nextValue: unknown): void {
+  const normalized = settingsController.normalizePanelOpacity(nextValue);
+  if (normalized === panelOpacity) return;
+  panelOpacity = normalized;
+  settingsController.savePanelOpacity(panelOpacity);
+  applyAppearanceVariables();
+  updatePanelOpacityUi();
+}
+
+function setLayoutDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeLayoutDirection(nextValue);
+  if (normalized === layoutDirection) return;
+  layoutDirection = normalized;
+  settingsController.saveLayoutDirection(layoutDirection);
+  applyAppearanceVariables();
+  updateLayoutDirectionUi();
+  rerenderPlayersIfNeeded();
+}
+
+function rerenderRecentSkillsPanel(): void {
+  renderRecentSkillsPanel(latestData?.recentSkills || []);
+}
+
+function setRecentSkillsLayoutDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeRecentSkillsLayoutDirection(nextValue);
+  if (normalized === recentSkillsLayoutDirection) return;
+  recentSkillsLayoutDirection = normalized;
+  recentSkillsGrowthDirection = normalized === 'horizontal'
+    ? (recentSkillsGrowthDirection === 'left' ? 'left' : 'right')
+    : (recentSkillsGrowthDirection === 'up' ? 'up' : 'down');
+  settingsController.saveRecentSkillsLayoutDirection(recentSkillsLayoutDirection);
+  settingsController.saveRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
+}
+
+function setRecentSkillsGrowthDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeRecentSkillsGrowthDirection(nextValue);
+  const allowed = recentSkillsLayoutDirection === 'horizontal'
+    ? (normalized === 'left' ? 'left' : 'right')
+    : (normalized === 'up' ? 'up' : 'down');
+  if (allowed === recentSkillsGrowthDirection) return;
+  recentSkillsGrowthDirection = allowed;
+  settingsController.saveRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
+}
+
+function setRecentSkillsTrackCount(nextValue: number): void {
+  const normalized = settingsController.normalizeRecentSkillsTrackCount(nextValue);
+  if (normalized === recentSkillsTrackCount) return;
+  recentSkillsTrackCount = normalized;
+  settingsController.saveRecentSkillsTrackCount(recentSkillsTrackCount);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
 }
 
 function setHudActiveState(active: boolean, foregroundExe: string | null = null): void {
@@ -275,23 +539,77 @@ function renderSkillsModal(): void {
   });
 }
 
+function handleHotkeyCapture(event: KeyboardEvent): void {
+  if (!listeningHotkeyAction) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const accelerator = keyEventToAccelerator(event);
+  if (accelerator === '__cancel__') {
+    endHotkeyCapture();
+    setHotkeyStatus();
+    return;
+  }
+  if (!accelerator) {
+    setHotkeyStatus('hotkeyInvalid');
+    return;
+  }
+
+  const duplicate = Object.entries(hotkeys).find(([action, value]) => action !== listeningHotkeyAction && value === accelerator);
+  if (duplicate) {
+    setHotkeyStatus('hotkeyDuplicate');
+    return;
+  }
+
+  saveHotkeys({
+    ...hotkeys,
+    [listeningHotkeyAction]: accelerator,
+  });
+  endHotkeyCapture();
+}
+
 function applyTranslations(): void {
   applyTranslationsShared({
     appearanceSettingsTitle,
+    cardSizeControls,
+    cardSizeLabel: null,
     currentLanguage,
     filePathEl,
+    frameGapControls,
+    frameGapLabel: null,
+    hotkeyOpenSettingsLabel,
+    hotkeyPickLogLabel,
+    hotkeyToggleInteractionLabel,
+    hotkeyToggleVisibilityLabel,
+    hotkeysSettingsTitle,
     hudActive,
+    iconsPerRowControls,
+    iconsPerRowLabel: null,
     languageLabel,
     languageSelect,
+    layoutDirection,
+    layoutDirectionLabel,
+    layoutDirectionSelect,
     lastWatchStatusMessage,
     latestData,
     logSettingsTitle,
     overlayLocked,
     overlaySettingsTitle,
+    panelOpacityLabel,
     pickFileBtn,
+    recentSkillsGrowthDirection,
+    recentSkillsGrowthDirectionLabel,
+    recentSkillsGrowthDirectionSelect,
+    recentSkillsLayoutDirection,
+    recentSkillsLayoutDirectionLabel,
+    recentSkillsLayoutDirectionSelect,
     recentSkillsLimit,
     recentSkillsLimitInput,
     recentSkillsLimitLabel,
+    recentSkillsTrackCount,
+    recentSkillsTrackCountControls,
+    recentSkillsTrackCountLabel,
     reloadBtn,
     renderPlayers,
     renderPullInfo,
@@ -316,6 +634,8 @@ function applyTranslations(): void {
     visibilitySettings,
     watchStatusEl,
   });
+  if (!listeningHotkeyAction) setHotkeyStatus();
+  updateHotkeyButtons();
 }
 
 async function ensureSkillCatalog(): Promise<void> {
@@ -325,13 +645,28 @@ async function ensureSkillCatalog(): Promise<void> {
   updateRecentSkillsPanelVisibility();
 }
 
-function openSettingsModal(): void {
+async function openSettingsModal(): Promise<void> {
+  applyAppearanceVariables();
   updateCardScaleUi();
+  updateFrameGapUi();
+  updateIconsPerRowUi();
+  updatePanelOpacityUi();
+  updateLayoutDirectionUi();
+  updateRecentSkillsLayoutUi();
   settingsModal.classList.remove('hidden');
+  settingsModalOpen = true;
+  await window.api.setSettingsModalOpen(true);
 }
 
-function closeSettingsModal(): void {
+async function closeSettingsModal(): Promise<void> {
   settingsModal.classList.add('hidden');
+  settingsModalOpen = false;
+  if (listeningHotkeyAction) {
+    endHotkeyCapture();
+    setHotkeyStatus();
+  }
+  await window.api.setSettingsModalOpen(false);
+  await window.api.closeInteractiveModal();
 }
 
 function openSkillsModal(): void {
@@ -350,6 +685,9 @@ playerCardRenderer = createPlayerCardRenderer({
   formatNumber,
   getCardScale: () => cardScale,
   getDefaultPosition,
+  getFrameGap: () => frameGap,
+  getIconsPerRow: () => iconsPerRow,
+  getLayoutDirection: () => layoutDirection,
   getLatestData: () => latestData,
   getOverlayLocked: () => overlayLocked,
   getPartySlotIndex,
@@ -414,10 +752,35 @@ recentSkillsLimitInput.addEventListener('input', (event: Event) => {
   const value = clamp(Number(input.value || 7), 1, 20);
   input.value = String(value);
 });
+recentSkillsLayoutDirectionSelect.addEventListener('change', (event: Event) => {
+  setRecentSkillsLayoutDirection((event.currentTarget as HTMLSelectElement).value);
+});
+recentSkillsGrowthDirectionSelect.addEventListener('change', (event: Event) => {
+  setRecentSkillsGrowthDirection((event.currentTarget as HTMLSelectElement).value);
+});
+recentSkillsTrackCountDownBtn.addEventListener('click', () => setRecentSkillsTrackCount(recentSkillsTrackCount - 1));
+recentSkillsTrackCountUpBtn.addEventListener('click', () => setRecentSkillsTrackCount(recentSkillsTrackCount + 1));
+frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP_STEP));
+frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
+iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
+iconsPerRowUpBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow + 1));
+panelOpacitySlider.addEventListener('input', (event: Event) => {
+  const value = Number((event.currentTarget as HTMLInputElement).value || Math.round(DEFAULT_PANEL_OPACITY * 100));
+  setPanelOpacity(value / 100);
+});
+layoutDirectionSelect.addEventListener('change', (event: Event) => {
+  setLayoutDirection((event.currentTarget as HTMLSelectElement).value || DEFAULT_LAYOUT_DIRECTION);
+});
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
-closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+closeSettingsModalBtn.addEventListener('click', () => {
+  void closeSettingsModal();
+});
+hotkeyToggleInteractionBtn.addEventListener('click', () => beginHotkeyCapture('toggleInteraction'));
+hotkeyPickLogBtn.addEventListener('click', () => beginHotkeyCapture('pickLog'));
+hotkeyToggleVisibilityBtn.addEventListener('click', () => beginHotkeyCapture('toggleVisibility'));
+hotkeyOpenSettingsBtn.addEventListener('click', () => beginHotkeyCapture('openSettings'));
 languageSelect.addEventListener('change', async (event: Event) => {
   const nextLanguage = (event.currentTarget as HTMLSelectElement).value === 'en' ? 'en' : 'ru';
   const result = await window.api.setLanguage(nextLanguage);
@@ -427,8 +790,11 @@ skillsModal.addEventListener('mousedown', (event: MouseEvent) => {
   if (event.target === skillsModal) closeSkillsModal();
 });
 settingsModal.addEventListener('mousedown', (event: MouseEvent) => {
-  if (event.target === settingsModal) closeSettingsModal();
+  if (event.target === settingsModal) {
+    void closeSettingsModal();
+  }
 });
+document.addEventListener('keydown', handleHotkeyCapture, true);
 
 window.api.onWatchStatus((payload) => {
   lastWatchStatusMessage = payload?.message || t('noWatching');
@@ -438,10 +804,16 @@ window.api.onWatchStatus((payload) => {
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
+  rerenderPlayersIfNeeded();
 });
 
 window.api.onOpenSettings(() => {
-  openSettingsModal();
+  void openSettingsModal();
+});
+
+window.api.onRequestCloseSettings(() => {
+  if (!settingsModalOpen) return;
+  void closeSettingsModal();
 });
 
 window.api.onLogData((payload) => {
@@ -479,7 +851,13 @@ window.api.getLanguage().then((result) => {
 });
 
 void ensureSkillCatalog();
+applyAppearanceVariables();
 updateCardScaleUi();
+updateFrameGapUi();
+updateIconsPerRowUi();
+updatePanelOpacityUi();
+updateLayoutDirectionUi();
+updateRecentSkillsLayoutUi();
 updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();

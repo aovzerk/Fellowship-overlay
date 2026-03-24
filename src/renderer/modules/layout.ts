@@ -5,23 +5,25 @@
     return { x: 16, y: 64 + index * 122 };
   }
 
-  function getScaledMetrics(cardScale: number): { scale: number; iconSize: number; iconGap: number; horizontalPadding: number; baseMinWidth: number } {
+  function getScaledMetrics(cardScale: number): { scale: number; iconSize: number; iconGap: number; horizontalPadding: number; baseMinWidth: number; borderAllowance: number } {
     const scale = Number(cardScale || 1);
     const iconSize = Math.round(60 * scale);
     const iconGap = Math.max(6, Math.round(8 * scale));
     const horizontalPadding = Math.round(20 * scale);
     const baseMinWidth = Math.round(180 * scale);
-    return { scale, iconSize, iconGap, horizontalPadding, baseMinWidth };
+    const borderAllowance = 2;
+    return { scale, iconSize, iconGap, horizontalPadding, baseMinWidth, borderAllowance };
   }
 
-  function getCardWidthForIconCount(cardScale: number, iconCount: number): number {
-    const { iconSize, iconGap, horizontalPadding, baseMinWidth } = getScaledMetrics(cardScale);
+  function getCardWidthForIconCount(cardScale: number, iconCount: number, iconsPerRow = iconCount || 0): number {
+    const { iconSize, iconGap, horizontalPadding, baseMinWidth, borderAllowance } = getScaledMetrics(cardScale);
+    const iconsInRow = Math.max(0, Math.min(Math.max(1, Math.round(Number(iconsPerRow || 1))), Math.max(1, iconCount || 1)));
     if (!iconCount) return baseMinWidth;
-    return Math.max(baseMinWidth, horizontalPadding + (iconCount * iconSize) + (Math.max(0, iconCount - 1) * iconGap));
+    return Math.max(baseMinWidth, horizontalPadding + (iconsInRow * iconSize) + (Math.max(0, iconsInRow - 1) * iconGap) + borderAllowance);
   }
 
-  function applyCardLayout(card: HTMLElement, cardScale: number, iconCount = 0): void {
-    card.style.width = `${getCardWidthForIconCount(cardScale, iconCount)}px`;
+  function applyCardLayout(card: HTMLElement, cardScale: number, iconCount = 0, iconsPerRow = iconCount || 0): void {
+    card.style.width = `${getCardWidthForIconCount(cardScale, iconCount, iconsPerRow)}px`;
   }
 
   function makeCardDraggable({

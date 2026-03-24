@@ -9,6 +9,15 @@
       skills: 'Skills',
       language: 'Язык',
       cardSizeTitle: 'Размер карточки',
+      cardSizeLabel: 'Размер карточки',
+      frameGapTitle: 'Отступ между фреймами',
+      frameGapLabel: 'Отступ',
+      iconsPerRowTitle: 'Спелов в строке',
+      iconsPerRowLabel: 'Спелов в строке',
+      panelOpacity: 'Прозрачность подложки',
+      layoutDirection: 'Направление',
+      layoutVertical: 'Вертикально',
+      layoutHorizontal: 'Горизонтально',
       noFileSelected: 'Папка не выбрана',
       noWatching: 'Нет слежения',
       hudActive: 'HUD active',
@@ -20,11 +29,30 @@
       logSettings: 'Лог',
       overlaySettings: 'Оверлей',
       appearanceSettings: 'Внешний вид',
+      hotkeysSettings: 'Горячие клавиши',
+      hotkeyToggleInteraction: 'Переключить режим взаимодействия',
+      hotkeyPickLog: 'Выбрать лог',
+      hotkeyToggleVisibility: 'Показать или скрыть оверлей',
+      hotkeyOpenSettings: 'Открыть настройки',
+      hotkeyHint: 'Нажмите на кнопку бинда, чтобы его изменить',
+      hotkeyListening: 'Нажмите новую комбинацию. Esc для отмены',
+      hotkeyDuplicate: 'Эта комбинация уже используется',
+      hotkeyInvalid: 'Используйте не модификатор',
       showParty: 'Показывать группу и кулдауны',
       showPull: 'Показывать информацию по пулам и %',
       showRecentSkills: 'Показывать последние скиллы',
       recentSkillsLimit: 'Лимит последних скиллов',
+      recentSkillsLayoutDirection: 'Ориентация панели последних скиллов',
+      recentSkillsGrowthDirection: 'Рост панели последних скиллов',
+      recentSkillsTrackCountRows: 'Строк',
+      recentSkillsTrackCountColumns: 'Столбцов',
+      growthRight: 'Вправо',
+      growthLeft: 'Влево',
+      growthDown: 'Вниз',
+      growthUp: 'Вверх',
       chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
+      selectedOrder: 'Порядок отображения',
+      relics: 'Реликвии',
       skillsEmpty: 'skills.json не найден или пуст',
       unknown: 'Неизвестно',
       errorPrefix: 'Ошибка',
@@ -46,6 +74,15 @@
       skills: 'Skills',
       language: 'Language',
       cardSizeTitle: 'Card size',
+      cardSizeLabel: 'Card size',
+      frameGapTitle: 'Frame gap',
+      frameGapLabel: 'Frame gap',
+      iconsPerRowTitle: 'Spells per row',
+      iconsPerRowLabel: 'Spells per row',
+      panelOpacity: 'Panel opacity',
+      layoutDirection: 'Direction',
+      layoutVertical: 'Vertical',
+      layoutHorizontal: 'Horizontal',
       noFileSelected: 'No folder selected',
       noWatching: 'Not watching',
       hudActive: 'HUD active',
@@ -57,11 +94,30 @@
       logSettings: 'Log',
       overlaySettings: 'Overlay',
       appearanceSettings: 'Appearance',
+      hotkeysSettings: 'Hotkeys',
+      hotkeyToggleInteraction: 'Toggle interaction mode',
+      hotkeyPickLog: 'Pick log',
+      hotkeyToggleVisibility: 'Show or hide overlay',
+      hotkeyOpenSettings: 'Open settings',
+      hotkeyHint: 'Click a hotkey badge to rebind it',
+      hotkeyListening: 'Press a new key combination. Esc to cancel',
+      hotkeyDuplicate: 'This hotkey is already in use',
+      hotkeyInvalid: 'Use a non-modifier key',
       showParty: 'Show party and cooldowns',
       showPull: 'Show pull and % info',
       showRecentSkills: 'Show recent skills',
       recentSkillsLimit: 'Recent skills limit',
+      recentSkillsLayoutDirection: 'Recent skills panel orientation',
+      recentSkillsGrowthDirection: 'Recent skills panel growth',
+      recentSkillsTrackCountRows: 'Rows',
+      recentSkillsTrackCountColumns: 'Columns',
+      growthRight: 'Right',
+      growthLeft: 'Left',
+      growthDown: 'Down',
+      growthUp: 'Up',
       chooseAbilities: 'Choose one or more abilities for each class',
+      selectedOrder: 'Display order',
+      relics: 'Relics',
       skillsEmpty: 'skills.json not found or empty',
       unknown: 'Unknown',
       errorPrefix: 'Error',
@@ -88,17 +144,44 @@
   function applyTranslations(ctx: ApplyTranslationsContext): void {
     const {
       appearanceSettingsTitle,
+      cardSizeControls,
+      cardSizeLabel,
       currentLanguage,
       filePathEl,
+      frameGapControls,
+      frameGapLabel,
+      hotkeyOpenSettingsLabel,
+      hotkeyPickLogLabel,
+      hotkeyToggleInteractionLabel,
+      hotkeyToggleVisibilityLabel,
+      hotkeysSettingsTitle,
+      hudActive,
+      iconsPerRowControls,
+      iconsPerRowLabel,
       languageLabel,
       languageSelect,
+      layoutDirection,
+      layoutDirectionLabel,
+      layoutDirectionSelect,
+      lastWatchStatusMessage,
       latestData,
+      logSettingsTitle,
       overlayLocked,
       overlaySettingsTitle,
+      panelOpacityLabel,
       pickFileBtn,
+      recentSkillsGrowthDirection,
+      recentSkillsGrowthDirectionLabel,
+      recentSkillsGrowthDirectionSelect,
+      recentSkillsLayoutDirection,
+      recentSkillsLayoutDirectionLabel,
+      recentSkillsLayoutDirectionSelect,
       recentSkillsLimit,
       recentSkillsLimitInput,
       recentSkillsLimitLabel,
+      recentSkillsTrackCount,
+      recentSkillsTrackCountControls,
+      recentSkillsTrackCountLabel,
       reloadBtn,
       renderPlayers,
       renderPullInfo,
@@ -122,8 +205,6 @@
       updateRecentSkillsPanelVisibility,
       visibilitySettings,
       watchStatusEl,
-      lastWatchStatusMessage,
-      logSettingsTitle,
     } = ctx;
 
     const translate = (key: string) => t(currentLanguage, key);
@@ -134,22 +215,81 @@
     logSettingsTitle.textContent = translate('logSettings');
     overlaySettingsTitle.textContent = translate('overlaySettings');
     appearanceSettingsTitle.textContent = translate('appearanceSettings');
+    if (hotkeysSettingsTitle) hotkeysSettingsTitle.textContent = translate('hotkeysSettings');
     pickFileBtn.textContent = translate('pickLog');
     reloadBtn.textContent = translate('reload');
     toggleLockBtn.textContent = overlayLocked ? translate('unlockOverlay') : translate('lockOverlay');
     skillsBtn.textContent = translate('skills');
     languageLabel.textContent = translate('language');
+    if (layoutDirectionLabel) layoutDirectionLabel.textContent = translate('layoutDirection');
+    if (cardSizeLabel) cardSizeLabel.textContent = translate('cardSizeLabel');
+    if (frameGapLabel) frameGapLabel.textContent = translate('frameGapLabel');
+    if (iconsPerRowLabel) iconsPerRowLabel.textContent = translate('iconsPerRowLabel');
+    if (panelOpacityLabel) panelOpacityLabel.textContent = translate('panelOpacity');
+    if (hotkeyToggleInteractionLabel) hotkeyToggleInteractionLabel.textContent = translate('hotkeyToggleInteraction');
+    if (hotkeyPickLogLabel) hotkeyPickLogLabel.textContent = translate('hotkeyPickLog');
+    if (hotkeyToggleVisibilityLabel) hotkeyToggleVisibilityLabel.textContent = translate('hotkeyToggleVisibility');
+    if (hotkeyOpenSettingsLabel) hotkeyOpenSettingsLabel.textContent = translate('hotkeyOpenSettings');
     if (showPartyToggleLabel) showPartyToggleLabel.textContent = translate('showParty');
     if (showPullToggleLabel) showPullToggleLabel.textContent = translate('showPull');
     if (showRecentSkillsToggleLabel) showRecentSkillsToggleLabel.textContent = translate('showRecentSkills');
     if (recentSkillsLimitLabel) recentSkillsLimitLabel.textContent = translate('recentSkillsLimit');
+    if (recentSkillsLayoutDirectionLabel) recentSkillsLayoutDirectionLabel.textContent = translate('recentSkillsLayoutDirection');
+    if (recentSkillsGrowthDirectionLabel) recentSkillsGrowthDirectionLabel.textContent = translate('recentSkillsGrowthDirection');
+    if (recentSkillsTrackCountLabel) {
+      recentSkillsTrackCountLabel.textContent = recentSkillsLayoutDirection === 'horizontal'
+        ? translate('recentSkillsTrackCountRows')
+        : translate('recentSkillsTrackCountColumns');
+    }
     if (showPartyToggle) showPartyToggle.checked = !!visibilitySettings.showParty;
     if (showPullToggle) showPullToggle.checked = !!visibilitySettings.showPull;
     if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
     recentSkillsLimitInput.value = String(recentSkillsLimit);
     languageSelect.value = currentLanguage;
-    const sizeControls = document.querySelector<HTMLElement>('.size-controls');
-    if (sizeControls) sizeControls.title = translate('cardSizeTitle');
+
+    if (layoutDirectionSelect) {
+      layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
+      const verticalOption = layoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="vertical"]');
+      const horizontalOption = layoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="horizontal"]');
+      if (verticalOption) verticalOption.textContent = translate('layoutVertical');
+      if (horizontalOption) horizontalOption.textContent = translate('layoutHorizontal');
+    }
+
+    if (recentSkillsLayoutDirectionSelect) {
+      recentSkillsLayoutDirectionSelect.value = recentSkillsLayoutDirection;
+      const verticalOption = recentSkillsLayoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="vertical"]');
+      const horizontalOption = recentSkillsLayoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="horizontal"]');
+      if (verticalOption) verticalOption.textContent = translate('layoutVertical');
+      if (horizontalOption) horizontalOption.textContent = translate('layoutHorizontal');
+    }
+
+    if (recentSkillsGrowthDirectionSelect) {
+      const options = recentSkillsLayoutDirection === 'horizontal'
+        ? [
+            { value: 'right', label: translate('growthRight') },
+            { value: 'left', label: translate('growthLeft') },
+          ]
+        : [
+            { value: 'down', label: translate('growthDown') },
+            { value: 'up', label: translate('growthUp') },
+          ];
+      recentSkillsGrowthDirectionSelect.innerHTML = options
+        .map((option) => `<option value="${option.value}">${option.label}</option>`)
+        .join('');
+      recentSkillsGrowthDirectionSelect.value = recentSkillsGrowthDirection;
+    }
+
+    if (cardSizeControls) cardSizeControls.title = translate('cardSizeTitle');
+    if (frameGapControls) frameGapControls.title = translate('frameGapTitle');
+    if (iconsPerRowControls) iconsPerRowControls.title = translate('iconsPerRowTitle');
+    if (recentSkillsTrackCountControls) {
+      recentSkillsTrackCountControls.title = recentSkillsLayoutDirection === 'horizontal'
+        ? translate('recentSkillsTrackCountRows')
+        : translate('recentSkillsTrackCountColumns');
+      const valueEl = recentSkillsTrackCountControls.querySelector('span');
+      if (valueEl) valueEl.textContent = String(recentSkillsTrackCount);
+    }
+
     if (!filePathEl.textContent || filePathEl.textContent === I18N.en.noFileSelected || filePathEl.textContent === I18N.ru.noFileSelected) {
       filePathEl.textContent = translate('noFileSelected');
     }
@@ -161,7 +301,7 @@
     renderPullInfo(latestData?.currentPull, latestData?.dungeon);
     renderRecentSkillsPanel(latestData?.recentSkills || []);
     if (!latestData?.players?.length) {
-      setHudActiveState(ctx.hudActive);
+      setHudActiveState(hudActive);
     } else {
       renderPlayers(latestData.players || []);
     }

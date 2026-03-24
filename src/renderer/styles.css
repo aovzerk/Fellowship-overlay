@@ -15,6 +15,8 @@ body {
 
 :root {
   --card-scale: 1;
+  --party-gap: 12px;
+  --panel-bg-alpha: 0.88;
 }
 
 #overlay-root {
@@ -32,7 +34,7 @@ body {
 }
 
 .panel {
-  background: rgba(7, 10, 25, 0.88);
+  background: rgba(7, 10, 25, var(--panel-bg-alpha));
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -58,7 +60,8 @@ button:hover {
 }
 
 
-.language-switcher {
+.language-switcher,
+.layout-control {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -69,7 +72,20 @@ button:hover {
   font-size: 12px;
 }
 
-.language-switcher select {
+.slider-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 380px);
+  font-size: 12px;
+}
+
+.slider-control input[type="range"] {
+  flex: 1 1 auto;
+}
+
+.language-switcher select,
+.layout-control select {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
@@ -78,7 +94,8 @@ button:hover {
   cursor: pointer;
 }
 
-.language-switcher option {
+.language-switcher option,
+.layout-control option {
   color: #000;
 }
 
@@ -98,9 +115,19 @@ button:hover {
   padding: 4px 8px;
 }
 
-#cardSizeValue {
+#cardSizeValue,
+#frameGapValue,
+#iconsPerRowValue,
+#recentSkillsTrackCountValue {
   min-width: 44px;
   text-align: center;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+#panelOpacityValue {
+  min-width: 44px;
+  text-align: right;
   font-weight: 700;
   opacity: 0.9;
 }
@@ -112,7 +139,31 @@ button:hover {
 }
 
 .floating-card {
+  position: relative;
+}
+
+.party-group {
   position: fixed;
+  left: 16px;
+  top: 64px;
+  display: flex;
+  gap: var(--party-gap);
+  pointer-events: auto;
+  transform-origin: top left;
+}
+
+.party-group.layout-horizontal {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.party-group.layout-vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.party-group.drag-enabled {
+  cursor: move;
 }
 
 .player-card {
@@ -123,7 +174,6 @@ button:hover {
 
 .player-header {
   margin-bottom: calc(8px * var(--card-scale));
-  cursor: move;
 }
 
 .player-name {
@@ -170,9 +220,10 @@ button:hover {
 
 .relics-block {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: calc(8px * var(--card-scale));
   align-items: center;
+  justify-content: center;
 }
 
 .relic-chip {
@@ -272,6 +323,55 @@ button:hover {
   font-size: 16px;
   font-weight: 800;
   margin-bottom: 10px;
+}
+
+.skill-order-title {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.skill-order-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: grab;
+}
+
+.order-item-name {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-item.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.order-item.drag-over {
+  border-color: rgba(95, 210, 255, 0.9);
+  background: rgba(95, 210, 255, 0.12);
+}
+
+.order-drag-hint {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 1px;
+  opacity: 0.45;
 }
 
 .skill-options-grid {
@@ -439,6 +539,40 @@ button:hover {
   font-size: 12px;
 }
 
+.settings-note-inline {
+  white-space: normal;
+}
+
+.hotkey-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hotkey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hotkey-label {
+  font-size: 13px;
+  opacity: 0.95;
+}
+
+.hotkey-badge {
+  min-width: 56px;
+  padding: 6px 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  opacity: 1;
+}
+
+.hotkey-badge.listening {
+  border-color: rgba(92, 179, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(92, 179, 255, 0.45);
+}
+
 .pull-panel {
   position: fixed;
   left: 16px;
@@ -528,10 +662,39 @@ button:hover {
 }
 
 .recent-skills-row {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(var(--recent-skills-columns, 1), calc(60px * var(--card-scale)));
+  grid-template-rows: repeat(var(--recent-skills-rows, 1), calc(60px * var(--card-scale)));
   gap: calc(8px * var(--card-scale));
-  align-items: center;
+  align-items: start;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.recent-skills-row[data-layout="horizontal"] {
+  grid-auto-flow: column;
+}
+
+.recent-skills-row[data-layout="horizontal"][data-growth="left"] {
+  direction: rtl;
+}
+
+.recent-skills-row[data-layout="horizontal"][data-growth="left"] .recent-skill-chip {
+  direction: ltr;
+}
+
+.recent-skills-row[data-layout="vertical"] {
+  grid-auto-flow: row;
+}
+
+.recent-skills-row[data-layout="vertical"][data-growth="up"] {
+  transform: scaleY(-1);
+}
+
+.recent-skills-row[data-layout="vertical"][data-growth="up"] .recent-skill-chip {
+  transform: scaleY(-1);
 }
 
 .recent-skill-chip {
