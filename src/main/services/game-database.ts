@@ -36,7 +36,7 @@ const RELICS_FILE_NAME = 'relics.json';
 const SKILLS_FILE_NAME = 'skills.json';
 const DUNGEON_FILE_NAME = 'dng.json';
 const DEFAULT_SKILL_ICON_REL_PATH = path.posix.join(GAME_DATA_ROOT_DIR, 'heroes', 'Default', 'default_skill.jpg');
-const DEFAULT_RELIC_ICON_REL_PATH = path.posix.join(GAME_DATA_ROOT_DIR, 'relics', 'empty.png');
+const DEFAULT_RELIC_ICON_REL_PATH = path.posix.join(GAME_DATA_ROOT_DIR, 'relics', 'empty.jpg');
 
 function normalizeName(raw: unknown): string {
   return String(raw || '')
@@ -75,7 +75,7 @@ function getRelicsRootPath(): string {
 }
 
 function getDefaultRelicIconPath(): string {
-  return getGameDataPath(GAME_DATA_RELICS_DIR, 'empty.png');
+  return getGameDataPath(GAME_DATA_RELICS_DIR, 'empty.jpg');
 }
 
 function getDungeonFilePath(dungeonName: string): string {
