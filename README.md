@@ -55,7 +55,7 @@ From the tray you can open the app and access **settings**.
 ## Installation
 
 **Requirements:**
-- Node.js 20
+- Node.js 20+
 
 **Setup & Run:**
 ```bash
