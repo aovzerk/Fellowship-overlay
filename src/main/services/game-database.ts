@@ -32,6 +32,8 @@ const GAME_DATA_CATALOGS_DIR = path.join(GAME_DATA_ROOT_DIR, 'catalogs');
 const GAME_DATA_DUNGEONS_DIR = path.join(GAME_DATA_ROOT_DIR, 'dungeons');
 const GAME_DATA_HEROES_DIR = path.join(GAME_DATA_ROOT_DIR, 'heroes');
 const GAME_DATA_RELICS_DIR = path.join(GAME_DATA_ROOT_DIR, 'relics');
+const GAME_DATA_WEAPONS_DIR = path.join(GAME_DATA_ROOT_DIR, 'weapons');
+const GAME_DATA_MOUNTS_DIR = path.join(GAME_DATA_ROOT_DIR, 'mounts');
 const RELICS_FILE_NAME = 'relics.json';
 const SKILLS_FILE_NAME = 'skills.json';
 const DUNGEON_FILE_NAME = 'dng.json';
@@ -72,6 +74,14 @@ function getHeroesRootPath(): string {
 
 function getRelicsRootPath(): string {
   return getGameDataPath(GAME_DATA_RELICS_DIR);
+}
+
+function getWeaponsRootPath(): string {
+  return getGameDataPath(GAME_DATA_WEAPONS_DIR);
+}
+
+function getMountsRootPath(): string {
+  return getGameDataPath(GAME_DATA_MOUNTS_DIR);
 }
 
 function getDefaultRelicIconPath(): string {
@@ -125,6 +135,24 @@ function getHeroFolders(): Map<string, HeroFolderInfo> {
   return folders;
 }
 
+function getAbilityAssetFromDirectory(rootPath: string, relativeDir: string, abilityId: unknown): HeroAbilityAsset | null {
+  const normalizedAbilityId = String(Number(abilityId));
+  if (!normalizedAbilityId || normalizedAbilityId === 'NaN') return null;
+
+  try {
+    const files = fs.readdirSync(rootPath);
+    const match = files.find((file) => file.startsWith(`${normalizedAbilityId}_`));
+    if (!match) return null;
+
+    return {
+      name: normalizeName(match) || `Skill ${normalizedAbilityId}`,
+      icon: path.posix.join(GAME_DATA_ROOT_DIR, relativeDir, match).replace(/\\/g, '/'),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getHeroAbilityAsset(classId: unknown, abilityId: unknown): HeroAbilityAsset | null {
   const normalizedClassId = String(Number(classId));
   const normalizedAbilityId = String(Number(abilityId));
@@ -132,30 +160,26 @@ function getHeroAbilityAsset(classId: unknown, abilityId: unknown): HeroAbilityA
   if (heroAbilityAssetCache.has(cacheKey)) return heroAbilityAssetCache.get(cacheKey) || null;
 
   const heroFolder = getHeroFolders().get(normalizedClassId);
-  if (!heroFolder?.absPath) {
-    heroAbilityAssetCache.set(cacheKey, null);
-    return null;
-  }
+  const asset = heroFolder?.absPath
+    ? getAbilityAssetFromDirectory(heroFolder.absPath, path.posix.join('heroes', heroFolder.dirName), normalizedAbilityId)
+    : null;
 
-  try {
-    const files = fs.readdirSync(heroFolder.absPath);
-    const match = files.find((file) => file.startsWith(`${normalizedAbilityId}_`));
-    if (!match) {
-      heroAbilityAssetCache.set(cacheKey, null);
-      return null;
-    }
+  heroAbilityAssetCache.set(cacheKey, asset);
+  return asset;
+}
 
-    const asset: HeroAbilityAsset = {
-      name: normalizeName(match) || `Skill ${normalizedAbilityId}`,
-      icon: path.posix.join(GAME_DATA_ROOT_DIR, 'heroes', heroFolder.dirName, match).replace(/\\/g, '/'),
-    };
+function getWeaponAbilityAsset(abilityId: unknown): HeroAbilityAsset | null {
+  return getAbilityAssetFromDirectory(getWeaponsRootPath(), 'weapons', abilityId);
+}
 
-    heroAbilityAssetCache.set(cacheKey, asset);
-    return asset;
-  } catch {
-    heroAbilityAssetCache.set(cacheKey, null);
-    return null;
-  }
+function getMountAbilityAsset(abilityId: unknown): HeroAbilityAsset | null {
+  return getAbilityAssetFromDirectory(getMountsRootPath(), 'mounts', abilityId);
+}
+
+function getBestAbilityAsset(classId: unknown, abilityId: unknown): HeroAbilityAsset | null {
+  return getHeroAbilityAsset(classId, abilityId)
+    || getWeaponAbilityAsset(abilityId)
+    || getMountAbilityAsset(abilityId);
 }
 
 function loadDungeonDataByName(name: unknown): DungeonData | null {
@@ -175,17 +199,24 @@ export {
   GAME_DATA_CATALOGS_DIR,
   GAME_DATA_DUNGEONS_DIR,
   GAME_DATA_HEROES_DIR,
+  GAME_DATA_MOUNTS_DIR,
   GAME_DATA_RELICS_DIR,
+  GAME_DATA_WEAPONS_DIR,
   GAME_DATA_ROOT_DIR,
+  getBestAbilityAsset,
   getDungeonsRootPath,
   getGameDataPath,
   getHeroAbilityAsset,
   getHeroFolders,
   getDefaultRelicIconPath,
   getHeroesRootPath,
+  getMountAbilityAsset,
+  getMountsRootPath,
   getRelicsRootPath,
   getRelicData,
   getSkillData,
+  getWeaponAbilityAsset,
+  getWeaponsRootPath,
   loadDungeonDataByName,
   normalizeName,
 };

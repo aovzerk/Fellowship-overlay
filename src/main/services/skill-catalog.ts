@@ -1,7 +1,7 @@
 import type { GetSkillCatalogFn } from '../../types/main-process';
 import type { SkillCatalog, SkillCatalogAbility, SkillCatalogClass } from '../../types/overlay';
 
-import { getHeroAbilityAsset, getHeroFolders, getSkillData } from './game-database';
+import { getBestAbilityAsset, getHeroFolders, getSkillData } from './game-database';
 
 const getSkillCatalog: GetSkillCatalogFn = (): SkillCatalog => {
   const skillData = getSkillData();
@@ -15,7 +15,7 @@ const getSkillCatalog: GetSkillCatalogFn = (): SkillCatalog => {
       const abilityList: SkillCatalogAbility[] = Object.entries(abilities || {})
         .map(([abilityId, cooldown]): SkillCatalogAbility => {
           const normalizedAbilityId = String(Number(abilityId));
-          const asset = getHeroAbilityAsset(normalizedClassId, normalizedAbilityId);
+          const asset = getBestAbilityAsset(normalizedClassId, normalizedAbilityId);
           const image = asset?.icon || null;
           const abilityName = asset?.name || `Skill ${abilityId}`;
 

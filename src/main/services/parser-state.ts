@@ -17,7 +17,7 @@ import {
   extractNpcTemplateId,
   isBossTemplateId,
 } from './parser-dungeon';
-import { DEFAULT_SKILL_ICON_REL_PATH, getHeroAbilityAsset } from './game-database';
+import { DEFAULT_SKILL_ICON_REL_PATH, getBestAbilityAsset } from './game-database';
 import { getPlayerEquippedRelicByAbilityId } from './parser-relics';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
@@ -334,8 +334,8 @@ function addRecentSkillActivation(
   if (!trackedPlayerId || player.id !== trackedPlayerId) return;
 
   const normalizedAbilityId = abilityId == null ? null : Number(abilityId);
-  const heroAbilityAsset = player.classId != null && normalizedAbilityId != null
-    ? getHeroAbilityAsset(player.classId, normalizedAbilityId)
+  const abilityAsset = normalizedAbilityId != null
+    ? getBestAbilityAsset(player.classId, normalizedAbilityId)
     : null;
 
   const entry: RecentSkillActivation = {
@@ -346,7 +346,7 @@ function addRecentSkillActivation(
     className: player.className,
     abilityId: normalizedAbilityId,
     abilityName: abilityName || null,
-    icon: heroAbilityAsset?.icon || DEFAULT_SKILL_ICON_REL_PATH,
+    icon: abilityAsset?.icon || DEFAULT_SKILL_ICON_REL_PATH,
   };
 
   state.recentSkillActivations.push(entry);
