@@ -8,6 +8,8 @@ import type {
   LanguageCode,
   OverlayPanelPositions,
   OverlaySettings,
+  RecentSkillsGrowthDirection,
+  RecentSkillsLayoutDirection,
   OverlayVisibilitySettings,
   PlayerPositions,
   Point,
@@ -34,6 +36,9 @@ const DEFAULT_PANEL_OPACITY = 0.88;
 const ICONS_PER_ROW_MIN = 1;
 const ICONS_PER_ROW_MAX = 6;
 const DEFAULT_ICONS_PER_ROW = 3;
+const RECENT_SKILLS_TRACK_COUNT_MIN = 1;
+const RECENT_SKILLS_TRACK_COUNT_MAX = 6;
+const DEFAULT_RECENT_SKILLS_TRACK_COUNT = 3;
 const DEFAULT_LAYOUT_DIRECTION: LayoutDirection = 'vertical';
 const DEFAULT_HOTKEYS: OverlayHotkeys = {
   toggleInteraction: 'F8',
@@ -41,6 +46,8 @@ const DEFAULT_HOTKEYS: OverlayHotkeys = {
   toggleVisibility: 'F10',
   openSettings: 'F11',
 };
+const DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: RecentSkillsLayoutDirection = 'horizontal';
+const DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION: RecentSkillsGrowthDirection = 'right';
 const LOG_FILE_EXTENSIONS = new Set(['.txt', '.log']);
 
 const I18N: Record<LanguageCode, Record<string, string>> = {
@@ -179,6 +186,22 @@ function normalizeLayoutDirection(value: unknown): LayoutDirection {
   return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
 }
 
+function normalizeRecentSkillsLayoutDirection(value: unknown): RecentSkillsLayoutDirection {
+  return String(value || '').toLowerCase() === 'vertical' ? 'vertical' : 'horizontal';
+}
+
+function normalizeRecentSkillsGrowthDirection(value: unknown): RecentSkillsGrowthDirection {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized === 'left' || normalized === 'up' || normalized === 'down') return normalized;
+  return DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION;
+}
+
+function normalizeRecentSkillsTrackCount(value: unknown): number {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return DEFAULT_RECENT_SKILLS_TRACK_COUNT;
+  return Math.round(clamp(normalized, RECENT_SKILLS_TRACK_COUNT_MIN, RECENT_SKILLS_TRACK_COUNT_MAX));
+}
+
 function normalizeStoredPath(value: unknown): string | null {
   const normalized = String(value || '').trim();
   return normalized || null;
@@ -227,6 +250,9 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     layoutDirection: normalizeLayoutDirection(source.layoutDirection),
     panelOpacity: normalizePanelOpacity(source.panelOpacity),
     iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+    recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
+    recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
+    recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
     hotkeys: normalizeHotkeys(source.hotkeys),
   };
 }
@@ -339,8 +365,11 @@ export {
   DEFAULT_LANGUAGE,
   DEFAULT_PANEL_OPACITY,
   DEFAULT_PULL_PANEL_POSITION,
+  DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
   DEFAULT_RECENT_SKILLS_LIMIT,
+  DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
   DEFAULT_RECENT_SKILLS_PANEL_POSITION,
+  DEFAULT_RECENT_SKILLS_TRACK_COUNT,
   FRAME_GAP_MAX,
   FRAME_GAP_MIN,
   I18N,
@@ -349,6 +378,8 @@ export {
   LOG_FILE_EXTENSIONS,
   PANEL_OPACITY_MAX,
   PANEL_OPACITY_MIN,
+  RECENT_SKILLS_TRACK_COUNT_MAX,
+  RECENT_SKILLS_TRACK_COUNT_MIN,
   clamp,
   createOverlaySettingsStore,
   normalizeLanguage,

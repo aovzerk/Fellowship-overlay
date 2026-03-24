@@ -42,6 +42,14 @@
       showPull: 'Показывать информацию по пулам и %',
       showRecentSkills: 'Показывать последние скиллы',
       recentSkillsLimit: 'Лимит последних скиллов',
+      recentSkillsLayoutDirection: 'Ориентация панели последних скиллов',
+      recentSkillsGrowthDirection: 'Рост панели последних скиллов',
+      recentSkillsTrackCountRows: 'Строк',
+      recentSkillsTrackCountColumns: 'Столбцов',
+      growthRight: 'Вправо',
+      growthLeft: 'Влево',
+      growthDown: 'Вниз',
+      growthUp: 'Вверх',
       chooseAbilities: 'Выберите одну или несколько способностей для каждого класса',
       selectedOrder: 'Порядок отображения',
       relics: 'Реликвии',
@@ -99,6 +107,14 @@
       showPull: 'Show pull and % info',
       showRecentSkills: 'Show recent skills',
       recentSkillsLimit: 'Recent skills limit',
+      recentSkillsLayoutDirection: 'Recent skills panel orientation',
+      recentSkillsGrowthDirection: 'Recent skills panel growth',
+      recentSkillsTrackCountRows: 'Rows',
+      recentSkillsTrackCountColumns: 'Columns',
+      growthRight: 'Right',
+      growthLeft: 'Left',
+      growthDown: 'Down',
+      growthUp: 'Up',
       chooseAbilities: 'Choose one or more abilities for each class',
       selectedOrder: 'Display order',
       relics: 'Relics',
@@ -154,9 +170,18 @@
       overlaySettingsTitle,
       panelOpacityLabel,
       pickFileBtn,
+      recentSkillsGrowthDirection,
+      recentSkillsGrowthDirectionLabel,
+      recentSkillsGrowthDirectionSelect,
+      recentSkillsLayoutDirection,
+      recentSkillsLayoutDirectionLabel,
+      recentSkillsLayoutDirectionSelect,
       recentSkillsLimit,
       recentSkillsLimitInput,
       recentSkillsLimitLabel,
+      recentSkillsTrackCount,
+      recentSkillsTrackCountControls,
+      recentSkillsTrackCountLabel,
       reloadBtn,
       renderPlayers,
       renderPullInfo,
@@ -209,6 +234,13 @@
     if (showPullToggleLabel) showPullToggleLabel.textContent = translate('showPull');
     if (showRecentSkillsToggleLabel) showRecentSkillsToggleLabel.textContent = translate('showRecentSkills');
     if (recentSkillsLimitLabel) recentSkillsLimitLabel.textContent = translate('recentSkillsLimit');
+    if (recentSkillsLayoutDirectionLabel) recentSkillsLayoutDirectionLabel.textContent = translate('recentSkillsLayoutDirection');
+    if (recentSkillsGrowthDirectionLabel) recentSkillsGrowthDirectionLabel.textContent = translate('recentSkillsGrowthDirection');
+    if (recentSkillsTrackCountLabel) {
+      recentSkillsTrackCountLabel.textContent = recentSkillsLayoutDirection === 'horizontal'
+        ? translate('recentSkillsTrackCountRows')
+        : translate('recentSkillsTrackCountColumns');
+    }
     if (showPartyToggle) showPartyToggle.checked = !!visibilitySettings.showParty;
     if (showPullToggle) showPullToggle.checked = !!visibilitySettings.showPull;
     if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
@@ -223,9 +255,40 @@
       if (horizontalOption) horizontalOption.textContent = translate('layoutHorizontal');
     }
 
+    if (recentSkillsLayoutDirectionSelect) {
+      recentSkillsLayoutDirectionSelect.value = recentSkillsLayoutDirection;
+      const verticalOption = recentSkillsLayoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="vertical"]');
+      const horizontalOption = recentSkillsLayoutDirectionSelect.querySelector<HTMLOptionElement>('option[value="horizontal"]');
+      if (verticalOption) verticalOption.textContent = translate('layoutVertical');
+      if (horizontalOption) horizontalOption.textContent = translate('layoutHorizontal');
+    }
+
+    if (recentSkillsGrowthDirectionSelect) {
+      const options = recentSkillsLayoutDirection === 'horizontal'
+        ? [
+            { value: 'right', label: translate('growthRight') },
+            { value: 'left', label: translate('growthLeft') },
+          ]
+        : [
+            { value: 'down', label: translate('growthDown') },
+            { value: 'up', label: translate('growthUp') },
+          ];
+      recentSkillsGrowthDirectionSelect.innerHTML = options
+        .map((option) => `<option value="${option.value}">${option.label}</option>`)
+        .join('');
+      recentSkillsGrowthDirectionSelect.value = recentSkillsGrowthDirection;
+    }
+
     if (cardSizeControls) cardSizeControls.title = translate('cardSizeTitle');
     if (frameGapControls) frameGapControls.title = translate('frameGapTitle');
     if (iconsPerRowControls) iconsPerRowControls.title = translate('iconsPerRowTitle');
+    if (recentSkillsTrackCountControls) {
+      recentSkillsTrackCountControls.title = recentSkillsLayoutDirection === 'horizontal'
+        ? translate('recentSkillsTrackCountRows')
+        : translate('recentSkillsTrackCountColumns');
+      const valueEl = recentSkillsTrackCountControls.querySelector('span');
+      if (valueEl) valueEl.textContent = String(recentSkillsTrackCount);
+    }
 
     if (!filePathEl.textContent || filePathEl.textContent === I18N.en.noFileSelected || filePathEl.textContent === I18N.ru.noFileSelected) {
       filePathEl.textContent = translate('noFileSelected');

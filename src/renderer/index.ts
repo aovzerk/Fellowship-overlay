@@ -67,6 +67,15 @@ const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle')
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
+const recentSkillsLayoutDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsLayoutDirectionSelect');
+const recentSkillsLayoutDirectionLabel = mustElement<HTMLElement>('recentSkillsLayoutDirectionLabel');
+const recentSkillsGrowthDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsGrowthDirectionSelect');
+const recentSkillsGrowthDirectionLabel = mustElement<HTMLElement>('recentSkillsGrowthDirectionLabel');
+const recentSkillsTrackCountDownBtn = mustElement<HTMLButtonElement>('recentSkillsTrackCountDownBtn');
+const recentSkillsTrackCountUpBtn = mustElement<HTMLButtonElement>('recentSkillsTrackCountUpBtn');
+const recentSkillsTrackCountValueEl = mustElement<HTMLElement>('recentSkillsTrackCountValue');
+const recentSkillsTrackCountControls = mustElement<HTMLElement>('recentSkillsTrackCountControls');
+const recentSkillsTrackCountLabel = mustElement<HTMLElement>('recentSkillsTrackCountLabel');
 
 const {
   CARD_SCALE_STEP,
@@ -75,6 +84,9 @@ const {
   DEFAULT_ICONS_PER_ROW,
   DEFAULT_LAYOUT_DIRECTION,
   DEFAULT_PANEL_OPACITY,
+  DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
+  DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
+  DEFAULT_RECENT_SKILLS_TRACK_COUNT,
   FRAME_GAP_STEP,
 } = window.OverlayRendererConstants;
 const {
@@ -126,6 +138,9 @@ let currentLanguage: LanguageCode = 'en';
 let lastWatchStatusMessage = '';
 let visibilitySettings: OverlayVisibilitySettings = settingsController.loadVisibilitySettings();
 let recentSkillsLimit = settingsController.loadRecentSkillsLimit();
+let recentSkillsLayoutDirection = settingsController.loadRecentSkillsLayoutDirection();
+let recentSkillsGrowthDirection = settingsController.loadRecentSkillsGrowthDirection();
+let recentSkillsTrackCount = settingsController.loadRecentSkillsTrackCount();
 let playerCardRenderer: PlayerCardRenderer | null = null;
 let settingsModalOpen = false;
 let listeningHotkeyAction: HotkeyAction | null = null;
@@ -272,6 +287,9 @@ function renderRecentSkillsPanel(recentSkills: RecentSkillActivation[] = []): vo
   renderRecentSkillsPanelShared({
     currentLanguage,
     getCardWidthForIconCount,
+    recentSkillsLayoutDirection,
+    recentSkillsGrowthDirection,
+    recentSkillsTrackCount,
     recentSkills,
     recentSkillsLimit,
     recentSkillsPanelEl,
@@ -389,6 +407,21 @@ function updateLayoutDirectionUi(): void {
   layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
 }
 
+function updateRecentSkillsLayoutUi(): void {
+  recentSkillsLayoutDirectionSelect.value = recentSkillsLayoutDirection;
+  const isHorizontal = recentSkillsLayoutDirection === 'horizontal';
+  recentSkillsGrowthDirectionSelect.innerHTML = isHorizontal
+    ? `<option value="right">${escapeHtml(t('growthRight'))}</option><option value="left">${escapeHtml(t('growthLeft'))}</option>`
+    : `<option value="down">${escapeHtml(t('growthDown'))}</option><option value="up">${escapeHtml(t('growthUp'))}</option>`;
+  const normalizedGrowth = settingsController.normalizeRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  recentSkillsGrowthDirection = isHorizontal
+    ? (normalizedGrowth === 'left' ? 'left' : 'right')
+    : (normalizedGrowth === 'up' ? 'up' : 'down');
+  recentSkillsGrowthDirectionSelect.value = recentSkillsGrowthDirection;
+  recentSkillsTrackCountValueEl.textContent = String(recentSkillsTrackCount);
+  recentSkillsTrackCountLabel.textContent = isHorizontal ? t('recentSkillsTrackCountRows') : t('recentSkillsTrackCountColumns');
+}
+
 function rerenderPlayersIfNeeded(): void {
   if (latestData?.players) renderPlayers(latestData.players);
 }
@@ -439,6 +472,44 @@ function setLayoutDirection(nextValue: unknown): void {
   applyAppearanceVariables();
   updateLayoutDirectionUi();
   rerenderPlayersIfNeeded();
+}
+
+function rerenderRecentSkillsPanel(): void {
+  renderRecentSkillsPanel(latestData?.recentSkills || []);
+}
+
+function setRecentSkillsLayoutDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeRecentSkillsLayoutDirection(nextValue);
+  if (normalized === recentSkillsLayoutDirection) return;
+  recentSkillsLayoutDirection = normalized;
+  recentSkillsGrowthDirection = normalized === 'horizontal'
+    ? (recentSkillsGrowthDirection === 'left' ? 'left' : 'right')
+    : (recentSkillsGrowthDirection === 'up' ? 'up' : 'down');
+  settingsController.saveRecentSkillsLayoutDirection(recentSkillsLayoutDirection);
+  settingsController.saveRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
+}
+
+function setRecentSkillsGrowthDirection(nextValue: unknown): void {
+  const normalized = settingsController.normalizeRecentSkillsGrowthDirection(nextValue);
+  const allowed = recentSkillsLayoutDirection === 'horizontal'
+    ? (normalized === 'left' ? 'left' : 'right')
+    : (normalized === 'up' ? 'up' : 'down');
+  if (allowed === recentSkillsGrowthDirection) return;
+  recentSkillsGrowthDirection = allowed;
+  settingsController.saveRecentSkillsGrowthDirection(recentSkillsGrowthDirection);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
+}
+
+function setRecentSkillsTrackCount(nextValue: number): void {
+  const normalized = settingsController.normalizeRecentSkillsTrackCount(nextValue);
+  if (normalized === recentSkillsTrackCount) return;
+  recentSkillsTrackCount = normalized;
+  settingsController.saveRecentSkillsTrackCount(recentSkillsTrackCount);
+  updateRecentSkillsLayoutUi();
+  rerenderRecentSkillsPanel();
 }
 
 function setHudActiveState(active: boolean, foregroundExe: string | null = null): void {
@@ -527,9 +598,18 @@ function applyTranslations(): void {
     overlaySettingsTitle,
     panelOpacityLabel,
     pickFileBtn,
+    recentSkillsGrowthDirection,
+    recentSkillsGrowthDirectionLabel,
+    recentSkillsGrowthDirectionSelect,
+    recentSkillsLayoutDirection,
+    recentSkillsLayoutDirectionLabel,
+    recentSkillsLayoutDirectionSelect,
     recentSkillsLimit,
     recentSkillsLimitInput,
     recentSkillsLimitLabel,
+    recentSkillsTrackCount,
+    recentSkillsTrackCountControls,
+    recentSkillsTrackCountLabel,
     reloadBtn,
     renderPlayers,
     renderPullInfo,
@@ -572,6 +652,7 @@ async function openSettingsModal(): Promise<void> {
   updateIconsPerRowUi();
   updatePanelOpacityUi();
   updateLayoutDirectionUi();
+  updateRecentSkillsLayoutUi();
   settingsModal.classList.remove('hidden');
   settingsModalOpen = true;
   await window.api.setSettingsModalOpen(true);
@@ -671,6 +752,14 @@ recentSkillsLimitInput.addEventListener('input', (event: Event) => {
   const value = clamp(Number(input.value || 7), 1, 20);
   input.value = String(value);
 });
+recentSkillsLayoutDirectionSelect.addEventListener('change', (event: Event) => {
+  setRecentSkillsLayoutDirection((event.currentTarget as HTMLSelectElement).value);
+});
+recentSkillsGrowthDirectionSelect.addEventListener('change', (event: Event) => {
+  setRecentSkillsGrowthDirection((event.currentTarget as HTMLSelectElement).value);
+});
+recentSkillsTrackCountDownBtn.addEventListener('click', () => setRecentSkillsTrackCount(recentSkillsTrackCount - 1));
+recentSkillsTrackCountUpBtn.addEventListener('click', () => setRecentSkillsTrackCount(recentSkillsTrackCount + 1));
 frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP_STEP));
 frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
 iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
@@ -768,6 +857,7 @@ updateFrameGapUi();
 updateIconsPerRowUi();
 updatePanelOpacityUi();
 updateLayoutDirectionUi();
+updateRecentSkillsLayoutUi();
 updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();

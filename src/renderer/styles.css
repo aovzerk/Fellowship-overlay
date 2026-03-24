@@ -117,7 +117,8 @@ button:hover {
 
 #cardSizeValue,
 #frameGapValue,
-#iconsPerRowValue {
+#iconsPerRowValue,
+#recentSkillsTrackCountValue {
   min-width: 44px;
   text-align: center;
   font-weight: 700;
@@ -538,6 +539,10 @@ button:hover {
   font-size: 12px;
 }
 
+.settings-note-inline {
+  white-space: normal;
+}
+
 .hotkey-list {
   display: grid;
   gap: 10px;
@@ -657,10 +662,39 @@ button:hover {
 }
 
 .recent-skills-row {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(var(--recent-skills-columns, 1), calc(60px * var(--card-scale)));
+  grid-template-rows: repeat(var(--recent-skills-rows, 1), calc(60px * var(--card-scale)));
   gap: calc(8px * var(--card-scale));
-  align-items: center;
+  align-items: start;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.recent-skills-row[data-layout="horizontal"] {
+  grid-auto-flow: column;
+}
+
+.recent-skills-row[data-layout="horizontal"][data-growth="left"] {
+  direction: rtl;
+}
+
+.recent-skills-row[data-layout="horizontal"][data-growth="left"] .recent-skill-chip {
+  direction: ltr;
+}
+
+.recent-skills-row[data-layout="vertical"] {
+  grid-auto-flow: row;
+}
+
+.recent-skills-row[data-layout="vertical"][data-growth="up"] {
+  transform: scaleY(-1);
+}
+
+.recent-skills-row[data-layout="vertical"][data-growth="up"] .recent-skill-chip {
+  transform: scaleY(-1);
 }
 
 .recent-skill-chip {
