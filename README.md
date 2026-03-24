@@ -56,7 +56,8 @@ The overlay can work in two modes:
   - When the overlay is **locked**, it passes all clicks through to the game
   - When the overlay is **unlocked**, it does **not** pass clicks through
 - **F9** — Select log file
-
+- **F10** — Shor or hide overlay
+- **F11** — Open settings
 ## Tray
 
 The application also runs in the **system tray**.
@@ -71,15 +72,12 @@ From the tray you can open the app and access **settings**.
 
 ## Installation
 
-**Requirements:**
-- Node.js 20+
-
 **Before using the overlay:**
 - Enable **ADVANCED COMBAT LOGS** in the game settings
 
 **Setup & Run:**
 ```bash
-npm i          # install dependencies
+npm i          # install dependencies # Node.js 20+
 npm start      # run in development mode
 npm run dist   # build application
 ```
