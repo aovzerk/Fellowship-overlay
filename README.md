@@ -1,3 +1,17 @@
+> [!IMPORTANT]
+> If you are worried about using this overlay, we have confirmation from the developers that it is allowed and players will not be punished for using it before official in-game support.
+>
+> **Developer statement (CR_Jupiter):**
+> 
+> "Hello! I am back with news about the overlay:
+>
+> Adding trackers to relics, spirit abilities and more is something we want to be doing anyways (that is also including current pull % etc.) so we won't be punishing players who want to use it before official in-game support
+>
+> Anyone who want's to use it can, go ham 🍔"
+>
+> Source: CR_Jupiter  
+> https://discord.com/channels/1254866410258038845/1268395520846467226/1485956620503617697
+
 # Fellowship Overlay
 
 Lightweight in-game overlay for tracking party members, relics, Spirit values, skill cooldowns, and recent actions in real time using combat logs.
