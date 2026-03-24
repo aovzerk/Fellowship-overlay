@@ -1,0 +1,68 @@
+{
+  "map": "Wyrmheart",
+  "zone_id": 8,
+  "killcount": 109,
+  "bossesID": [156],
+  "mobs": {
+    "166": {
+      "name": "Blade of Cithrel",
+      "score": 3,
+      "percent": 2.75
+    },
+    "165": {
+      "name": "Eldrin Recruit",
+      "score": 2,
+      "percent": 1.83
+    },
+    "163": {
+      "name": "Deceitful Scholar",
+      "score": 5,
+      "percent": 4.59
+    },
+    "162": {
+      "name": "Tundra Stalker",
+      "score": 2,
+      "percent": 1.83
+    },
+    "160": {
+      "name": "Spellbound Golem",
+      "score": 4,
+      "percent": 3.67
+    },
+    "157": {
+      "name": "Coldheart Assassin",
+      "score": 3,
+      "percent": 2.75
+    },
+    "152": {
+      "name": "Ice Shardling",
+      "score": 1,
+      "percent": 0.92
+    },
+    "155": {
+      "name": "Frozen Remnant",
+      "score": 1,
+      "percent": 0.92
+    },
+    "154": {
+      "name": "Greater Ice Elemental",
+      "score": 6,
+      "percent": 5.50
+    },
+    "153": {
+      "name": "Eldrin Chronomancer",
+      "score": 4,
+      "percent": 3.67
+    },
+    "151": {
+      "name": "Expedition Lookout",
+      "score": 1,
+      "percent": 0.92
+    },
+    "156": {
+      "name": "Apostate Veras",
+      "score": 0,
+      "percent": 0.00
+    }
+  }
+}
