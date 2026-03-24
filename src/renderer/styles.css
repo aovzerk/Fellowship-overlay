@@ -490,6 +490,11 @@ button:hover {
   opacity: 1;
 }
 
+.hotkey-badge.listening {
+  border-color: rgba(92, 179, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(92, 179, 255, 0.45);
+}
+
 .pull-panel {
   position: fixed;
   left: 16px;

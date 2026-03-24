@@ -3,6 +3,7 @@ import type {
   OverlaySettingsStore,
 } from '../../types/main-process';
 import type {
+  OverlayHotkeys,
   LayoutDirection,
   LanguageCode,
   OverlayPanelPositions,
@@ -34,6 +35,12 @@ const ICONS_PER_ROW_MIN = 1;
 const ICONS_PER_ROW_MAX = 6;
 const DEFAULT_ICONS_PER_ROW = 3;
 const DEFAULT_LAYOUT_DIRECTION: LayoutDirection = 'vertical';
+const DEFAULT_HOTKEYS: OverlayHotkeys = {
+  toggleInteraction: 'F8',
+  pickLog: 'F9',
+  toggleVisibility: 'F10',
+  openSettings: 'F11',
+};
 const LOG_FILE_EXTENSIONS = new Set(['.txt', '.log']);
 
 const I18N: Record<LanguageCode, Record<string, string>> = {
@@ -177,6 +184,21 @@ function normalizeStoredPath(value: unknown): string | null {
   return normalized || null;
 }
 
+function normalizeHotkey(value: unknown, fallback: string): string {
+  const normalized = String(value || '').trim();
+  return normalized || fallback;
+}
+
+function normalizeHotkeys(value: unknown): OverlayHotkeys {
+  const source = asRecord(value);
+  return {
+    toggleInteraction: normalizeHotkey(source.toggleInteraction, DEFAULT_HOTKEYS.toggleInteraction),
+    pickLog: normalizeHotkey(source.pickLog, DEFAULT_HOTKEYS.pickLog),
+    toggleVisibility: normalizeHotkey(source.toggleVisibility, DEFAULT_HOTKEYS.toggleVisibility),
+    openSettings: normalizeHotkey(source.openSettings, DEFAULT_HOTKEYS.openSettings),
+  };
+}
+
 function normalizeCurrentFilePath(value: unknown): string | null {
   return normalizeStoredPath(value);
 }
@@ -205,6 +227,7 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     layoutDirection: normalizeLayoutDirection(source.layoutDirection),
     panelOpacity: normalizePanelOpacity(source.panelOpacity),
     iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+    hotkeys: normalizeHotkeys(source.hotkeys),
   };
 }
 
@@ -310,6 +333,7 @@ export {
   CARD_SCALE_MIN,
   DEFAULT_CARD_SCALE,
   DEFAULT_FRAME_GAP,
+  DEFAULT_HOTKEYS,
   DEFAULT_ICONS_PER_ROW,
   DEFAULT_LAYOUT_DIRECTION,
   DEFAULT_LANGUAGE,
@@ -328,4 +352,5 @@ export {
   clamp,
   createOverlaySettingsStore,
   normalizeLanguage,
+  normalizeHotkeys,
 };

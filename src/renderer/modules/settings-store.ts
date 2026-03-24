@@ -5,6 +5,7 @@
     CARD_SCALE_MIN,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
+    DEFAULT_HOTKEYS,
     DEFAULT_ICONS_PER_ROW,
     DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
@@ -114,6 +115,21 @@
     return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
   }
 
+  function normalizeHotkey(value: unknown, fallback: string): string {
+    const normalized = String(value || '').trim();
+    return normalized || fallback;
+  }
+
+  function normalizeHotkeys(value: unknown): OverlayHotkeys {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<OverlayHotkeys> : {};
+    return {
+      toggleInteraction: normalizeHotkey(source.toggleInteraction, DEFAULT_HOTKEYS.toggleInteraction),
+      pickLog: normalizeHotkey(source.pickLog, DEFAULT_HOTKEYS.pickLog),
+      toggleVisibility: normalizeHotkey(source.toggleVisibility, DEFAULT_HOTKEYS.toggleVisibility),
+      openSettings: normalizeHotkey(source.openSettings, DEFAULT_HOTKEYS.openSettings),
+    };
+  }
+
   function normalizePanelOpacity(value: unknown): number {
     const normalized = Number(value);
     if (!Number.isFinite(normalized)) return DEFAULT_PANEL_OPACITY;
@@ -133,6 +149,7 @@
       layoutDirection: normalizeLayoutDirection(source.layoutDirection),
       panelOpacity: normalizePanelOpacity(source.panelOpacity),
       iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+      hotkeys: normalizeHotkeys(source.hotkeys),
     };
   }
 
@@ -189,6 +206,7 @@
       normalizeFrameGap,
       normalizeIconsPerRow,
       normalizeLayoutDirection,
+      normalizeHotkeys,
       normalizePanelOpacity,
       normalizePosition,
       normalizeRecentSkillsLimit,
@@ -202,6 +220,9 @@
       },
       loadIconsPerRow() {
         return normalizeIconsPerRow(getOverlaySettings().iconsPerRow);
+      },
+      loadHotkeys() {
+        return normalizeHotkeys(getOverlaySettings().hotkeys);
       },
       loadLayoutDirection() {
         return normalizeLayoutDirection(getOverlaySettings().layoutDirection);
@@ -239,6 +260,9 @@
       },
       saveIconsPerRow(iconsPerRow: number) {
         saveOverlaySettingsPatch({ iconsPerRow: normalizeIconsPerRow(iconsPerRow) });
+      },
+      saveHotkeys(hotkeys: OverlayHotkeys) {
+        saveOverlaySettingsPatch({ hotkeys: normalizeHotkeys(hotkeys) });
       },
       saveLayoutDirection(layoutDirection: 'vertical' | 'horizontal') {
         saveOverlaySettingsPatch({ layoutDirection: normalizeLayoutDirection(layoutDirection) });
