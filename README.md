@@ -71,13 +71,13 @@ From the tray you can open the app and access **settings**.
 ![Overlay Example](./screenshots/screenshot3.png)
 
 ## Installation
-
-**Before using the overlay:**
+- Download .exe file and run
 - Enable **ADVANCED COMBAT LOGS** in the game settings
 
-**Setup & Run:**
+## DEV
+- Node.js 20+
 ```bash
-npm i          # install dependencies # Node.js 20+
+npm i          # install dependencies
 npm start      # run in development mode
 npm run dist   # build application
 ```
