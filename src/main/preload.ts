@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('api', {
   reloadCurrentFile: (): Promise<unknown> => ipcRenderer.invoke('reload-current-file'),
   toggleOverlayLock: (): Promise<{ locked: boolean }> => ipcRenderer.invoke('toggle-overlay-lock'),
   toggleOverlayVisibility: (): Promise<{ visible: boolean }> => ipcRenderer.invoke('toggle-overlay-visibility'),
+  setSettingsModalOpen: (open: boolean): Promise<{ ok: boolean }> => ipcRenderer.invoke('set-settings-modal-open', open),
+  closeInteractiveModal: (): Promise<{ locked: boolean }> => ipcRenderer.invoke('close-interactive-modal'),
   getCurrentFile: (): Promise<unknown> => ipcRenderer.invoke('get-current-file'),
   getSkillCatalog: (): Promise<unknown> => ipcRenderer.invoke('get-skill-catalog'),
   getLanguage: (): Promise<{ language: LanguageCode }> => ipcRenderer.invoke('get-language'),
@@ -29,4 +31,5 @@ contextBridge.exposeInMainWorld('api', {
   onOverlayMode: (callback: (payload: OverlayModePayload) => void): void => { ipcRenderer.on('overlay-mode', (_: unknown, payload: OverlayModePayload) => callback(payload)); },
   onLanguageChanged: (callback: (payload: { language: LanguageCode }) => void): void => { ipcRenderer.on('language-changed', (_: unknown, payload: { language: LanguageCode }) => callback(payload)); },
   onOpenSettings: (callback: (payload: OpenSettingsPayload) => void): void => { ipcRenderer.on('open-settings', (_: unknown, payload: OpenSettingsPayload) => callback(payload)); },
+  onRequestCloseSettings: (callback: () => void): void => { ipcRenderer.on('request-close-settings', () => callback()); },
 });

@@ -12,6 +12,7 @@ import type {
   LogDataPayload,
   LogSourceInfo,
   OpenSettingsPayload,
+  OverlayHotkeys,
   OverlayModePayload,
   PickDirectoryResult,
   SaveOverlaySettingsResult,
@@ -47,6 +48,11 @@ interface OpenDialogResultLike {
 let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
+let settingsModalOpen = false;
+
+function getConfiguredHotkeys(): OverlayHotkeys {
+  return settingsStore.getOverlaySettings().hotkeys;
+}
 
 function resolveSettingsDirectory(): string {
   const portableExecutableDir = String(process.env.PORTABLE_EXECUTABLE_DIR || '').trim();
@@ -107,6 +113,8 @@ const logDirectoryService: LogDirectoryService = createLogDirectoryService({
 function openSettingsWindow(): void {
   if (!win) return;
   showWindow();
+  settingsModalOpen = true;
+  if (clickThroughEnabled) setClickThrough(false);
   const payload: OpenSettingsPayload = {
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
@@ -115,6 +123,19 @@ function openSettingsWindow(): void {
     language: settingsStore.getCurrentLanguage(),
   };
   win.webContents.send('open-settings', payload);
+}
+
+function setSettingsModalOpen(open: boolean): void {
+  settingsModalOpen = !!open;
+  if (settingsModalOpen && clickThroughEnabled) {
+    setClickThrough(false);
+  }
+}
+
+function closeInteractiveModal(): { locked: boolean } {
+  settingsModalOpen = false;
+  setClickThrough(true);
+  return { locked: !clickThroughEnabled };
 }
 
 const trayManager: TrayManager = createTrayManager({
@@ -213,24 +234,40 @@ function createWindow(): void {
   setClickThrough(true);
 }
 
+function registerConfiguredHotkeys(): void {
+  globalShortcut.unregisterAll();
+
+  const hotkeys = getConfiguredHotkeys();
+  const registrations: Array<[string, () => void]> = [
+    [hotkeys.toggleInteraction, () => {
+      setClickThrough(!clickThroughEnabled);
+    }],
+    [hotkeys.pickLog, () => {
+      void chooseLogDirectory();
+    }],
+    [hotkeys.toggleVisibility, () => {
+      toggleOverlayVisibility();
+    }],
+    [hotkeys.openSettings, () => {
+      if (!win?.isVisible() || !settingsModalOpen) {
+        openSettingsWindow();
+        return;
+      }
+      win.webContents.send('request-close-settings');
+    }],
+  ];
+
+  registrations.forEach(([accelerator, handler]) => {
+    if (!accelerator) return;
+    try {
+      globalShortcut.register(accelerator, handler);
+    } catch {}
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
-
-  globalShortcut.register('F8', () => {
-    setClickThrough(!clickThroughEnabled);
-  });
-
-  globalShortcut.register('F9', () => {
-    void chooseLogDirectory();
-  });
-
-  globalShortcut.register('F10', () => {
-    toggleOverlayVisibility();
-  });
-
-  globalShortcut.register('F11', () => {
-    openSettingsWindow();
-  });
+  registerConfiguredHotkeys();
 
   ipcMain.handle('pick-log-file', async (): Promise<PickDirectoryResult> => chooseLogDirectory());
   ipcMain.handle('reload-current-file', async () => logDirectoryService.reloadCurrentFile());
@@ -241,6 +278,11 @@ app.whenReady().then(() => {
   ipcMain.handle('toggle-overlay-visibility', async (): Promise<{ visible: boolean }> => ({
     visible: toggleOverlayVisibility(),
   }));
+  ipcMain.handle('set-settings-modal-open', async (_: unknown, open: boolean): Promise<{ ok: boolean }> => {
+    setSettingsModalOpen(!!open);
+    return { ok: true };
+  });
+  ipcMain.handle('close-interactive-modal', async (): Promise<{ locked: boolean }> => closeInteractiveModal());
   ipcMain.handle('get-current-file', async (): Promise<LogSourceInfo> => ({
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
@@ -261,7 +303,13 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('save-overlay-settings', async (_: unknown, partialSettings): Promise<SaveOverlaySettingsResult> => ({
     ok: true,
-    settings: settingsStore.saveOverlaySettings(partialSettings),
+    settings: (() => {
+      const nextSettings = settingsStore.saveOverlaySettings(partialSettings);
+      if (partialSettings && typeof partialSettings === 'object' && 'hotkeys' in (partialSettings as Record<string, unknown>)) {
+        registerConfiguredHotkeys();
+      }
+      return nextSettings;
+    })(),
   }));
   ipcMain.handle('set-language', async (_: unknown, language: LanguageCode): Promise<LanguagePayload> => {
     const nextLanguage = settingsStore.setCurrentLanguage(language);

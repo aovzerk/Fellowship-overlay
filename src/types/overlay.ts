@@ -1,6 +1,7 @@
 export type Nullable<T> = T | null;
 export type LanguageCode = 'en' | 'ru';
 export type LayoutDirection = 'vertical' | 'horizontal';
+export type HotkeyAction = 'toggleInteraction' | 'pickLog' | 'toggleVisibility' | 'openSettings';
 
 export interface Point {
   x: number;
@@ -21,6 +22,13 @@ export interface OverlayPanelPositions {
   recentSkills: Point;
 }
 
+export interface OverlayHotkeys {
+  toggleInteraction: string;
+  pickLog: string;
+  toggleVisibility: string;
+  openSettings: string;
+}
+
 export interface OverlaySettings {
   language?: LanguageCode;
   logDirectoryPath?: string | null;
@@ -35,6 +43,7 @@ export interface OverlaySettings {
   layoutDirection: LayoutDirection;
   panelOpacity: number;
   iconsPerRow: number;
+  hotkeys: OverlayHotkeys;
 }
 
 export interface LogSourceInfo {
@@ -375,6 +384,8 @@ export interface OverlayApi {
   reloadCurrentFile(): Promise<ReloadFileResult>;
   toggleOverlayLock(): Promise<{ locked: boolean }>;
   toggleOverlayVisibility(): Promise<{ visible: boolean }>;
+  setSettingsModalOpen(open: boolean): Promise<{ ok: boolean }>;
+  closeInteractiveModal(): Promise<{ locked: boolean }>;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;
@@ -388,6 +399,7 @@ export interface OverlayApi {
   onOverlayMode(callback: (payload: OverlayModePayload) => void): void;
   onLanguageChanged(callback: (payload: LanguagePayload) => void): void;
   onOpenSettings(callback: (payload: OpenSettingsPayload) => void): void;
+  onRequestCloseSettings(callback: () => void): void;
 }
 
 export interface RendererConstantsApi {
@@ -416,6 +428,7 @@ export interface RendererConstantsApi {
   DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
   DEFAULT_PANEL_OPACITY: number;
   DEFAULT_ICONS_PER_ROW: number;
+  DEFAULT_HOTKEYS: OverlayHotkeys;
   DEFAULT_OVERLAY_SETTINGS: OverlaySettings;
 }
 
@@ -548,12 +561,14 @@ export interface OverlaySettingsController {
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
+  normalizeHotkeys(value: unknown): OverlayHotkeys;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
   loadCardScale(): number;
   loadFrameGap(): number;
   loadIconsPerRow(): number;
   loadLayoutDirection(): LayoutDirection;
   loadPanelOpacity(): number;
+  loadHotkeys(): OverlayHotkeys;
   loadPositions(): PlayerPositions;
   loadPullPanelPosition(): Point;
   loadRecentSkillsLimit(): number;
@@ -565,6 +580,7 @@ export interface OverlaySettingsController {
   saveIconsPerRow(iconsPerRow: number): void;
   saveLayoutDirection(layoutDirection: LayoutDirection): void;
   savePanelOpacity(panelOpacity: number): void;
+  saveHotkeys(hotkeys: OverlayHotkeys): void;
   savePositions(positions: PlayerPositions): void;
   savePullPanelPosition(position: Point): void;
   saveRecentSkillsLimit(recentSkillsLimit: number): void;

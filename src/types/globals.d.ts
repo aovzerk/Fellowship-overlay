@@ -32,10 +32,12 @@ declare interface Window {
 type Nullable<T> = import('./overlay').Nullable<T>;
 type LanguageCode = import('./overlay').LanguageCode;
 type Point = import('./overlay').Point;
+type HotkeyAction = import('./overlay').HotkeyAction;
 type PlayerPositions = import('./overlay').PlayerPositions;
 type SkillSelectionMap = import('./overlay').SkillSelectionMap;
 type OverlayVisibilitySettings = import('./overlay').OverlayVisibilitySettings;
 type OverlayPanelPositions = import('./overlay').OverlayPanelPositions;
+type OverlayHotkeys = import('./overlay').OverlayHotkeys;
 type OverlaySettings = import('./overlay').OverlaySettings;
 type LogSourceInfo = import('./overlay').LogSourceInfo;
 type WatchStatusPayload = import('./overlay').WatchStatusPayload;

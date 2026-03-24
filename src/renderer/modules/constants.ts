@@ -24,6 +24,12 @@
   const DEFAULT_LAYOUT_DIRECTION: 'vertical' | 'horizontal' = 'vertical';
   const DEFAULT_PANEL_OPACITY = 0.88;
   const DEFAULT_ICONS_PER_ROW = 3;
+  const DEFAULT_HOTKEYS: OverlayHotkeys = {
+    toggleInteraction: 'F8',
+    pickLog: 'F9',
+    toggleVisibility: 'F10',
+    openSettings: 'F11',
+  };
   const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
     playerPositions: {},
     panelPositions: {
@@ -38,6 +44,7 @@
     layoutDirection: DEFAULT_LAYOUT_DIRECTION,
     panelOpacity: DEFAULT_PANEL_OPACITY,
     iconsPerRow: DEFAULT_ICONS_PER_ROW,
+    hotkeys: { ...DEFAULT_HOTKEYS },
   };
 
   window.OverlayRendererConstants = {
@@ -54,6 +61,7 @@
     PANEL_OPACITY_MIN,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
+    DEFAULT_HOTKEYS,
     DEFAULT_ICONS_PER_ROW,
     DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
