@@ -19,10 +19,10 @@
             <div id="settingsModalTitle" class="modal-title">Настройки</div>
             <div id="settingsModalSubtitle" class="modal-subtitle">Общие настройки оверлея</div>
           </div>
-          <button id="closeSettingsModalBtn" class="danger-btn">×</button>
+          <button id="closeSettingsModalBtn" class="danger-btn">✕</button>
         </div>
         <div class="modal-body settings-grid">
-          <section class="settings-group" id="logSettingsGroup">
+          <section class="settings-group">
             <div class="settings-group-title" id="logSettingsTitle">Лог</div>
             <div class="settings-row">
               <button id="pickFileBtn">Выбрать папку</button>
@@ -32,7 +32,7 @@
             <div id="watchStatus" class="settings-note">Нет слежения</div>
           </section>
 
-          <section class="settings-group" id="overlaySettingsGroup">
+          <section class="settings-group">
             <div class="settings-group-title" id="overlaySettingsTitle">Оверлей</div>
             <div class="settings-row">
               <button id="toggleLockBtn">Lock/Unlock</button>
@@ -41,11 +41,11 @@
             <div class="settings-row settings-row-inline settings-toggle-list">
               <label class="settings-toggle interactive" for="showPartyToggle">
                 <input id="showPartyToggle" type="checkbox" checked />
-                <span id="showPartyToggleLabel">Показывать группу и кулдауны</span>
+                <span id="showPartyToggleLabel">Показывать группу</span>
               </label>
               <label class="settings-toggle interactive" for="showPullToggle">
                 <input id="showPullToggle" type="checkbox" checked />
-                <span id="showPullToggleLabel">Показывать информацию по пулам и %</span>
+                <span id="showPullToggleLabel">Показывать проценты пулов</span>
               </label>
               <label class="settings-toggle interactive" for="showRecentSkillsToggle">
                 <input id="showRecentSkillsToggle" type="checkbox" checked />
@@ -63,69 +63,19 @@
             </div>
           </section>
 
-          <section class="settings-group" id="appearanceSettingsGroup">
+          <section class="settings-group">
             <div class="settings-group-title" id="appearanceSettingsTitle">Внешний вид</div>
-            <label class="language-switcher interactive" id="languageControls" for="languageSelect" title="Language">
+            <label class="language-switcher interactive" for="languageSelect" title="Language">
               <span id="languageLabel">Язык</span>
               <select id="languageSelect">
                 <option value="ru">Русский</option>
                 <option value="en">English</option>
               </select>
             </label>
-            <div class="settings-row">
-              <label class="layout-control interactive" id="layoutDirectionControls" for="layoutDirectionSelect" title="Layout direction">
-                <span id="layoutDirectionLabel">Направление</span>
-                <select id="layoutDirectionSelect">
-                  <option value="vertical">Вертикально</option>
-                  <option value="horizontal">Горизонтально</option>
-                </select>
-              </label>
-            </div>
-            <div class="settings-row">
-              <div class="size-controls interactive" id="frameGapControls" title="Frame gap">
-                <button id="frameGapDownBtn" type="button">-</button>
-                <span id="frameGapValue">12px</span>
-                <button id="frameGapUpBtn" type="button">+</button>
-              </div>
-              <div class="size-controls interactive" id="iconsPerRowControls" title="Icons per row">
-                <button id="iconsPerRowDownBtn" type="button">-</button>
-                <span id="iconsPerRowValue">3</span>
-                <button id="iconsPerRowUpBtn" type="button">+</button>
-              </div>
-              <div class="size-controls interactive" id="cardSizeControls" title="Card size">
-                <button id="cardSizeDownBtn" type="button">-</button>
-                <span id="cardSizeValue">100%</span>
-                <button id="cardSizeUpBtn" type="button">+</button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <label class="slider-control interactive" id="panelOpacityControls" for="panelOpacitySlider">
-                <span id="panelOpacityLabel">Прозрачность подложки</span>
-                <input id="panelOpacitySlider" type="range" min="20" max="100" step="1" value="88" />
-                <span id="panelOpacityValue">88%</span>
-              </label>
-            </div>
-          </section>
-
-          <section class="settings-group" id="hotkeysSettingsGroup">
-            <div class="settings-group-title" id="hotkeysSettingsTitle">Горячие клавиши</div>
-            <div class="hotkey-list">
-              <div class="hotkey-row">
-                <span id="hotkeyToggleInteractionLabel" class="hotkey-label">Переключить режим взаимодействия</span>
-                <button type="button" class="hotkey-badge" disabled>F8</button>
-              </div>
-              <div class="hotkey-row">
-                <span id="hotkeyPickLogLabel" class="hotkey-label">Выбрать лог</span>
-                <button type="button" class="hotkey-badge" disabled>F9</button>
-              </div>
-              <div class="hotkey-row">
-                <span id="hotkeyToggleVisibilityLabel" class="hotkey-label">Показать или скрыть оверлей</span>
-                <button type="button" class="hotkey-badge" disabled>F10</button>
-              </div>
-              <div class="hotkey-row">
-                <span id="hotkeyOpenSettingsLabel" class="hotkey-label">Открыть настройки</span>
-                <button type="button" class="hotkey-badge" disabled>F11</button>
-              </div>
+            <div class="size-controls interactive" title="Card size">
+              <button id="cardSizeDownBtn" type="button">−</button>
+              <span id="cardSizeValue">100%</span>
+              <button id="cardSizeUpBtn" type="button">+</button>
             </div>
           </section>
         </div>
@@ -139,7 +89,7 @@
             <div id="skillsModalTitle" class="modal-title">Tracked class skills</div>
             <div id="skillsModalSubtitle" class="modal-subtitle">Choose one or more abilities for each class</div>
           </div>
-          <button id="closeSkillsModalBtn" class="danger-btn">×</button>
+          <button id="closeSkillsModalBtn" class="danger-btn">✕</button>
         </div>
         <div class="modal-body">
           <div id="skillsCatalog"></div>

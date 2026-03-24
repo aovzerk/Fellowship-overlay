@@ -15,8 +15,6 @@ body {
 
 :root {
   --card-scale: 1;
-  --party-gap: 12px;
-  --panel-bg-alpha: 0.88;
 }
 
 #overlay-root {
@@ -34,7 +32,7 @@ body {
 }
 
 .panel {
-  background: rgba(7, 10, 25, var(--panel-bg-alpha));
+  background: rgba(7, 10, 25, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -60,8 +58,7 @@ button:hover {
 }
 
 
-.language-switcher,
-.layout-control {
+.language-switcher {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -72,20 +69,7 @@ button:hover {
   font-size: 12px;
 }
 
-.slider-control {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: min(100%, 380px);
-  font-size: 12px;
-}
-
-.slider-control input[type="range"] {
-  flex: 1 1 auto;
-}
-
-.language-switcher select,
-.layout-control select {
+.language-switcher select {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
@@ -94,8 +78,7 @@ button:hover {
   cursor: pointer;
 }
 
-.language-switcher option,
-.layout-control option {
+.language-switcher option {
   color: #000;
 }
 
@@ -115,18 +98,9 @@ button:hover {
   padding: 4px 8px;
 }
 
-#cardSizeValue,
-#frameGapValue,
-#iconsPerRowValue {
+#cardSizeValue {
   min-width: 44px;
   text-align: center;
-  font-weight: 700;
-  opacity: 0.9;
-}
-
-#panelOpacityValue {
-  min-width: 44px;
-  text-align: right;
   font-weight: 700;
   opacity: 0.9;
 }
@@ -463,31 +437,6 @@ button:hover {
   white-space: nowrap;
   opacity: 0.9;
   font-size: 12px;
-}
-
-.hotkey-list {
-  display: grid;
-  gap: 10px;
-}
-
-.hotkey-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.hotkey-label {
-  font-size: 13px;
-  opacity: 0.95;
-}
-
-.hotkey-badge {
-  min-width: 56px;
-  padding: 6px 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  opacity: 1;
 }
 
 .pull-panel {

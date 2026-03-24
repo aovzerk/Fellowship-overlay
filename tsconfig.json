@@ -9,7 +9,6 @@
     "strict": false,
     "noImplicitAny": false,
     "skipLibCheck": true,
-    "types": [],
     "esModuleInterop": false,
     "forceConsistentCasingInFileNames": false,
     "resolveJsonModule": false,

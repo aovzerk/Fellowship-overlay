@@ -19,28 +19,9 @@ const pickFileBtn = mustElement<HTMLButtonElement>('pickFileBtn');
 const reloadBtn = mustElement<HTMLButtonElement>('reloadBtn');
 const toggleLockBtn = mustElement<HTMLButtonElement>('toggleLockBtn');
 const skillsBtn = mustElement<HTMLButtonElement>('skillsBtn');
-const hotkeysSettingsTitle = mustElement<HTMLElement>('hotkeysSettingsTitle');
-const hotkeyToggleInteractionLabel = mustElement<HTMLElement>('hotkeyToggleInteractionLabel');
-const hotkeyPickLogLabel = mustElement<HTMLElement>('hotkeyPickLogLabel');
-const hotkeyToggleVisibilityLabel = mustElement<HTMLElement>('hotkeyToggleVisibilityLabel');
-const hotkeyOpenSettingsLabel = mustElement<HTMLElement>('hotkeyOpenSettingsLabel');
-const frameGapDownBtn = mustElement<HTMLButtonElement>('frameGapDownBtn');
-const frameGapUpBtn = mustElement<HTMLButtonElement>('frameGapUpBtn');
-const frameGapValueEl = mustElement<HTMLElement>('frameGapValue');
-const frameGapControls = mustElement<HTMLElement>('frameGapControls');
-const iconsPerRowDownBtn = mustElement<HTMLButtonElement>('iconsPerRowDownBtn');
-const iconsPerRowUpBtn = mustElement<HTMLButtonElement>('iconsPerRowUpBtn');
-const iconsPerRowValueEl = mustElement<HTMLElement>('iconsPerRowValue');
-const iconsPerRowControls = mustElement<HTMLElement>('iconsPerRowControls');
-const panelOpacitySlider = mustElement<HTMLInputElement>('panelOpacitySlider');
-const panelOpacityValueEl = mustElement<HTMLElement>('panelOpacityValue');
-const panelOpacityLabel = mustElement<HTMLElement>('panelOpacityLabel');
-const layoutDirectionSelect = mustElement<HTMLSelectElement>('layoutDirectionSelect');
-const layoutDirectionLabel = mustElement<HTMLElement>('layoutDirectionLabel');
 const cardSizeDownBtn = mustElement<HTMLButtonElement>('cardSizeDownBtn');
 const cardSizeUpBtn = mustElement<HTMLButtonElement>('cardSizeUpBtn');
 const cardSizeValueEl = mustElement<HTMLElement>('cardSizeValue');
-const cardSizeControls = mustElement<HTMLElement>('cardSizeControls');
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
@@ -63,14 +44,7 @@ const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsTog
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
 
-const {
-  CARD_SCALE_STEP,
-  DEFAULT_FRAME_GAP,
-  DEFAULT_ICONS_PER_ROW,
-  DEFAULT_LAYOUT_DIRECTION,
-  DEFAULT_PANEL_OPACITY,
-  FRAME_GAP_STEP,
-} = window.OverlayRendererConstants;
+const { CARD_SCALE_STEP } = window.OverlayRendererConstants;
 const {
   applyTranslations: applyTranslationsShared,
   setLogSourceText: setLogSourceTextShared,
@@ -111,10 +85,6 @@ let hudActive = true;
 let skillCatalog: SkillCatalog = { classes: [] };
 let selectedSkillsByClass: SkillSelectionMap = settingsController.loadSkillSelections();
 let cardScale = settingsController.loadCardScale();
-let frameGap = settingsController.loadFrameGap();
-let iconsPerRow = settingsController.loadIconsPerRow();
-let panelOpacity = settingsController.loadPanelOpacity();
-let layoutDirection = settingsController.loadLayoutDirection();
 let currentLanguage: LanguageCode = 'en';
 let lastWatchStatusMessage = '';
 let visibilitySettings: OverlayVisibilitySettings = settingsController.loadVisibilitySettings();
@@ -269,35 +239,6 @@ function updateCardScaleUi(): void {
   cardSizeValueEl.textContent = `${Math.round(cardScale * 100)}%`;
 }
 
-function applyAppearanceVariables(): void {
-  overlayRoot.style.setProperty('--party-gap', `${frameGap}px`);
-  overlayRoot.style.setProperty('--panel-bg-alpha', String(panelOpacity));
-  overlayRoot.dataset.layoutDirection = layoutDirection;
-  overlayRoot.dataset.iconsPerRow = String(iconsPerRow);
-}
-
-function updateFrameGapUi(): void {
-  frameGapValueEl.textContent = `${frameGap}px`;
-}
-
-function updateIconsPerRowUi(): void {
-  iconsPerRowValueEl.textContent = String(iconsPerRow);
-}
-
-function updatePanelOpacityUi(): void {
-  const percent = Math.round(panelOpacity * 100);
-  panelOpacitySlider.value = String(percent);
-  panelOpacityValueEl.textContent = `${percent}%`;
-}
-
-function updateLayoutDirectionUi(): void {
-  layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
-}
-
-function rerenderPlayersIfNeeded(): void {
-  if (latestData?.players) renderPlayers(latestData.players);
-}
-
 function setCardScale(nextScale: number): void {
   const normalized = settingsController.normalizeCardScaleValue(nextScale);
   if (normalized === cardScale) return;
@@ -305,45 +246,6 @@ function setCardScale(nextScale: number): void {
   settingsController.saveCardScale(cardScale);
   updateCardScaleUi();
   if (latestData?.players) renderPlayers(latestData.players);
-}
-
-function setFrameGap(nextValue: unknown): void {
-  const normalized = settingsController.normalizeFrameGap(nextValue);
-  if (normalized === frameGap) return;
-  frameGap = normalized;
-  settingsController.saveFrameGap(frameGap);
-  applyAppearanceVariables();
-  updateFrameGapUi();
-  rerenderPlayersIfNeeded();
-}
-
-function setIconsPerRow(nextValue: unknown): void {
-  const normalized = settingsController.normalizeIconsPerRow(nextValue);
-  if (normalized === iconsPerRow) return;
-  iconsPerRow = normalized;
-  settingsController.saveIconsPerRow(iconsPerRow);
-  applyAppearanceVariables();
-  updateIconsPerRowUi();
-  rerenderPlayersIfNeeded();
-}
-
-function setPanelOpacity(nextValue: unknown): void {
-  const normalized = settingsController.normalizePanelOpacity(nextValue);
-  if (normalized === panelOpacity) return;
-  panelOpacity = normalized;
-  settingsController.savePanelOpacity(panelOpacity);
-  applyAppearanceVariables();
-  updatePanelOpacityUi();
-}
-
-function setLayoutDirection(nextValue: unknown): void {
-  const normalized = settingsController.normalizeLayoutDirection(nextValue);
-  if (normalized === layoutDirection) return;
-  layoutDirection = normalized;
-  settingsController.saveLayoutDirection(layoutDirection);
-  applyAppearanceVariables();
-  updateLayoutDirectionUi();
-  rerenderPlayersIfNeeded();
 }
 
 function setHudActiveState(active: boolean, foregroundExe: string | null = null): void {
@@ -376,31 +278,16 @@ function renderSkillsModal(): void {
 function applyTranslations(): void {
   applyTranslationsShared({
     appearanceSettingsTitle,
-    cardSizeControls,
-    cardSizeLabel: null,
     currentLanguage,
     filePathEl,
-    frameGapControls,
-    frameGapLabel: null,
-    hotkeyOpenSettingsLabel,
-    hotkeyPickLogLabel,
-    hotkeyToggleInteractionLabel,
-    hotkeyToggleVisibilityLabel,
-    hotkeysSettingsTitle,
     hudActive,
-    iconsPerRowControls,
-    iconsPerRowLabel: null,
     languageLabel,
     languageSelect,
-    layoutDirection,
-    layoutDirectionLabel,
-    layoutDirectionSelect,
     lastWatchStatusMessage,
     latestData,
     logSettingsTitle,
     overlayLocked,
     overlaySettingsTitle,
-    panelOpacityLabel,
     pickFileBtn,
     recentSkillsLimit,
     recentSkillsLimitInput,
@@ -439,12 +326,7 @@ async function ensureSkillCatalog(): Promise<void> {
 }
 
 function openSettingsModal(): void {
-  applyAppearanceVariables();
   updateCardScaleUi();
-  updateFrameGapUi();
-  updateIconsPerRowUi();
-  updatePanelOpacityUi();
-  updateLayoutDirectionUi();
   settingsModal.classList.remove('hidden');
 }
 
@@ -532,17 +414,6 @@ recentSkillsLimitInput.addEventListener('input', (event: Event) => {
   const value = clamp(Number(input.value || 7), 1, 20);
   input.value = String(value);
 });
-frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP_STEP));
-frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
-iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
-iconsPerRowUpBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow + 1));
-panelOpacitySlider.addEventListener('input', (event: Event) => {
-  const value = Number((event.currentTarget as HTMLInputElement).value || Math.round(DEFAULT_PANEL_OPACITY * 100));
-  setPanelOpacity(value / 100);
-});
-layoutDirectionSelect.addEventListener('change', (event: Event) => {
-  setLayoutDirection((event.currentTarget as HTMLSelectElement).value || DEFAULT_LAYOUT_DIRECTION);
-});
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
@@ -608,12 +479,7 @@ window.api.getLanguage().then((result) => {
 });
 
 void ensureSkillCatalog();
-applyAppearanceVariables();
 updateCardScaleUi();
-updateFrameGapUi();
-updateIconsPerRowUi();
-updatePanelOpacityUi();
-updateLayoutDirectionUi();
 updateOverlayVisibility();
 applyTranslations();
 updatePullPanelVisibility();
