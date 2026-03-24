@@ -1,0 +1,98 @@
+{
+  "map": "The Heart of Tuzari",
+  "zone_id": 5,
+  "killcount": 238,
+  "bossesID": [198, 200, 199],
+  "mobs": {
+    "198": {
+      "name": "Moar'gore, Master of Sacrifice",
+      "score": 0,
+      "percent": 0.00
+    },
+    "200": {
+      "name": "Prophet Ez'rath",
+      "score": 0,
+      "percent": 0.00
+    },
+    "199": {
+      "name": "Vun’Kahr, the Thorned Maw",
+      "score": 0,
+      "percent": 0.00
+    },
+    "10": {
+      "name": "Ashen Arsonist",
+      "score": 3,
+      "percent": 1.26
+    },
+    "128": {
+      "name": "Barbarous Lasher",
+      "score": 5,
+      "percent": 2.10
+    },
+    "201": {
+      "name": "Bloodfang",
+      "score": 3,
+      "percent": 1.26
+    },
+    "185": {
+      "name": "Bloodfang Raider",
+      "score": 3,
+      "percent": 1.26
+    },
+    "189": {
+      "name": "Executioner",
+      "score": 5,
+      "percent": 2.10
+    },
+    "191": {
+      "name": "Hellcaller",
+      "score": 4,
+      "percent": 1.68
+    },
+    "186": {
+      "name": "Hulking Bulgore",
+      "score": 4,
+      "percent": 1.68
+    },
+    "192": {
+      "name": "Initiate",
+      "score": 1,
+      "percent": 0.42
+    },
+    "134": {
+      "name": "Mancatcher",
+      "score": 2,
+      "percent": 0.84
+    },
+    "32": {
+      "name": "Nightmist Cutthroat",
+      "score": 3,
+      "percent": 1.26
+    },
+    "12": {
+      "name": "Pillager",
+      "score": 2,
+      "percent": 0.84
+    },
+    "193": {
+      "name": "Profane Invoker",
+      "score": 4,
+      "percent": 1.68
+    },
+    "190": {
+      "name": "Sickle",
+      "score": 1,
+      "percent": 0.42
+    },
+    "182": {
+      "name": "Slaughtervine",
+      "score": 1,
+      "percent": 0.42
+    },
+    "202": {
+      "name": "Twisted Root",
+      "score": 0,
+      "percent": 0.00
+    }
+  }
+}
