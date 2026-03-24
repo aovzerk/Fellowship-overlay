@@ -16,6 +16,9 @@
 
 Lightweight in-game overlay for tracking party members, relics, Spirit values, skill cooldowns, and recent actions in real time using combat logs.
 
+> [!IMPORTANT]
+> You must enable **ADVANCED COMBAT LOGS** in the game settings, otherwise the overlay will not receive the data it needs to work correctly.
+
 ## Join the Community
 
 **Discord community:** [https://discord.gg/82BeHyQEeR](https://discord.gg/82BeHyQEeR)
@@ -70,6 +73,9 @@ From the tray you can open the app and access **settings**.
 
 **Requirements:**
 - Node.js 20+
+
+**Before using the overlay:**
+- Enable **ADVANCED COMBAT LOGS** in the game settings
 
 **Setup & Run:**
 ```bash
