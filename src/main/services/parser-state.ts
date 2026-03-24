@@ -21,6 +21,7 @@ import { DEFAULT_SKILL_ICON_REL_PATH, getHeroAbilityAsset } from './game-databas
 import { getPlayerEquippedRelicByAbilityId } from './parser-relics';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
+const MAX_SPIRIT_HISTORY = 120;
 
 type InternalPlayerState = Omit<PlayerState, 'abilities'> & {
   abilities: Map<string, AbilityStat>;
@@ -164,6 +165,7 @@ function ensurePlayer(state: ParserState, id: string, name: string | null | unde
       deaths: 0,
       abilities: new Map<string, AbilityStat>(),
       spirit: null,
+      spiritHistory: [],
       relics: [],
       stones: {
         raw: [],
@@ -438,21 +440,28 @@ function serializeAbilityStat(ability: Partial<AbilityStat> | null | undefined):
   };
 }
 
+function extractSpiritFromResourcePart(raw: unknown): { current: number; max: number } | null {
+  if (typeof raw !== 'string') return null;
+  if (!raw.startsWith('[') || !raw.endsWith(']')) return null;
+
+  const matches = [...raw.matchAll(/\(([-\d.]+),([-\d.]+),([-\d.]+)\)/g)];
+  for (const m of matches) {
+    const resourceType = toNumber(m[1]);
+    const current = toNumber(m[2]);
+    const max = toNumber(m[3]);
+
+    if (resourceType === 4 && current != null && max != null) {
+      return { current, max };
+    }
+  }
+
+  return null;
+}
+
 function extractSpiritFromResourceList(parts: string[]): { current: number; max: number } | null {
   for (const part of parts) {
-    if (typeof part !== 'string') continue;
-    if (!part.startsWith('[') || !part.endsWith(']')) continue;
-
-    const matches = [...part.matchAll(/\(([-\d.]+),([-\d.]+),([-\d.]+)\)/g)];
-    for (const m of matches) {
-      const resourceType = toNumber(m[1]);
-      const current = toNumber(m[2]);
-      const max = toNumber(m[3]);
-
-      if (resourceType === 4 && current != null && max != null) {
-        return { current, max };
-      }
-    }
+    const spirit = extractSpiritFromResourcePart(part);
+    if (spirit) return spirit;
   }
 
   return null;
@@ -469,21 +478,39 @@ function addSpiritSnapshot(
   const normalizedMax = Math.max(0, getPlayerSpiritMax(player) || max || 0);
   const normalizedCurrent = Math.max(0, Math.min(normalizedMax || max || 0, Number(current || 0)));
   const last = player.spirit || null;
-
-  if (last && last.current === normalizedCurrent && last.max === normalizedMax) {
-    if (last.ts !== ts) {
-      player.spirit = { ...last, ts } as SpiritSnapshot;
-    }
-    return;
-  }
-
-  player.spirit = {
+  const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
+  const snapshot: SpiritSnapshot = {
     ts,
     current: normalizedCurrent,
     max: normalizedMax,
     abilityId,
     abilityName,
-  } as SpiritSnapshot;
+  };
+
+  if (last && last.current === normalizedCurrent && last.max === normalizedMax) {
+    player.spirit = {
+      ...last,
+      ...snapshot,
+      abilityId: abilityId ?? last.abilityId,
+      abilityName: abilityName ?? last.abilityName,
+    } as SpiritSnapshot;
+
+    if (history.length) {
+      history[history.length - 1] = { ...player.spirit };
+    } else {
+      history.push({ ...player.spirit });
+    }
+
+    player.spiritHistory = history;
+    return;
+  }
+
+  player.spirit = snapshot;
+  history.push({ ...snapshot });
+  if (history.length > MAX_SPIRIT_HISTORY) {
+    history.splice(0, history.length - MAX_SPIRIT_HISTORY);
+  }
+  player.spiritHistory = history;
 }
 
 function buildUsesPerBoss(player: PlayerState, encounters: EncounterState[]): UsesPerBossEntry[] {
@@ -532,6 +559,7 @@ function noteBossNpcInLine(state: ParserState, parts: string[]): void {
 
 export {
   MAX_RECENT_SKILL_ACTIVATIONS,
+  extractSpiritFromResourcePart,
   addAbilityStat,
   addEncounterAbilityStat,
   addRecentSkillActivation,
