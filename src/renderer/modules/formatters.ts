@@ -37,7 +37,7 @@
   }
 
   function toAssetSrc(relPath: string | null | undefined): string {
-    const normalized = String(relPath || 'game-data/relics/empty.png').replace(/^\.\//, '').replace(/^\/+/, '');
+    const normalized = String(relPath || 'game-data/relics/empty.jpg').replace(/^\.\//, '').replace(/^\/+/, '');
     return `../../${escapeHtml(normalized)}`;
   }
 

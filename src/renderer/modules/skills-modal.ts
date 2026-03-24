@@ -40,7 +40,7 @@
     return `
       <label class="skill-option">
         <input type="checkbox" data-class-id="${classId}" data-ability-id="${ability.id}" ${checked} />
-        <img class="skill-option-icon" src="${toAssetSrc(ability.icon || 'game-data/relics/empty.png')}" alt="${escapeHtml(ability.name)}" />
+        <img class="skill-option-icon" src="${toAssetSrc(ability.icon || 'game-data/relics/empty.jpg')}" alt="${escapeHtml(ability.name)}" />
         <span class="skill-option-text">
           <span class="skill-option-name">${escapeHtml(ability.name)}</span>
           <span class="skill-option-cooldown">${escapeHtml(ability.cooldown)}s</span>
@@ -53,7 +53,7 @@
     const isRelics = token === RELICS_ORDER_TOKEN;
     const ability = isRelics ? null : abilitiesById.get(String(token));
     const name = isRelics ? t('relics') : (ability?.name || t('unknown'));
-    const icon = isRelics ? 'game-data/relics/empty.png' : (ability?.icon || 'game-data/relics/empty.png');
+    const icon = isRelics ? 'game-data/relics/empty.jpg' : (ability?.icon || 'game-data/relics/empty.jpg');
 
     return `
       <div class="order-item" draggable="true" data-order-class-id="${classId}" data-order-token="${escapeHtml(token)}">

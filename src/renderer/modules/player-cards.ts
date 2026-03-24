@@ -41,7 +41,7 @@
       const timer = row.querySelector<HTMLElement>('.relic-timer');
       if (!icon || !timer) continue;
 
-      icon.src = toAssetSrc(item.icon || 'game-data/relics/empty.png');
+      icon.src = toAssetSrc(item.icon || 'game-data/relics/empty.jpg');
       icon.alt = escapeHtml(item.name);
       row.title = item.name || '';
 
