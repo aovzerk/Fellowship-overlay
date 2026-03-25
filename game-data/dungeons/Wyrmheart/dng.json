@@ -2,67 +2,84 @@
   "map": "Wyrmheart",
   "zone_id": 8,
   "killcount": 109,
-  "bossesID": [156],
+  "bossesID": [
+    156
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 18.3
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 18.3
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 18.3
+    },
     "166": {
       "name": "Blade of Cithrel",
       "score": 3,
-      "percent": 2.75
+      "percent": 2.8
     },
     "165": {
       "name": "Eldrin Recruit",
       "score": 2,
-      "percent": 1.83
+      "percent": 1.8
     },
     "163": {
       "name": "Deceitful Scholar",
       "score": 5,
-      "percent": 4.59
+      "percent": 4.6
     },
     "162": {
       "name": "Tundra Stalker",
       "score": 2,
-      "percent": 1.83
+      "percent": 1.8
     },
     "160": {
       "name": "Spellbound Golem",
       "score": 4,
-      "percent": 3.67
+      "percent": 3.7
     },
     "157": {
       "name": "Coldheart Assassin",
       "score": 3,
-      "percent": 2.75
+      "percent": 2.8
     },
     "152": {
       "name": "Ice Shardling",
       "score": 1,
-      "percent": 0.92
+      "percent": 0.9
     },
     "155": {
       "name": "Frozen Remnant",
       "score": 1,
-      "percent": 0.92
+      "percent": 0.9
     },
     "154": {
       "name": "Greater Ice Elemental",
       "score": 6,
-      "percent": 5.50
+      "percent": 5.5
     },
     "153": {
       "name": "Eldrin Chronomancer",
       "score": 4,
-      "percent": 3.67
+      "percent": 3.7
     },
     "151": {
       "name": "Expedition Lookout",
       "score": 1,
-      "percent": 0.92
+      "percent": 0.9
     },
     "156": {
       "name": "Apostate Veras",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     }
   }
 }

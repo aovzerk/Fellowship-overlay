@@ -2,77 +2,95 @@
   "map": "Urrak Markets",
   "zone_id": 21,
   "killcount": 160,
-  "bossesID": [44, 43],
+  "bossesID": [
+    44,
+    43
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 12.5
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 12.5
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 12.5
+    },
     "201": {
       "name": "Bloodfang",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "191": {
       "name": "Hellcaller",
       "score": 4,
-      "percent": 2.50
+      "percent": 2.5
     },
     "185": {
       "name": "Bloodfang Raider",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "182": {
       "name": "Slaughtervine",
       "score": 1,
-      "percent": 0.63
+      "percent": 0.6
     },
     "134": {
       "name": "Mancatcher",
       "score": 2,
-      "percent": 1.25
+      "percent": 1.2
     },
     "42": {
       "name": "Desecrator",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "41": {
       "name": "Gorestained Butcher",
       "score": 5,
-      "percent": 3.13
+      "percent": 3.1
     },
     "40": {
       "name": "Horned Seer",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "39": {
       "name": "Outrunner",
       "score": 2,
-      "percent": 1.25
+      "percent": 1.2
     },
     "38": {
       "name": "Slavebind Totem",
       "score": 4,
-      "percent": 2.50
+      "percent": 2.5
     },
     "37": {
       "name": "Urrak Slaver",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "36": {
       "name": "Urrak Witch",
       "score": 3,
-      "percent": 1.88
+      "percent": 1.9
     },
     "44": {
       "name": "Drazhul the Fleshbroker",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "43": {
       "name": "Slavetrader Brull",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     }
   }
 }

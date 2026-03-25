@@ -2,62 +2,79 @@
   "map": "Stormwatch",
   "zone_id": 12,
   "killcount": 155,
-  "bossesID": [133],
+  "bossesID": [
+    133
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 12.9
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 12.9
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 12.9
+    },
     "193": {
       "name": "Profane Invoker",
       "score": 4,
-      "percent": 2.5806
+      "percent": 2.6
     },
     "189": {
       "name": "Executioner",
       "score": 5,
-      "percent": 3.2258
+      "percent": 3.2
     },
     "132": {
       "name": "Bully Basher",
       "score": 4,
-      "percent": 2.5806
+      "percent": 2.6
     },
     "131": {
       "name": "Facestabber",
       "score": 2,
-      "percent": 1.2903
+      "percent": 1.3
     },
     "134": {
       "name": "Mancatcher",
       "score": 2,
-      "percent": 1.2903
+      "percent": 1.3
     },
     "130": {
       "name": "Shinchopper",
       "score": 1,
-      "percent": 0.6452
+      "percent": 0.6
     },
     "129": {
       "name": "Stormscreamer",
       "score": 5,
-      "percent": 3.2258
+      "percent": 3.2
     },
     "48": {
       "name": "Dire Rat",
       "score": 1,
-      "percent": 0.6452
+      "percent": 0.6
     },
     "32": {
       "name": "Nightmist Cutthroat",
       "score": 3,
-      "percent": 1.9355
+      "percent": 1.9
     },
     "12": {
       "name": "Pillager",
       "score": 2,
-      "percent": 1.2903
+      "percent": 1.3
     },
     "10": {
       "name": "Ashen Arsonist",
       "score": 3,
-      "percent": 1.9355
+      "percent": 1.9
     },
     "133": {
       "name": "Warlord Brogg",

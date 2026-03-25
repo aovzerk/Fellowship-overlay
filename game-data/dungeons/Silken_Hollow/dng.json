@@ -2,62 +2,79 @@
   "map": "Silken Hollow",
   "zone_id": 24,
   "killcount": 168,
-  "bossesID": [92],
+  "bossesID": [
+    92
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 11.9
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 11.9
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 11.9
+    },
     "132": {
       "name": "Bully Basher",
       "score": 4,
-      "percent": 2.38
+      "percent": 2.4
     },
     "131": {
       "name": "Facestabber",
       "score": 2,
-      "percent": 1.19
+      "percent": 1.2
     },
     "130": {
       "name": "Shinchopper",
       "score": 1,
-      "percent": 0.60
+      "percent": 0.6
     },
     "268": {
       "name": "Carrion Horror",
       "score": 5,
-      "percent": 2.98
+      "percent": 3.0
     },
     "267": {
       "name": "Eggbearer",
       "score": 2,
-      "percent": 1.19
+      "percent": 1.2
     },
     "91": {
       "name": "Gravesnare Kidnapper",
       "score": 4,
-      "percent": 2.38
+      "percent": 2.4
     },
     "90": {
       "name": "Rotheart Recluse",
       "score": 3,
-      "percent": 1.79
+      "percent": 1.8
     },
     "89": {
       "name": "Spiderling",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "266": {
       "name": "Venomdrinker",
       "score": 3,
-      "percent": 1.79
+      "percent": 1.8
     },
     "13": {
       "name": "Frenzied Looter",
       "score": 1,
-      "percent": 0.60
+      "percent": 0.6
     },
     "92": {
       "name": "Vexira, Mother of Nightmares",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     }
   }
 }
