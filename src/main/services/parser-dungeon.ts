@@ -190,6 +190,7 @@ function touchCurrentPull(state: ParserState, ts: string, npcId: string | null |
       firstSeenAt: ts,
       lastSeenAt: ts,
       deadAt: null,
+      suspectedDeadAt: null,
       chickenizedAt: null,
       chickenized: false,
       bossSpawnedAt: bossSpawned ? ts : null,
