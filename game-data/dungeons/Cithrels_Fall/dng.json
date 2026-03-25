@@ -2,62 +2,81 @@
   "map": "Cithrel's Fall",
   "zone_id": 7,
   "killcount": 188,
-  "bossesID": [169, 170, 168],
+  "bossesID": [
+    169,
+    170,
+    168
+  ],
   "mobs": {
     "169": {
       "name": "Ancient Koros",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "168": {
       "name": "Noor, The Betrayer",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "170": {
       "name": "Cithrel",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 10.6
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 10.6
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 10.6
     },
     "166": {
       "name": "Blade of Cithrel",
       "score": 3,
-      "percent": 1.60
+      "percent": 1.6
     },
     "167": {
       "name": "Corrupter",
       "score": 5,
-      "percent": 2.66
+      "percent": 2.7
     },
     "163": {
       "name": "Deceitful Scholar",
       "score": 5,
-      "percent": 2.66
+      "percent": 2.7
     },
     "165": {
       "name": "Eldrin Recruit",
       "score": 2,
-      "percent": 1.06
+      "percent": 1.1
     },
     "164": {
       "name": "Eldrin Sentinel",
       "score": 3,
-      "percent": 1.60
+      "percent": 1.6
     },
     "161": {
       "name": "Ice Shardling",
       "score": 1,
-      "percent": 0.53
+      "percent": 0.5
     },
     "160": {
       "name": "Spellbound Golem",
       "score": 4,
-      "percent": 2.13
+      "percent": 2.1
     },
     "162": {
       "name": "Tundra Stalker",
       "score": 2,
-      "percent": 1.06
+      "percent": 1.1
     }
   }
 }

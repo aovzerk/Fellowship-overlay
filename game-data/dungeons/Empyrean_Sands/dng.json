@@ -2,67 +2,84 @@
   "map": "Empyrean_Sands",
   "zone_id": 6,
   "killcount": 130,
-  "bossesID": [87],
+  "bossesID": [
+    87
+  ],
   "mobs": {
     "87": {
       "name": "Sin-Magir",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 15.4
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 15.4
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 15.4
     },
     "173": {
       "name": "Acolyte of Sinnari",
       "score": 3,
-      "percent": 2.31
+      "percent": 2.3
     },
     "128": {
       "name": "Barbarous Lasher",
       "score": 5,
-      "percent": 3.85
+      "percent": 3.8
     },
     "179": {
       "name": "Dunesnare Hunter",
       "score": 3,
-      "percent": 2.31
+      "percent": 2.3
     },
     "177": {
       "name": "Gravebreaker Brute",
       "score": 5,
-      "percent": 3.85
+      "percent": 3.8
     },
     "116": {
       "name": "Gravescythe",
       "score": 2,
-      "percent": 1.54
+      "percent": 1.5
     },
     "115": {
       "name": "Greedspawn Sentinel",
       "score": 5,
-      "percent": 3.85
+      "percent": 3.8
     },
     "174": {
       "name": "Nightbound Magi",
       "score": 5,
-      "percent": 3.85
+      "percent": 3.8
     },
     "183": {
       "name": "Ruins Lasher",
       "score": 1,
-      "percent": 0.77
+      "percent": 0.8
     },
     "176": {
       "name": "Sandsworn Husk",
       "score": 2,
-      "percent": 1.54
+      "percent": 1.5
     },
     "175": {
       "name": "Tombguard Reaver",
       "score": 3,
-      "percent": 2.31
+      "percent": 2.3
     },
     "94": {
       "name": "Water Elemental",
       "score": 3,
-      "percent": 2.31
+      "percent": 2.3
     }
   }
 }

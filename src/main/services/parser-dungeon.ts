@@ -28,11 +28,14 @@ function getNpcPercentMeta(state: ParserState, unitId: string, fallbackName: str
   const dungeonData = state?.dungeon?.data;
   const mob = dungeonData?.mobs?.[String(templateId)];
   if (!mob) return null;
+  const score = Number(mob.score) || 0;
+  const killcount = Number(dungeonData?.killcount) || 0;
+  const exactPercent = killcount > 0 ? ((score / killcount) * 100) : (Number(mob.percent) || 0);
   return {
     templateId,
     name: mob.name || fallbackName || `NPC ${templateId}`,
-    score: Number(mob.score) || 0,
-    percent: Number(mob.percent) || 0,
+    score,
+    percent: exactPercent,
   };
 }
 

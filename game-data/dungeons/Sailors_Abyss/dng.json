@@ -2,52 +2,69 @@
   "map": "Sailor's Abyss",
   "zone_id": 15,
   "killcount": 131,
-  "bossesID": [105],
+  "bossesID": [
+    105
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 15.3
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 15.3
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 15.3
+    },
     "94": {
       "name": "Water Elemental",
       "score": 3,
-      "percent": 2.29
+      "percent": 2.3
     },
     "97": {
       "name": "Hollowed Corsair",
       "score": 5,
-      "percent": 3.82
+      "percent": 3.8
     },
     "98": {
       "name": "Fading Raider",
       "score": 2,
-      "percent": 1.53
+      "percent": 1.5
     },
     "99": {
       "name": "Deepbound Magi",
       "score": 5,
-      "percent": 3.82
+      "percent": 3.8
     },
     "100": {
       "name": "Forgotten Soul",
       "score": 1,
-      "percent": 0.76
+      "percent": 0.8
     },
     "102": {
       "name": "Tormented Spectre",
       "score": 2,
-      "percent": 1.53
+      "percent": 1.5
     },
     "103": {
       "name": "Vengeful Shade",
       "score": 3,
-      "percent": 2.29
+      "percent": 2.3
     },
     "104": {
       "name": "Witchreef Lasher",
       "score": 1,
-      "percent": 0.76
+      "percent": 0.8
     },
     "105": {
       "name": "Sinthara",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     }
   }
 }

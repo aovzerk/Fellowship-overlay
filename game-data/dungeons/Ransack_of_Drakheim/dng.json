@@ -2,97 +2,116 @@
   "map": "Ransack of Drakheim",
   "zone_id": 23,
   "killcount": 260,
-  "bossesID": [18, 28, 25],
+  "bossesID": [
+    18,
+    28,
+    25
+  ],
   "mobs": {
     "18": {
       "name": "Auga Handhafi the Blind",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "28": {
       "name": "Chilgar the Drowned",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "25": {
       "name": "Fodir Kaldur",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 7.7
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 7.7
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 7.7
     },
     "10": {
       "name": "Ashen Arsonist",
       "score": 3,
-      "percent": 1.15
+      "percent": 1.2
     },
     "34": {
       "name": "Bleakfrost Mystic",
       "score": 4,
-      "percent": 1.54
+      "percent": 1.5
     },
     "33": {
       "name": "Bleakfrost Slaver",
       "score": 3,
-      "percent": 1.15
+      "percent": 1.2
     },
     "15": {
       "name": "Coldbrine Fiend",
       "score": 3,
-      "percent": 1.15
+      "percent": 1.2
     },
     "14": {
       "name": "Craven Hiisi",
       "score": 1,
-      "percent": 0.38
+      "percent": 0.4
     },
     "13`": {
       "name": "Frenzied Looter",
       "score": 1,
-      "percent": 0.38
+      "percent": 0.4
     },
     "269": {
       "name": "Grasping Pillar",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "24": {
       "name": "Ice Tomb",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "11": {
       "name": "Icebite Reaver",
       "score": 5,
-      "percent": 1.92
+      "percent": 1.9
     },
     "23": {
       "name": "Kaldurson Eldsupptok",
       "score": 15,
-      "percent": 5.77
+      "percent": 5.8
     },
     "22": {
       "name": "Kaldurson Isilagður",
       "score": 15,
-      "percent": 5.77
+      "percent": 5.8
     },
     "32": {
       "name": "Nightmist Cutthroat",
       "score": 3,
-      "percent": 1.15
+      "percent": 1.2
     },
     "29": {
       "name": "Nightmist Whisperer",
       "score": 15,
-      "percent": 5.77
+      "percent": 5.8
     },
     "12": {
       "name": "Pillager",
       "score": 2,
-      "percent": 0.77
+      "percent": 0.8
     },
     "30": {
       "name": "Shadow of Ulmorgat",
       "score": 5,
-      "percent": 1.92
+      "percent": 1.9
     }
   }
 }

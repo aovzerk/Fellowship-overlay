@@ -2,102 +2,121 @@
   "map": "Wraithtide Vault",
   "zone_id": 13,
   "killcount": 281,
-  "bossesID": [121, 124, 125],
+  "bossesID": [
+    121,
+    124,
+    125
+  ],
   "mobs": {
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 7.1
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 7.1
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 7.1
+    },
     "121": {
       "name": "Bael'Aurum",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "124": {
       "name": "Deathless Katrine",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "125": {
       "name": "First Mate Marrow",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "128": {
       "name": "Barbarous Lasher",
       "score": 5,
-      "percent": 1.78
+      "percent": 1.8
     },
     "127": {
       "name": "Bilgerat",
       "score": 4,
-      "percent": 1.42
+      "percent": 1.4
     },
     "110": {
       "name": "Bleachbone Brute",
       "score": 4,
-      "percent": 1.42
+      "percent": 1.4
     },
     "116": {
       "name": "Gravescythe",
       "score": 2,
-      "percent": 0.71
+      "percent": 0.7
     },
     "118": {
       "name": "Greedbound Prism",
       "score": 2,
-      "percent": 0.71
+      "percent": 0.7
     },
     "115": {
       "name": "Greedspawn Sentinel",
       "score": 5,
-      "percent": 1.78
+      "percent": 1.8
     },
     "112": {
       "name": "Gunpowder Rat",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "109": {
       "name": "Jungle Stalker",
       "score": 3,
-      "percent": 1.07
+      "percent": 1.1
     },
     "183": {
       "name": "Ruins Lasher",
       "score": 1,
-      "percent": 0.36
+      "percent": 0.4
     },
     "114": {
       "name": "Saltsworn Scallywag",
       "score": 2,
-      "percent": 0.71
+      "percent": 0.7
     },
     "119": {
       "name": "Scuttlejack Cannoneer",
       "score": 5,
-      "percent": 1.78
+      "percent": 1.8
     },
     "113": {
       "name": "Shark",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "126": {
       "name": "Soulpowder Buccaneer",
       "score": 3,
-      "percent": 1.07
+      "percent": 1.1
     },
     "111": {
       "name": "Spectral Swab",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     },
     "107": {
       "name": "Tide Witch",
       "score": 5,
-      "percent": 1.78
+      "percent": 1.8
     },
     "283": {
       "name": "Winter Trickster Rat",
       "score": 0,
-      "percent": 0.00
+      "percent": 0.0
     }
   }
 }

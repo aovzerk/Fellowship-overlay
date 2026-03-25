@@ -122,7 +122,8 @@
     const mobs = Array.isArray(currentPull?.mobs) ? currentPull.mobs : [];
     const alivePercent = Number(currentPull?.alivePercent || 0);
     const completedPercent = Number(dungeon?.completedPercent || 0);
-    const projectedTotalPercent = completedPercent + alivePercent;
+    const dungeonEnded = Boolean(dungeon?.endedAt);
+    const projectedTotalPercent = dungeonEnded ? completedPercent : (completedPercent + alivePercent);
     const chickenizedCount = Number(currentPull?.chickenizedCount || 0);
     const chickenizedOriginalPercent = Number(currentPull?.chickenizedOriginalPercent || 0);
     const aliveChickenizedCount = Number(currentPull?.aliveChickenizedCount || 0);
@@ -147,7 +148,7 @@
     pullInfoEl.innerHTML = `
       <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
       <div class="pull-stats">
-        <div class="pull-stat"><span>${escapeHtml(translate('pullTotal'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}% (+${escapeHtml(formatPercent(currentLanguage, alivePercent))}%)</strong></div>
+        <div class="pull-stat"><span>${escapeHtml(translate('pullTotal'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}%${dungeonEnded ? '' : ` (+${escapeHtml(formatPercent(currentLanguage, alivePercent))}%)`}</strong></div>
       </div>
       ${chickenizedLine}
     `;
