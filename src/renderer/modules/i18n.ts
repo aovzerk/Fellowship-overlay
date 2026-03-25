@@ -16,7 +16,7 @@
       iconsPerRowTitle: 'Спелов в строке',
       iconsPerRowLabel: 'Спелов в строке',
       panelOpacity: 'Прозрачность подложки',
-      autoHideWithGameWindow: '\u0410\u0432\u0442\u043e\u0441\u043a\u0440\u044b\u0442\u0438\u0435 \u043f\u043e \u043e\u043a\u043d\u0443 \u0438\u0433\u0440\u044b',
+      autoHideWithGameWindow: 'Автоскрытие по окну игры',
       languageRussian: 'Русский',
       languageEnglish: 'English',
       layoutDirection: 'Направление',
