@@ -1,5 +1,6 @@
 import type {
   LanguageCode,
+  HudActivityPayload,
   LogDataPayload,
   OpenSettingsPayload,
   OverlayModePayload,
@@ -29,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
   onLogData: (callback: (payload: LogDataPayload) => void): void => { ipcRenderer.on('log-data', (_: unknown, payload: LogDataPayload) => callback(payload)); },
   onWatchStatus: (callback: (payload: WatchStatusPayload) => void): void => { ipcRenderer.on('watch-status', (_: unknown, payload: WatchStatusPayload) => callback(payload)); },
   onOverlayMode: (callback: (payload: OverlayModePayload) => void): void => { ipcRenderer.on('overlay-mode', (_: unknown, payload: OverlayModePayload) => callback(payload)); },
+  onHudActivity: (callback: (payload: HudActivityPayload) => void): void => { ipcRenderer.on('hud-activity', (_: unknown, payload: HudActivityPayload) => callback(payload)); },
   onLanguageChanged: (callback: (payload: { language: LanguageCode }) => void): void => { ipcRenderer.on('language-changed', (_: unknown, payload: { language: LanguageCode }) => callback(payload)); },
   onOpenSettings: (callback: (payload: OpenSettingsPayload) => void): void => { ipcRenderer.on('open-settings', (_: unknown, payload: OpenSettingsPayload) => callback(payload)); },
   onRequestCloseSettings: (callback: () => void): void => { ipcRenderer.on('request-close-settings', () => callback()); },

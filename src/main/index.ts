@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   BrowserWindowLike,
   LogDirectoryService,
   OverlaySettingsStore,
@@ -7,6 +7,7 @@ import type {
 import type {
   GetOverlaySettingsSyncResult,
   GetPlayerPositionsSyncResult,
+  HudActivityPayload,
   LanguageCode,
   LanguagePayload,
   LogDataPayload,
@@ -22,6 +23,7 @@ import type {
 } from '../types/overlay';
 
 import { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } from 'electron';
+import { execFile } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { disposeParserWorker, parseCombatLog } from './services/parser-runner';
@@ -45,10 +47,43 @@ interface OpenDialogResultLike {
   filePaths: string[];
 }
 
+interface GameWindowState {
+  found: boolean;
+  active: boolean;
+  visible: boolean;
+  minimized: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  monitorX: number;
+  monitorY: number;
+  monitorWidth: number;
+  monitorHeight: number;
+  workAreaX: number;
+  workAreaY: number;
+  workAreaWidth: number;
+  workAreaHeight: number;
+  processName: string | null;
+  title: string | null;
+}
+
+const GAME_PROCESS_NAME = 'fellowship-Win64-Shipping';
+const WINDOW_TRACK_INTERVAL_MS = 1000;
+const WINDOW_HIDE_MISS_THRESHOLD = 3;
+const SETTINGS_CLOSE_GRACE_MS = 3000;
+
 let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
 let isQuitting = false;
 let settingsModalOpen = false;
+let overlayVisibilityRequested = true;
+let gameWindowPollTimer: ReturnType<typeof setInterval> | null = null;
+let gameWindowPollInFlight = false;
+let lastGameWindowState: GameWindowState | null = null;
+let lastStableGameWindowState: GameWindowState | null = null;
+let consecutiveWindowMisses = 0;
+let settingsCloseGraceUntil = 0;
 
 function getConfiguredHotkeys(): OverlayHotkeys {
   return settingsStore.getOverlaySettings().hotkeys;
@@ -79,19 +114,18 @@ function showWindow(): void {
   win.focus();
 }
 
+function showWindowWithoutFocus(): void {
+  if (!win) return;
+  if (typeof win.showInactive === 'function') {
+    win.showInactive();
+    return;
+  }
+  win.show();
+}
+
 function hideToTray(): void {
   if (!win) return;
   win.hide();
-}
-
-function toggleOverlayVisibility(): boolean {
-  if (!win) return false;
-  if (win.isVisible()) {
-    hideToTray();
-    return false;
-  }
-  showWindow();
-  return true;
 }
 
 function sendWatchStatus(ok: boolean, message: string): void {
@@ -103,12 +137,341 @@ function sendLogData(payload: LogDataPayload & { updatedAt?: string }): void {
   win?.webContents.send('log-data', payload);
 }
 
+function computeAutoScaleFromWindow(width: number, height: number): number {
+  if (width <= 0 || height <= 0) return 1;
+  const widthScale = width / 1920;
+  const heightScale = height / 1080;
+  const rawScale = Math.min(widthScale, heightScale);
+  const softenedScale = 1 + ((rawScale - 1) * 0.45);
+  return Math.round(Math.max(0.9, Math.min(1.12, softenedScale)) * 100) / 100;
+}
+
+function sendHudActivity(
+  active: boolean,
+  foregroundExe: string | null = null,
+  state: GameWindowState | null = null,
+  appliedBounds: { x: number; y: number; width: number; height: number } | null = null,
+): void {
+  const payload: HudActivityPayload = {
+    active: !!active,
+    foregroundExe,
+    autoScale: state ? computeAutoScaleFromWindow(state.width, state.height) : 1,
+  };
+  win?.webContents.send('hud-activity', payload);
+}
+
 const logDirectoryService: LogDirectoryService = createLogDirectoryService({
   parseCombatLog,
   settingsStore,
   sendWatchStatus,
   sendLogData,
 });
+
+function setClickThrough(enabled: boolean): void {
+  clickThroughEnabled = !!enabled;
+
+  if (!win) return;
+
+  win.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
+  const payload: OverlayModePayload = {
+    clickThrough: clickThroughEnabled,
+    locked: !clickThroughEnabled,
+  };
+  win.webContents.send('overlay-mode', payload);
+}
+
+function getPowerShellWindowProbeScript(): string {
+  return [
+    "$ErrorActionPreference = 'Stop'",
+    "$processes = @(Get-Process -Name '" + GAME_PROCESS_NAME + "' -ErrorAction SilentlyContinue)",
+    "Add-Type @'",
+    "using System;",
+    "using System.Text;",
+    "using System.Runtime.InteropServices;",
+    "public static class OverlayWinApi {",
+    "  [StructLayout(LayoutKind.Sequential)]",
+    "  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }",
+    "  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]",
+    "  public struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public int dwFlags; }",
+    "  public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);",
+    "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);",
+    "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);",
+    "  [DllImport(\"user32.dll\")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);",
+    "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow();",
+    "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr hWnd);",
+    "  [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr hWnd);",
+    "  [DllImport(\"user32.dll\")] public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);",
+    "  [DllImport(\"user32.dll\", CharSet = CharSet.Auto)] public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);",
+    "  [DllImport(\"user32.dll\", CharSet = CharSet.Auto)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);",
+    "}",
+    "'@",
+    "$pidSet = @{}",
+    "foreach ($process in $processes) { $pidSet[[uint32]$process.Id] = $process }",
+    "$windows = New-Object System.Collections.ArrayList",
+    "$enum = [OverlayWinApi+EnumWindowsProc]{",
+    "  param([IntPtr]$hWnd, [IntPtr]$lParam)",
+    "  $windowPid = [uint32]0",
+    "  [OverlayWinApi]::GetWindowThreadProcessId($hWnd, [ref]$windowPid) | Out-Null",
+    "  if (-not $pidSet.ContainsKey($windowPid)) { return $true }",
+    "  $rect = New-Object OverlayWinApi+RECT",
+    "  $gotRect = [OverlayWinApi]::GetWindowRect($hWnd, [ref]$rect)",
+    "  $visible = [OverlayWinApi]::IsWindowVisible($hWnd)",
+    "  $minimized = [OverlayWinApi]::IsIconic($hWnd)",
+    "  $width = 0",
+    "  $height = 0",
+    "  if ($gotRect) { $width = [Math]::Max(0, $rect.Right - $rect.Left); $height = [Math]::Max(0, $rect.Bottom - $rect.Top) }",
+    "  $text = New-Object System.Text.StringBuilder 512",
+    "  [OverlayWinApi]::GetWindowText($hWnd, $text, $text.Capacity) | Out-Null",
+    "  $null = $windows.Add([PSCustomObject]@{ handle = [int64]$hWnd; pid = [int]$windowPid; visible = [bool]$visible; minimized = [bool]$minimized; x = if ($gotRect) { $rect.Left } else { 0 }; y = if ($gotRect) { $rect.Top } else { 0 }; width = $width; height = $height; area = ($width * $height); title = $text.ToString() })",
+    "  return $true",
+    "}",
+    "[OverlayWinApi]::EnumWindows($enum, [IntPtr]::Zero) | Out-Null",
+    "$foreground = [OverlayWinApi]::GetForegroundWindow()",
+    "$foregroundPid = [uint32]0",
+    "if ($foreground -ne [IntPtr]::Zero) { [OverlayWinApi]::GetWindowThreadProcessId($foreground, [ref]$foregroundPid) | Out-Null }",
+    "$foregroundMatchesProcess = $pidSet.ContainsKey($foregroundPid)",
+    "$debug = (($windows | Sort-Object area -Descending | Select-Object -First 8) | ForEach-Object { 'h=' + $_.handle + ' pid=' + $_.pid + ' vis=' + $_.visible + ' min=' + $_.minimized + ' rect=[' + $_.x + ',' + $_.y + ',' + $_.width + 'x' + $_.height + '] title=' + $_.title }) -join ' || '",
+    "$candidates = $windows | Where-Object { $_.width -gt 0 -and $_.height -gt 0 }",
+    "$best = $candidates | Sort-Object @{ Expression = { if ([IntPtr]::new([int64]$_.handle) -eq $foreground) { 0 } else { 1 } } }, @{ Expression = { if ($_.visible -and -not $_.minimized) { 0 } else { 1 } } }, @{ Expression = { -$_.area } } | Select-Object -First 1",
+    "$handle = [IntPtr]::new([int64]$best.handle)",
+    "$monitorHandle = [OverlayWinApi]::MonitorFromWindow($handle, 2)",
+    "$monitorInfo = New-Object OverlayWinApi+MONITORINFO",
+    "$monitorInfo.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf([type][OverlayWinApi+MONITORINFO])",
+    "$gotMonitor = $false",
+    "if ($monitorHandle -ne [IntPtr]::Zero) { $gotMonitor = [OverlayWinApi]::GetMonitorInfo($monitorHandle, [ref]$monitorInfo) }",
+    "$monitorWidth = 0",
+    "$monitorHeight = 0",
+    "$workAreaWidth = 0",
+    "$workAreaHeight = 0",
+    "if ($gotMonitor) {",
+    "  $monitorWidth = [Math]::Max(0, $monitorInfo.rcMonitor.Right - $monitorInfo.rcMonitor.Left)",
+    "  $monitorHeight = [Math]::Max(0, $monitorInfo.rcMonitor.Bottom - $monitorInfo.rcMonitor.Top)",
+    "  $workAreaWidth = [Math]::Max(0, $monitorInfo.rcWork.Right - $monitorInfo.rcWork.Left)",
+    "  $workAreaHeight = [Math]::Max(0, $monitorInfo.rcWork.Bottom - $monitorInfo.rcWork.Top)",
+    "}",
+    "@{",
+    "  found = $true;",
+    "  active = [bool]$foregroundMatchesProcess;",
+    "  visible = [bool]$best.visible;",
+    "  minimized = [bool]$best.minimized;",
+    "  x = [int]$best.x;",
+    "  y = [int]$best.y;",
+    "  width = [int]$best.width;",
+    "  height = [int]$best.height;",
+    "  monitorX = if ($gotMonitor) { $monitorInfo.rcMonitor.Left } else { 0 };",
+    "  monitorY = if ($gotMonitor) { $monitorInfo.rcMonitor.Top } else { 0 };",
+    "  monitorWidth = $monitorWidth;",
+    "  monitorHeight = $monitorHeight;",
+    "  workAreaX = if ($gotMonitor) { $monitorInfo.rcWork.Left } else { 0 };",
+    "  workAreaY = if ($gotMonitor) { $monitorInfo.rcWork.Top } else { 0 };",
+    "  workAreaWidth = $workAreaWidth;",
+    "  workAreaHeight = $workAreaHeight;",
+    "  processName = $processes[0].ProcessName;",
+    "  title = [string]$best.title",
+    "} | ConvertTo-Json -Compress",
+  ].join('\n');
+}
+function getFallbackGameWindowState(): GameWindowState {
+  return {
+    found: false,
+    active: false,
+    visible: false,
+    minimized: false,
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    monitorX: 0,
+    monitorY: 0,
+    monitorWidth: 0,
+    monitorHeight: 0,
+    workAreaX: 0,
+    workAreaY: 0,
+    workAreaWidth: 0,
+    workAreaHeight: 0,
+    processName: null,
+    title: null,
+  };
+}
+
+function fetchGameWindowState(): Promise<GameWindowState> {
+  return new Promise((resolve) => {
+    const probePath = path.join(app.getPath('temp'), 'fs-overlay-window-probe.ps1');
+    fs.writeFileSync(probePath, getPowerShellWindowProbeScript(), 'utf8');
+
+    execFile(
+      'powershell',
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', probePath],
+      { windowsHide: true, timeout: 3000 },
+      (error, stdout) => {
+        if (error || !stdout) {
+          resolve(getFallbackGameWindowState());
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(String(stdout).trim()) as Partial<GameWindowState>;
+          resolve({
+            found: !!parsed.found,
+            active: !!parsed.active,
+            visible: !!parsed.visible,
+            minimized: !!parsed.minimized,
+            x: Number(parsed.x || 0),
+            y: Number(parsed.y || 0),
+            width: Number(parsed.width || 0),
+            height: Number(parsed.height || 0),
+            monitorX: Number(parsed.monitorX || 0),
+            monitorY: Number(parsed.monitorY || 0),
+            monitorWidth: Number(parsed.monitorWidth || 0),
+            monitorHeight: Number(parsed.monitorHeight || 0),
+            workAreaX: Number(parsed.workAreaX || 0),
+            workAreaY: Number(parsed.workAreaY || 0),
+            workAreaWidth: Number(parsed.workAreaWidth || 0),
+            workAreaHeight: Number(parsed.workAreaHeight || 0),
+            processName: parsed.processName ? String(parsed.processName) : null,
+            title: parsed.title ? String(parsed.title) : null,
+          });
+        } catch {
+          resolve(getFallbackGameWindowState());
+        }
+      },
+    );
+  });
+}
+
+function resolveOverlayBoundsForGameWindow(state: GameWindowState): { x: number; y: number; width: number; height: number } {
+  const fallbackBounds = { x: state.x, y: state.y, width: state.width, height: state.height };
+  if (state.width <= 0 || state.height <= 0) return fallbackBounds;
+
+  const bounds = {
+    x: state.monitorX,
+    y: state.monitorY,
+    width: state.monitorWidth,
+    height: state.monitorHeight,
+  };
+  const workArea = {
+    x: state.workAreaX,
+    y: state.workAreaY,
+    width: state.workAreaWidth,
+    height: state.workAreaHeight,
+  };
+
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    return fallbackBounds;
+  }
+
+  const edgeTolerance = 12;
+  const areaCoverage = (state.width * state.height) / Math.max(1, bounds.width * bounds.height);
+
+  const stateLeft = state.x;
+  const stateTop = state.y;
+  const stateRight = state.x + state.width;
+  const stateBottom = state.y + state.height;
+
+  const boundsRight = bounds.x + bounds.width;
+  const boundsBottom = bounds.y + bounds.height;
+  const workAreaRight = workArea.x + workArea.width;
+  const workAreaBottom = workArea.y + workArea.height;
+
+  const edgeMatches = (value, primary, secondary) =>
+    Math.abs(value - primary) <= edgeTolerance || Math.abs(value - secondary) <= edgeTolerance;
+
+  const fillsMonitorLikeFullscreen =
+    areaCoverage >= 0.85 &&
+    edgeMatches(stateLeft, bounds.x, workArea.x) &&
+    edgeMatches(stateTop, bounds.y, workArea.y) &&
+    edgeMatches(stateRight, boundsRight, workAreaRight) &&
+    edgeMatches(stateBottom, boundsBottom, workAreaBottom);
+
+  if (fillsMonitorLikeFullscreen) {
+    return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  }
+
+  return fallbackBounds;
+}
+
+function applyGameWindowBounds(state: GameWindowState): void {
+  if (!win || !state.found || state.width <= 0 || state.height <= 0) return;
+
+  const currentBounds = win.getBounds();
+  const nextBounds = resolveOverlayBoundsForGameWindow(state);
+
+  if (
+    currentBounds.x !== nextBounds.x ||
+    currentBounds.y !== nextBounds.y ||
+    currentBounds.width !== nextBounds.width ||
+    currentBounds.height !== nextBounds.height
+  ) {
+    win.setBounds(nextBounds);
+  }
+}
+
+function applyTrackedOverlayState(state: GameWindowState | null): void {
+  const rawState = state || getFallbackGameWindowState();
+  const currentGood = rawState.found && rawState.visible && !rawState.minimized && rawState.active && rawState.width > 0 && rawState.height > 0;
+
+  if (currentGood) {
+    consecutiveWindowMisses = 0;
+    lastStableGameWindowState = rawState;
+  } else if (!settingsModalOpen) {
+    consecutiveWindowMisses += 1;
+  }
+
+  const canReuseLastStable = !!lastStableGameWindowState && consecutiveWindowMisses < WINDOW_HIDE_MISS_THRESHOLD;
+  const withinSettingsCloseGrace = Date.now() < settingsCloseGraceUntil;
+  const effectiveState = currentGood ? rawState : (canReuseLastStable ? lastStableGameWindowState! : rawState);
+
+  applyGameWindowBounds(effectiveState);
+
+  const keepVisibleDuringMissGrace = overlayVisibilityRequested && !settingsModalOpen && canReuseLastStable;
+  const keepVisibleAfterSettingsClose = overlayVisibilityRequested && !settingsModalOpen && withinSettingsCloseGrace && !!lastStableGameWindowState;
+  const shouldShow = settingsModalOpen || (overlayVisibilityRequested && currentGood) || keepVisibleDuringMissGrace || keepVisibleAfterSettingsClose;
+
+  if (shouldShow) {
+    showWindowWithoutFocus();
+  } else {
+    hideToTray();
+  }
+
+  const processName = effectiveState.processName || rawState.processName;
+  const foregroundExe = processName ? `${processName}.exe` : null;
+  const adjustedBounds = resolveOverlayBoundsForGameWindow(effectiveState);
+  const hudActive = settingsModalOpen || (overlayVisibilityRequested && currentGood) || keepVisibleDuringMissGrace || keepVisibleAfterSettingsClose;
+  sendHudActivity(hudActive, foregroundExe, effectiveState, adjustedBounds);
+}
+
+async function syncOverlayWithGameWindow(): Promise<void> {
+  if (gameWindowPollInFlight) return;
+  gameWindowPollInFlight = true;
+
+  try {
+    const state = await fetchGameWindowState();
+    lastGameWindowState = state;
+    applyTrackedOverlayState(state);
+  } finally {
+    gameWindowPollInFlight = false;
+  }
+}
+
+function startGameWindowTracking(): void {
+  if (gameWindowPollTimer) return;
+  void syncOverlayWithGameWindow();
+  gameWindowPollTimer = setInterval(() => {
+    void syncOverlayWithGameWindow();
+  }, WINDOW_TRACK_INTERVAL_MS);
+}
+
+function stopGameWindowTracking(): void {
+  if (!gameWindowPollTimer) return;
+  clearInterval(gameWindowPollTimer);
+  gameWindowPollTimer = null;
+}
+
+function toggleOverlayVisibility(): boolean {
+  overlayVisibilityRequested = !overlayVisibilityRequested;
+  applyTrackedOverlayState(lastGameWindowState);
+  return !!win?.isVisible();
+}
 
 function openSettingsWindow(): void {
   if (!win) return;
@@ -127,14 +490,24 @@ function openSettingsWindow(): void {
 
 function setSettingsModalOpen(open: boolean): void {
   settingsModalOpen = !!open;
-  if (settingsModalOpen && clickThroughEnabled) {
-    setClickThrough(false);
+  if (settingsModalOpen) {
+    settingsCloseGraceUntil = 0;
+    if (clickThroughEnabled) setClickThrough(false);
+  } else {
+    settingsCloseGraceUntil = Date.now() + SETTINGS_CLOSE_GRACE_MS;
+    if (lastStableGameWindowState) consecutiveWindowMisses = 0;
   }
+  applyTrackedOverlayState(lastGameWindowState);
 }
 
 function closeInteractiveModal(): { locked: boolean } {
   settingsModalOpen = false;
+  settingsCloseGraceUntil = Date.now() + SETTINGS_CLOSE_GRACE_MS;
+  if (lastStableGameWindowState) {
+    consecutiveWindowMisses = 0;
+  }
   setClickThrough(true);
+  applyTrackedOverlayState(lastGameWindowState);
   return { locked: !clickThroughEnabled };
 }
 
@@ -152,19 +525,6 @@ const trayManager: TrayManager = createTrayManager({
   showWindow,
   t: (key: string): string => settingsStore.t(key),
 });
-
-function setClickThrough(enabled: boolean): void {
-  clickThroughEnabled = !!enabled;
-
-  if (!win) return;
-
-  win.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
-  const payload: OverlayModePayload = {
-    clickThrough: clickThroughEnabled,
-    locked: !clickThroughEnabled,
-  };
-  win.webContents.send('overlay-mode', payload);
-}
 
 async function chooseLogDirectory(): Promise<PickDirectoryResult> {
   if (!win) return { canceled: true };
@@ -189,7 +549,7 @@ async function chooseLogDirectory(): Promise<PickDirectoryResult> {
 
 function createWindow(): void {
   const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
+  const { width, height } = primaryDisplay.bounds;
 
   const appIcon = getAppIconPath();
 
@@ -221,11 +581,13 @@ function createWindow(): void {
     const payload: LanguagePayload = { language: settingsStore.getCurrentLanguage() };
     win?.webContents.send('language-changed', payload);
     void logDirectoryService.restoreLastLogDirectoryIfAvailable();
+    applyTrackedOverlayState(lastGameWindowState);
   });
 
   win.on('close', (event: PreventableEventLike) => {
     if (!isQuitting) {
       event.preventDefault();
+      overlayVisibilityRequested = false;
       hideToTray();
     }
   });
@@ -268,6 +630,7 @@ function registerConfiguredHotkeys(): void {
 app.whenReady().then(() => {
   createWindow();
   registerConfiguredHotkeys();
+  startGameWindowTracking();
 
   ipcMain.handle('pick-log-file', async (): Promise<PickDirectoryResult> => chooseLogDirectory());
   ipcMain.handle('reload-current-file', async () => logDirectoryService.reloadCurrentFile());
@@ -334,6 +697,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  stopGameWindowTracking();
   logDirectoryService.stopWatching();
   void disposeParserWorker();
   globalShortcut.unregisterAll();
@@ -348,3 +712,5 @@ app.on('activate', () => {
 });
 
 export {};
+
+

@@ -35,7 +35,9 @@
   const DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: 'vertical' | 'horizontal' = 'horizontal';
   const DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION: 'left' | 'right' | 'up' | 'down' = 'right';
   const DEFAULT_RECENT_SKILLS_TRACK_COUNT = 3;
+  const DEFAULT_AUTO_SCALE_ENABLED = true;
   const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
+    autoScaleEnabled: DEFAULT_AUTO_SCALE_ENABLED,
     playerPositions: {},
     panelPositions: {
       pullInfo: { ...DEFAULT_PULL_PANEL_POSITION },
@@ -75,6 +77,7 @@
     DEFAULT_ICONS_PER_ROW,
     DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
+    DEFAULT_AUTO_SCALE_ENABLED,
     DEFAULT_PANEL_OPACITY,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,

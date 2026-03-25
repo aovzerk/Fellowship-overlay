@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -706,4 +706,113 @@ button:hover {
 .recent-skill-chip .relic-timer {
   display: none;
 }
+
+
+.settings-table {
+  display: grid;
+  grid-template-columns: minmax(160px, 190px) minmax(0, 300px);
+  gap: 10px 12px;
+  align-items: center;
+  justify-content: start;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.settings-table-label {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.settings-table-control {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-start;
+  width: 300px;
+  max-width: 100%;
+}
+
+.settings-table-control-inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 300px;
+  max-width: 100%;
+}
+
+.settings-table .layout-control,
+.settings-table .settings-field,
+.settings-table .slider-control,
+.settings-table .size-controls {
+  width: 300px;
+  max-width: 100%;
+}
+
+.settings-table .layout-control {
+  display: flex;
+  justify-content: space-between;
+}
+
+.settings-table .layout-control select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-table .settings-field {
+  justify-content: stretch;
+}
+
+.settings-table .settings-field input {
+  width: 100%;
+  max-width: none;
+}
+
+.settings-table .size-controls {
+  display: inline-flex;
+  justify-content: space-between;
+}
+
+.settings-table .slider-control {
+  width: 300px;
+  max-width: 100%;
+}
+
+.settings-table-control > .layout-control,
+.settings-table-control > .settings-field,
+.settings-table-control > .size-controls,
+.settings-table-control > .slider-control {
+  width: 100%;
+}
+
+.settings-table-control-inline > .size-controls {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .settings-table {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .settings-table-control,
+  .settings-table-control-inline,
+  .settings-table .layout-control,
+  .settings-table .settings-field,
+  .settings-table .slider-control,
+  .settings-table .size-controls {
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+
+.settings-row > .settings-toggle {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
 
