@@ -44,13 +44,95 @@ import {
   unquote,
 } from './parser-state';
 import { findRecentDungeonParseOffset, getFileIdentity, processFileRange } from './parser-file';
+import { parseTs } from './parser-line-utils';
 import { finalizeState } from './parser-finalize';
 import { loadDungeonData } from './game-database';
 
 const MAX_STORED_ENCOUNTERS = 2;
 const MAX_STORED_NPC_DEATHS = 400;
 const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
+const NPC_UNDERFLOW_FALLBACK_MS = 1500;
 const parserCache = new Map<string, ParserCacheEntry>();
+
+function registerNpcDeath(state: ParserState, death: NpcDeathEntry, updateCurrentPull = true): void {
+  const deathTs = death.ts || state.latestLogTs || new Date().toISOString();
+  const normalizedDeath: NpcDeathEntry = { ...death, ts: deathTs };
+  const alreadyCounted = state.dungeon.countedNpcDeaths.has(normalizedDeath.npcId);
+
+  if (updateCurrentPull) {
+    markCurrentPullDeath(state, deathTs, normalizedDeath.npcId, normalizedDeath.npcName || '');
+  } else {
+    const npc = state.currentPull?.npcMap?.get(normalizedDeath.npcId);
+    if (npc && !npc.deadAt) npc.deadAt = deathTs;
+  }
+
+  if (alreadyCounted) return;
+
+  state.npcDeaths.push(normalizedDeath);
+  if (state.npcDeaths.length > MAX_STORED_NPC_DEATHS) {
+    state.npcDeaths.splice(0, state.npcDeaths.length - MAX_STORED_NPC_DEATHS);
+  }
+
+  state.dungeon.countedNpcDeaths.add(normalizedDeath.npcId);
+  const meta = getNpcPercentMeta(state, normalizedDeath.npcId, normalizedDeath.npcName || '');
+  const wasChickenized = state.dungeon?.chickenizedNpcIds?.has(normalizedDeath.npcId);
+  const wasBossSpawned = state.dungeon?.bossSpawnedNpcIds?.has(normalizedDeath.npcId);
+  const percentToAdd = (wasChickenized || wasBossSpawned) ? 0 : (Number(meta?.percent) || 0);
+  if (percentToAdd) state.dungeon.completedPercent += percentToAdd;
+
+  if (state.currentEncounter) {
+    state.currentEncounter.npcDeaths.push(normalizedDeath);
+    if (state.currentEncounter.npcDeaths.length > MAX_STORED_ENCOUNTER_NPC_DEATHS) {
+      state.currentEncounter.npcDeaths.splice(0, state.currentEncounter.npcDeaths.length - MAX_STORED_ENCOUNTER_NPC_DEATHS);
+    }
+  }
+}
+
+function markNpcUnderflowIfNeeded(
+  state: ParserState,
+  ts: string,
+  npcId: string | null | undefined,
+  npcName: string | null | undefined,
+  targetCurrentHpRaw: unknown,
+  targetMaxHpRaw: unknown,
+): void {
+  if (!isNpcId(npcId)) return;
+  const targetCurrentHp = Number(targetCurrentHpRaw);
+  const targetMaxHp = Number(targetMaxHpRaw);
+  if (!Number.isFinite(targetCurrentHp) || !Number.isFinite(targetMaxHp) || targetMaxHp <= 0) return;
+  if (targetCurrentHp <= targetMaxHp) return;
+
+  touchCurrentPull(state, ts, npcId, npcName || '');
+  const npc = state.currentPull?.npcMap?.get(npcId);
+  if (npc && !npc.deadAt && !npc.suspectedDeadAt) {
+    npc.suspectedDeadAt = ts;
+  }
+}
+
+function resolvePendingNpcUnderflowDeaths(state: ParserState, ts: string | null, force = false): void {
+  const tsMs = parseTs(ts);
+  if (tsMs == null) return;
+
+  for (const npc of state.currentPull?.npcMap?.values?.() || []) {
+    if (!npc || npc.deadAt || !npc.suspectedDeadAt) continue;
+    const suspectedMs = parseTs(npc.suspectedDeadAt);
+    if (suspectedMs == null) continue;
+    if (!force && (tsMs - suspectedMs) < NPC_UNDERFLOW_FALLBACK_MS) continue;
+
+    registerNpcDeath(state, {
+      ts: npc.suspectedDeadAt,
+      npcId: npc.unitId,
+      npcName: npc.name || null,
+      killerId: null,
+      killerName: null,
+      killingAbilityId: null,
+      killingAbility: null,
+    }, false);
+
+    npc.deadAt = npc.deadAt || npc.suspectedDeadAt || ts;
+    npc.suspectedDeadAt = null;
+  }
+}
 
 function updateSpiritFromResourcePart(
   state: ParserState,
@@ -82,6 +164,7 @@ function processLine(state: ParserState, line: string): void {
 
   if (ts) {
     state.latestLogTs = ts;
+    resolvePendingNpcUnderflowDeaths(state, ts);
   }
 
   if (event) {
@@ -122,6 +205,7 @@ function processLine(state: ParserState, line: string): void {
       break;
     }
     case 'DUNGEON_END': {
+      resolvePendingNpcUnderflowDeaths(state, ts, true);
       state.dungeon.endedAt = ts;
       state.dungeon.name = String(unquote(parts[2]) || '');
       state.dungeon.id = toNumber(parts[3]);
@@ -142,6 +226,7 @@ function processLine(state: ParserState, line: string): void {
       break;
     }
     case 'ZONE_CHANGE': {
+      resolvePendingNpcUnderflowDeaths(state, ts, true);
       const dungeonName = String(unquote(parts[2]) || '');
       const dungeonId = toNumber(parts[3]);
       const dungeonData = loadDungeonData(dungeonId, dungeonName);
@@ -198,6 +283,7 @@ function processLine(state: ParserState, line: string): void {
       break;
     }
     case 'ENCOUNTER_END': {
+      resolvePendingNpcUnderflowDeaths(state, ts, true);
       const encounterId = toNumber(parts[2]);
       const success = parts[4] === '1';
       const enc = state.currentEncounter || state.encounters[state.encounters.length - 1];
@@ -259,6 +345,7 @@ function processLine(state: ParserState, line: string): void {
       const amount = toNumber(parts[9]) || 0;
       if (isNpcId(sourceId) && isPlayerId(targetId)) touchCurrentPull(state, ts, sourceId, sourceName);
       if (isNpcId(targetId) && isPlayerId(sourceId)) touchCurrentPull(state, ts, targetId, targetName);
+      markNpcUnderflowIfNeeded(state, ts, targetId, targetName, parts[23], parts[24]);
       if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
         markNpcChickenized(state, ts, targetId, targetName);
       }
@@ -317,15 +404,16 @@ function processLine(state: ParserState, line: string): void {
       updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[17], abilityId, abilityName);
       break;
     }
-    case 'UNIT_DEATH': {
+    case 'UNIT_DEATH':
+    case 'UNIT_DESTROYED': {
       const deadId = parts[2];
       const deadName = String(unquote(parts[3]) || '');
-      const killerId = parts[4] || null;
-      const killerName = String(unquote(parts[5]) || '') || null;
-      const killingAbilityId = toNumber(parts[6]);
-      const killingAbility = String(unquote(parts[7]) || '') || null;
+      const killerId = event === 'UNIT_DEATH' ? (parts[4] || null) : null;
+      const killerName = event === 'UNIT_DEATH' ? (String(unquote(parts[5]) || '') || null) : null;
+      const killingAbilityId = event === 'UNIT_DEATH' ? toNumber(parts[6]) : null;
+      const killingAbility = event === 'UNIT_DEATH' ? (String(unquote(parts[7]) || '') || null) : null;
       if (isNpcId(deadId)) {
-        const death: NpcDeathEntry = {
+        registerNpcDeath(state, {
           ts,
           npcId: deadId,
           npcName: deadName || null,
@@ -333,28 +421,11 @@ function processLine(state: ParserState, line: string): void {
           killerName,
           killingAbilityId,
           killingAbility,
-        };
-        state.npcDeaths.push(death);
-        if (state.npcDeaths.length > MAX_STORED_NPC_DEATHS) {
-          state.npcDeaths.splice(0, state.npcDeaths.length - MAX_STORED_NPC_DEATHS);
-        }
-        markCurrentPullDeath(state, ts, deadId, deadName);
-        if (!state.dungeon.countedNpcDeaths.has(deadId)) {
-          state.dungeon.countedNpcDeaths.add(deadId);
-          const meta = getNpcPercentMeta(state, deadId, deadName);
-          const wasChickenized = state.dungeon?.chickenizedNpcIds?.has(deadId);
-          const wasBossSpawned = state.dungeon?.bossSpawnedNpcIds?.has(deadId);
-          const percentToAdd = (wasChickenized || wasBossSpawned) ? 0 : (Number(meta?.percent) || 0);
-          if (percentToAdd) state.dungeon.completedPercent += percentToAdd;
-        }
-        if (state.currentEncounter) {
-          state.currentEncounter.npcDeaths.push(death);
-          if (state.currentEncounter.npcDeaths.length > MAX_STORED_ENCOUNTER_NPC_DEATHS) {
-            state.currentEncounter.npcDeaths.splice(0, state.currentEncounter.npcDeaths.length - MAX_STORED_ENCOUNTER_NPC_DEATHS);
-          }
-        }
+        });
+        const npc = state.currentPull?.npcMap?.get(deadId);
+        if (npc) npc.suspectedDeadAt = null;
       }
-      if (isPlayerId(deadId)) ensurePlayer(state, deadId, deadName).deaths += 1;
+      if (event === 'UNIT_DEATH' && isPlayerId(deadId)) ensurePlayer(state, deadId, deadName).deaths += 1;
       break;
     }
     default:

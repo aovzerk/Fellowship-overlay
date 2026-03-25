@@ -230,6 +230,7 @@ export interface CurrentPullNpc extends NpcPercentMeta {
   firstSeenAt: string | null;
   lastSeenAt: string | null;
   deadAt: string | null;
+  suspectedDeadAt: string | null;
   chickenizedAt: string | null;
   chickenized: boolean;
   bossSpawnedAt: string | null;
