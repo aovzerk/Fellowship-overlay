@@ -145,10 +145,18 @@
       ? `<div class="pull-note chickenized">${escapeHtml(translate('chickenizedInfo'))}: <strong>${escapeHtml(String(chickenizedCount))}</strong> ${escapeHtml(translate('chickenizedSuffix'))} <span>(-${escapeHtml(formatPercent(currentLanguage, chickenizedOriginalPercent))}%${aliveChickenizedCount > 0 ? `, ${escapeHtml(translate('chickenizedAlive'))}: ${escapeHtml(String(aliveChickenizedCount))} / -${escapeHtml(formatPercent(currentLanguage, aliveChickenizedOriginalPercent))}%` : ''})</span></div>`
       : '';
 
+    const completedLine = `<div class="pull-stat"><span>${escapeHtml(translate('pullCompleted'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, completedPercent))}%</strong></div>`;
+    const aliveLine = dungeonEnded
+      ? ''
+      : `<div class="pull-stat"><span>${escapeHtml(translate('pullAlive'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, alivePercent))}%</strong></div>`;
+    const totalLine = `<div class="pull-stat"><span>${escapeHtml(dungeonEnded ? translate('pullTotal') : translate('pullProjected'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}%</strong></div>`;
+
     pullInfoEl.innerHTML = `
       <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
       <div class="pull-stats">
-        <div class="pull-stat"><span>${escapeHtml(translate('pullTotal'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}%${dungeonEnded ? '' : ` (+${escapeHtml(formatPercent(currentLanguage, alivePercent))}%)`}</strong></div>
+        ${completedLine}
+        ${aliveLine}
+        ${totalLine}
       </div>
       ${chickenizedLine}
     `;
