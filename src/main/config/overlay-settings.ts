@@ -39,6 +39,7 @@ const DEFAULT_ICONS_PER_ROW = 3;
 const RECENT_SKILLS_TRACK_COUNT_MIN = 1;
 const RECENT_SKILLS_TRACK_COUNT_MAX = 6;
 const DEFAULT_RECENT_SKILLS_TRACK_COUNT = 3;
+const DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW = false;
 const DEFAULT_LAYOUT_DIRECTION: LayoutDirection = 'vertical';
 const DEFAULT_HOTKEYS: OverlayHotkeys = {
   toggleInteraction: 'F8',
@@ -65,15 +66,15 @@ const I18N: Record<LanguageCode, Record<string, string>> = {
   },
   ru: {
     trayTooltip: 'Fellowship Overlay',
-    trayHide: 'Скрыть оверлей',
-    trayShow: 'Показать оверлей',
-    traySettings: 'Настройки',
-    trayExit: 'Выход',
-    watchFileUnavailable: 'Текущий лог-файл недоступен',
-    watchFolderUnavailable: 'Выбранная папка недоступна',
-    watchFolderActive: 'Слежение за папкой и последним логом активно',
-    noLogFiles: 'В выбранной папке не найдено файлов .log или .txt',
-    logFolder: 'Папка с логами',
+    trayHide: '\u0421\u043a\u0440\u044b\u0442\u044c \u043e\u0432\u0435\u0440\u043b\u0435\u0439',
+    trayShow: '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u043e\u0432\u0435\u0440\u043b\u0435\u0439',
+    traySettings: '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438',
+    trayExit: '\u0412\u044b\u0445\u043e\u0434',
+    watchFileUnavailable: '\u0422\u0435\u043a\u0443\u0449\u0438\u0439 \u043b\u043e\u0433-\u0444\u0430\u0439\u043b \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d',
+    watchFolderUnavailable: '\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u0430\u044f \u043f\u0430\u043f\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430',
+    watchFolderActive: '\u0421\u043b\u0435\u0436\u0435\u043d\u0438\u0435 \u0437\u0430 \u043f\u0430\u043f\u043a\u043e\u0439 \u0438 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u043c \u043b\u043e\u0433\u043e\u043c \u0430\u043a\u0442\u0438\u0432\u043d\u043e',
+    noLogFiles: '\u0412 \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u043f\u0430\u043f\u043a\u0435 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e \u0444\u0430\u0439\u043b\u043e\u0432 .log \u0438\u043b\u0438 .txt',
+    logFolder: '\u041f\u0430\u043f\u043a\u0430 \u0441 \u043b\u043e\u0433\u0430\u043c\u0438',
   },
 };
 
@@ -202,6 +203,10 @@ function normalizeRecentSkillsTrackCount(value: unknown): number {
   return Math.round(clamp(normalized, RECENT_SKILLS_TRACK_COUNT_MIN, RECENT_SKILLS_TRACK_COUNT_MAX));
 }
 
+function normalizeAutoHideWithGameWindow(value: unknown): boolean {
+  return typeof value === 'boolean' ? value : DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW;
+}
+
 function normalizeStoredPath(value: unknown): string | null {
   const normalized = String(value || '').trim();
   return normalized || null;
@@ -253,6 +258,7 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
     recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
     recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
+    autoHideWithGameWindow: normalizeAutoHideWithGameWindow(source.autoHideWithGameWindow),
     hotkeys: normalizeHotkeys(source.hotkeys),
   };
 }
@@ -382,6 +388,7 @@ export {
   RECENT_SKILLS_TRACK_COUNT_MIN,
   clamp,
   createOverlaySettingsStore,
+  normalizeAutoHideWithGameWindow,
   normalizeLanguage,
   normalizeHotkeys,
 };

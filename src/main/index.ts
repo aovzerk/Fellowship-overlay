@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   BrowserWindowLike,
   LogDirectoryService,
   OverlaySettingsStore,
@@ -84,9 +84,14 @@ let lastGameWindowState: GameWindowState | null = null;
 let lastStableGameWindowState: GameWindowState | null = null;
 let consecutiveWindowMisses = 0;
 let settingsCloseGraceUntil = 0;
+let windowProbeScriptPath: string | null = null;
 
 function getConfiguredHotkeys(): OverlayHotkeys {
   return settingsStore.getOverlaySettings().hotkeys;
+}
+
+function isAutoHideWithGameWindowEnabled(): boolean {
+  return settingsStore.getOverlaySettings().autoHideWithGameWindow !== false;
 }
 
 function resolveSettingsDirectory(): string {
@@ -108,56 +113,62 @@ function resolveSettingsFilePath(): string {
 const SETTINGS_FILE: string = resolveSettingsFilePath();
 const settingsStore: OverlaySettingsStore = createOverlaySettingsStore({ settingsFile: SETTINGS_FILE });
 
+function getLiveWindow(): BrowserWindowLike | null {
+  if (!win) return null;
+  if (typeof win.isDestroyed === 'function' && win.isDestroyed()) {
+    win = null;
+    return null;
+  }
+  if (win.webContents && typeof win.webContents.isDestroyed === 'function' && win.webContents.isDestroyed()) {
+    win = null;
+    return null;
+  }
+  return win;
+}
 function showWindow(): void {
-  if (!win) return;
-  win.show();
-  win.focus();
+  const currentWin = getLiveWindow();
+  if (!currentWin) return;
+  currentWin.show();
+  currentWin.focus();
 }
 
 function showWindowWithoutFocus(): void {
-  if (!win) return;
-  if (typeof win.showInactive === 'function') {
-    win.showInactive();
+  const currentWin = getLiveWindow();
+  if (!currentWin) return;
+  if (typeof currentWin.showInactive === 'function') {
+    currentWin.showInactive();
     return;
   }
-  win.show();
+  currentWin.show();
 }
 
 function hideToTray(): void {
-  if (!win) return;
-  win.hide();
+  const currentWin = getLiveWindow();
+  if (!currentWin) return;
+  currentWin.hide();
 }
 
 function sendWatchStatus(ok: boolean, message: string): void {
   const payload: WatchStatusPayload = { ok: !!ok, message };
-  win?.webContents.send('watch-status', payload);
+  const currentWin = getLiveWindow();
+  currentWin?.webContents.send('watch-status', payload);
 }
 
 function sendLogData(payload: LogDataPayload & { updatedAt?: string }): void {
-  win?.webContents.send('log-data', payload);
-}
-
-function computeAutoScaleFromWindow(width: number, height: number): number {
-  if (width <= 0 || height <= 0) return 1;
-  const widthScale = width / 1920;
-  const heightScale = height / 1080;
-  const rawScale = Math.min(widthScale, heightScale);
-  const softenedScale = 1 + ((rawScale - 1) * 0.45);
-  return Math.round(Math.max(0.9, Math.min(1.12, softenedScale)) * 100) / 100;
+  const currentWin = getLiveWindow();
+  currentWin?.webContents.send('log-data', payload);
 }
 
 function sendHudActivity(
   active: boolean,
   foregroundExe: string | null = null,
-  state: GameWindowState | null = null,
-  appliedBounds: { x: number; y: number; width: number; height: number } | null = null,
 ): void {
   const payload: HudActivityPayload = {
     active: !!active,
     foregroundExe,
-    autoScale: state ? computeAutoScaleFromWindow(state.width, state.height) : 1,
   };
-  win?.webContents.send('hud-activity', payload);
+  const currentWin = getLiveWindow();
+  currentWin?.webContents.send('hud-activity', payload);
 }
 
 const logDirectoryService: LogDirectoryService = createLogDirectoryService({
@@ -170,14 +181,15 @@ const logDirectoryService: LogDirectoryService = createLogDirectoryService({
 function setClickThrough(enabled: boolean): void {
   clickThroughEnabled = !!enabled;
 
-  if (!win) return;
+  const currentWin = getLiveWindow();
+  if (!currentWin) return;
 
-  win.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
+  currentWin.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
   const payload: OverlayModePayload = {
     clickThrough: clickThroughEnabled,
     locked: !clickThroughEnabled,
   };
-  win.webContents.send('overlay-mode', payload);
+  currentWin.webContents.send('overlay-mode', payload);
 }
 
 function getPowerShellWindowProbeScript(): string {
@@ -294,10 +306,23 @@ function getFallbackGameWindowState(): GameWindowState {
   };
 }
 
+
+function ensureWindowProbeScriptPath(): string {
+  if (windowProbeScriptPath && fs.existsSync(windowProbeScriptPath)) {
+    return windowProbeScriptPath;
+  }
+
+  const probePath = path.join(app.getPath('temp'), 'fs-overlay-window-probe.ps1');
+  if (!fs.existsSync(probePath)) {
+    fs.writeFileSync(probePath, getPowerShellWindowProbeScript(), 'utf8');
+  }
+  windowProbeScriptPath = probePath;
+  return probePath;
+}
+
 function fetchGameWindowState(): Promise<GameWindowState> {
   return new Promise((resolve) => {
-    const probePath = path.join(app.getPath('temp'), 'fs-overlay-window-probe.ps1');
-    fs.writeFileSync(probePath, getPowerShellWindowProbeScript(), 'utf8');
+    const probePath = ensureWindowProbeScriptPath();
 
     execFile(
       'powershell',
@@ -391,9 +416,10 @@ function resolveOverlayBoundsForGameWindow(state: GameWindowState): { x: number;
 }
 
 function applyGameWindowBounds(state: GameWindowState): void {
-  if (!win || !state.found || state.width <= 0 || state.height <= 0) return;
+  const currentWin = getLiveWindow();
+  if (!currentWin || !state.found || state.width <= 0 || state.height <= 0) return;
 
-  const currentBounds = win.getBounds();
+  const currentBounds = currentWin.getBounds();
   const nextBounds = resolveOverlayBoundsForGameWindow(state);
 
   if (
@@ -402,7 +428,7 @@ function applyGameWindowBounds(state: GameWindowState): void {
     currentBounds.width !== nextBounds.width ||
     currentBounds.height !== nextBounds.height
   ) {
-    win.setBounds(nextBounds);
+    currentWin.setBounds(nextBounds);
   }
 }
 
@@ -423,9 +449,12 @@ function applyTrackedOverlayState(state: GameWindowState | null): void {
 
   applyGameWindowBounds(effectiveState);
 
-  const keepVisibleDuringMissGrace = overlayVisibilityRequested && !settingsModalOpen && canReuseLastStable;
-  const keepVisibleAfterSettingsClose = overlayVisibilityRequested && !settingsModalOpen && withinSettingsCloseGrace && !!lastStableGameWindowState;
-  const shouldShow = settingsModalOpen || (overlayVisibilityRequested && currentGood) || keepVisibleDuringMissGrace || keepVisibleAfterSettingsClose;
+  const autoHideWithGameWindow = isAutoHideWithGameWindowEnabled();
+  const keepVisibleDuringMissGrace = autoHideWithGameWindow && overlayVisibilityRequested && !settingsModalOpen && canReuseLastStable;
+  const keepVisibleAfterSettingsClose = autoHideWithGameWindow && overlayVisibilityRequested && !settingsModalOpen && withinSettingsCloseGrace && !!lastStableGameWindowState;
+  const shouldShow = autoHideWithGameWindow
+    ? (settingsModalOpen || (overlayVisibilityRequested && currentGood) || keepVisibleDuringMissGrace || keepVisibleAfterSettingsClose)
+    : (settingsModalOpen || overlayVisibilityRequested);
 
   if (shouldShow) {
     showWindowWithoutFocus();
@@ -435,9 +464,8 @@ function applyTrackedOverlayState(state: GameWindowState | null): void {
 
   const processName = effectiveState.processName || rawState.processName;
   const foregroundExe = processName ? `${processName}.exe` : null;
-  const adjustedBounds = resolveOverlayBoundsForGameWindow(effectiveState);
-  const hudActive = settingsModalOpen || (overlayVisibilityRequested && currentGood) || keepVisibleDuringMissGrace || keepVisibleAfterSettingsClose;
-  sendHudActivity(hudActive, foregroundExe, effectiveState, adjustedBounds);
+  const hudActive = shouldShow;
+  sendHudActivity(hudActive, foregroundExe);
 }
 
 async function syncOverlayWithGameWindow(): Promise<void> {
@@ -485,7 +513,8 @@ function openSettingsWindow(): void {
     locked: !clickThroughEnabled,
     language: settingsStore.getCurrentLanguage(),
   };
-  win.webContents.send('open-settings', payload);
+  const currentWin = getLiveWindow();
+  currentWin?.webContents.send('open-settings', payload);
 }
 
 function setSettingsModalOpen(open: boolean): void {
@@ -579,7 +608,8 @@ function createWindow(): void {
 
   win.webContents.once('did-finish-load', () => {
     const payload: LanguagePayload = { language: settingsStore.getCurrentLanguage() };
-    win?.webContents.send('language-changed', payload);
+    const currentWin = getLiveWindow();
+    currentWin?.webContents.send('language-changed', payload);
     void logDirectoryService.restoreLastLogDirectoryIfAvailable();
     applyTrackedOverlayState(lastGameWindowState);
   });
@@ -590,6 +620,10 @@ function createWindow(): void {
       overlayVisibilityRequested = false;
       hideToTray();
     }
+  });
+
+  win.on('closed', () => {
+    win = null;
   });
 
   trayManager.createTray();
@@ -615,7 +649,8 @@ function registerConfiguredHotkeys(): void {
         openSettingsWindow();
         return;
       }
-      win.webContents.send('request-close-settings');
+      const currentWin = getLiveWindow();
+      currentWin?.webContents.send('request-close-settings');
     }],
   ];
 
@@ -671,6 +706,7 @@ app.whenReady().then(() => {
       if (partialSettings && typeof partialSettings === 'object' && 'hotkeys' in (partialSettings as Record<string, unknown>)) {
         registerConfiguredHotkeys();
       }
+      applyTrackedOverlayState(lastGameWindowState);
       return nextSettings;
     })(),
   }));
@@ -678,7 +714,8 @@ app.whenReady().then(() => {
     const nextLanguage = settingsStore.setCurrentLanguage(language);
     trayManager.refreshTrayTooltip();
     const payload: LanguagePayload = { language: nextLanguage };
-    win?.webContents.send('language-changed', payload);
+    const currentWin = getLiveWindow();
+    currentWin?.webContents.send('language-changed', payload);
 
     const currentDirectoryPath = settingsStore.getCurrentDirectoryPath();
     if (currentDirectoryPath && fs.existsSync(currentDirectoryPath)) {
@@ -712,5 +749,3 @@ app.on('activate', () => {
 });
 
 export {};
-
-

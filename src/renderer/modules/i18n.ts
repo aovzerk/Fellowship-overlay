@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const I18N: Record<LanguageCode, Record<string, string>> = {
 
     ru: {
@@ -16,7 +16,7 @@
       iconsPerRowTitle: 'Спелов в строке',
       iconsPerRowLabel: 'Спелов в строке',
       panelOpacity: 'Прозрачность подложки',
-      autoScaleToggle: 'Автомасштаб по окну игры',
+      autoHideWithGameWindow: '\u0410\u0432\u0442\u043e\u0441\u043a\u0440\u044b\u0442\u0438\u0435 \u043f\u043e \u043e\u043a\u043d\u0443 \u0438\u0433\u0440\u044b',
       languageRussian: 'Русский',
       languageEnglish: 'English',
       layoutDirection: 'Направление',
@@ -88,7 +88,7 @@
       iconsPerRowTitle: 'Spells per row',
       iconsPerRowLabel: 'Spells per row',
       panelOpacity: 'Panel opacity',
-      autoScaleToggle: 'Auto scale with game window',
+      autoHideWithGameWindow: 'Auto hide with game window',
       languageRussian: 'Русский',
       languageEnglish: 'English',
       layoutDirection: 'Direction',
@@ -159,7 +159,7 @@
   function applyTranslations(ctx: ApplyTranslationsContext): void {
     const {
       appearanceSettingsTitle,
-      autoScaleToggleLabel,
+      autoHideWithWindowToggleLabel,
       cardSizeControls,
       cardSizeLabel,
       currentLanguage,
@@ -243,7 +243,7 @@
     if (frameGapLabel) frameGapLabel.textContent = translate('frameGapLabel');
     if (iconsPerRowLabel) iconsPerRowLabel.textContent = translate('iconsPerRowLabel');
     if (panelOpacityLabel) panelOpacityLabel.textContent = translate('panelOpacity');
-    if (autoScaleToggleLabel) autoScaleToggleLabel.textContent = translate('autoScaleToggle');
+    if (autoHideWithWindowToggleLabel) autoHideWithWindowToggleLabel.textContent = translate('autoHideWithGameWindow');
     if (hotkeyToggleInteractionLabel) hotkeyToggleInteractionLabel.textContent = translate('hotkeyToggleInteraction');
     if (hotkeyPickLogLabel) hotkeyPickLogLabel.textContent = translate('hotkeyPickLog');
     if (hotkeyToggleVisibilityLabel) hotkeyToggleVisibilityLabel.textContent = translate('hotkeyToggleVisibility');
@@ -339,7 +339,3 @@
     t,
   };
 })();
-
-
-
-

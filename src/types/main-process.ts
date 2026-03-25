@@ -74,6 +74,7 @@ export interface ParserCacheEntry {
 }
 
 export interface BrowserWindowLike {
+  isDestroyed?(): boolean;
   show(): void;
   showInactive?(): void;
   hide(): void;
@@ -87,6 +88,7 @@ export interface BrowserWindowLike {
   loadFile(filePath: string): void;
   on(event: string, listener: (...args: unknown[]) => void): void;
   webContents: {
+    isDestroyed?(): boolean;
     send(channel: string, payload?: unknown): void;
     once(event: string, listener: (...args: unknown[]) => void): void;
   };

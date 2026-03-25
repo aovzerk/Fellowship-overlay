@@ -1,4 +1,4 @@
-﻿export type Nullable<T> = T | null;
+export type Nullable<T> = T | null;
 export type LanguageCode = 'en' | 'ru';
 export type LayoutDirection = 'vertical' | 'horizontal';
 export type HotkeyAction = 'toggleInteraction' | 'pickLog' | 'toggleVisibility' | 'openSettings';
@@ -35,7 +35,7 @@ export interface OverlaySettings {
   language?: LanguageCode;
   logDirectoryPath?: string | null;
   currentFilePath?: string | null;
-  autoScaleEnabled?: boolean;
+  autoHideWithGameWindow?: boolean;
   playerPositions: PlayerPositions;
   panelPositions: OverlayPanelPositions;
   visibilitySettings: OverlayVisibilitySettings;
@@ -70,7 +70,6 @@ export interface OverlayModePayload {
 export interface HudActivityPayload {
   active: boolean;
   foregroundExe?: string | null;
-  autoScale?: number;
 }
 
 export interface LanguagePayload {
@@ -439,7 +438,7 @@ export interface RendererConstantsApi {
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
   DEFAULT_RECENT_SKILLS_LIMIT: number;
-  DEFAULT_AUTO_SCALE_ENABLED: boolean;
+  DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW: boolean;
   DEFAULT_CARD_SCALE: number;
   DEFAULT_FRAME_GAP: number;
   DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
@@ -464,11 +463,10 @@ export interface RendererFormattersApi {
 
 export interface ApplyTranslationsContext {
   appearanceSettingsTitle: HTMLElement;
-  autoScaleEnabled: boolean;
   cardSizeControls: HTMLElement | null;
   cardSizeLabel: HTMLElement | null;
-  autoScaleToggle: HTMLInputElement | null;
-  autoScaleToggleLabel: HTMLElement | null;
+  autoHideWithWindowToggle: HTMLInputElement | null;
+  autoHideWithWindowToggleLabel: HTMLElement | null;
   currentLanguage: LanguageCode;
   filePathEl: HTMLElement;
   frameGapControls: HTMLElement | null;
@@ -589,7 +587,7 @@ export interface RendererPanelsApi {
 }
 
 export interface OverlaySettingsController {
-  normalizeAutoScaleEnabled(value: unknown): boolean;
+  normalizeAutoHideWithGameWindow(value: unknown): boolean;
   normalizeCardScaleValue(value: unknown): number;
   normalizeFrameGap(value: unknown): number;
   normalizeIconsPerRow(value: unknown): number;
@@ -603,7 +601,7 @@ export interface OverlaySettingsController {
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
   normalizeHotkeys(value: unknown): OverlayHotkeys;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
-  loadAutoScaleEnabled(): boolean;
+  loadAutoHideWithGameWindow(): boolean;
   loadCardScale(): number;
   loadFrameGap(): number;
   loadIconsPerRow(): number;
@@ -619,7 +617,7 @@ export interface OverlaySettingsController {
   loadRecentSkillsTrackCount(): number;
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
-  saveAutoScaleEnabled(enabled: boolean): void;
+  saveAutoHideWithGameWindow(enabled: boolean): void;
   saveCardScale(cardScale: number): void;
   saveFrameGap(frameGap: number): void;
   saveIconsPerRow(iconsPerRow: number): void;
@@ -722,7 +720,3 @@ export interface RenderSkillsModalArgs {
 export interface RendererSkillsModalApi {
   renderSkillsModal(args: RenderSkillsModalArgs): void;
 }
-
-
-
-
