@@ -1,29 +1,33 @@
-(() => {
+﻿(() => {
   const I18N: Record<LanguageCode, Record<string, string>> = {
+
     ru: {
       htmlLang: 'ru',
       pickLog: 'Выбрать папку',
       reload: 'Обновить',
-      lockOverlay: 'Lock overlay',
-      unlockOverlay: 'Unlock overlay',
-      skills: 'Skills',
+      lockOverlay: 'Закрепить оверлей',
+      unlockOverlay: 'Разблокировать оверлей',
+      skills: 'Способности',
       language: 'Язык',
       cardSizeTitle: 'Размер карточки',
       cardSizeLabel: 'Размер карточки',
-      frameGapTitle: 'Отступ между фреймами',
+      frameGapTitle: 'Отступ между карточками',
       frameGapLabel: 'Отступ',
       iconsPerRowTitle: 'Спелов в строке',
       iconsPerRowLabel: 'Спелов в строке',
       panelOpacity: 'Прозрачность подложки',
+      autoScaleToggle: 'Автомасштаб по окну игры',
+      languageRussian: 'Русский',
+      languageEnglish: 'English',
       layoutDirection: 'Направление',
       layoutVertical: 'Вертикально',
       layoutHorizontal: 'Горизонтально',
       noFileSelected: 'Папка не выбрана',
       noWatching: 'Нет слежения',
-      hudActive: 'HUD active',
-      hudHidden: 'HUD hidden',
+      hudActive: 'HUD активен',
+      hudHidden: 'HUD скрыт',
       spirit: 'Spirit',
-      trackedClassSkills: 'Отслеживаемые способности классов',
+      trackedClassSkills: 'Отслеживаемые классовые способности',
       settings: 'Настройки',
       settingsSubtitle: 'Общие настройки оверлея',
       logSettings: 'Лог',
@@ -35,9 +39,9 @@
       hotkeyToggleVisibility: 'Показать или скрыть оверлей',
       hotkeyOpenSettings: 'Открыть настройки',
       hotkeyHint: 'Нажмите на кнопку бинда, чтобы его изменить',
-      hotkeyListening: 'Нажмите новую комбинацию. Esc для отмены',
-      hotkeyDuplicate: 'Эта комбинация уже используется',
-      hotkeyInvalid: 'Используйте не модификатор',
+      hotkeyListening: 'Нажмите новое сочетание клавиш. Esc для отмены',
+      hotkeyDuplicate: 'Этот бинд уже используется',
+      hotkeyInvalid: 'Используйте клавишу, а не только модификатор',
       showParty: 'Показывать группу и кулдауны',
       showPull: 'Показывать информацию по пулам и %',
       showRecentSkills: 'Показывать последние скиллы',
@@ -46,6 +50,7 @@
       recentSkillsGrowthDirection: 'Рост панели последних скиллов',
       recentSkillsTrackCountRows: 'Строк',
       recentSkillsTrackCountColumns: 'Столбцов',
+      recentSkillsTrackCountTitle: 'Лимит сетки',
       growthRight: 'Вправо',
       growthLeft: 'Влево',
       growthDown: 'Вниз',
@@ -57,13 +62,13 @@
       unknown: 'Неизвестно',
       errorPrefix: 'Ошибка',
       currentPull: 'Текущий пул',
-      pullTotal: 'Всего',
-      noPullData: 'Нет данных по текущему бою',
+      pullTotal: 'Сумма',
+      noPullData: 'Нет данных по текущему пулу',
       recentSkillsTitle: 'Последние скиллы',
       noRecentSkills: 'Нет использованных скиллов',
       chickenizedInfo: 'Chickenize',
       chickenizedSuffix: 'моб(ов) = 0%',
-      chickenizedAlive: 'живых',
+      chickenizedAlive: 'живы',
     },
     en: {
       htmlLang: 'en',
@@ -80,6 +85,9 @@
       iconsPerRowTitle: 'Spells per row',
       iconsPerRowLabel: 'Spells per row',
       panelOpacity: 'Panel opacity',
+      autoScaleToggle: 'Auto scale with game window',
+      languageRussian: 'Русский',
+      languageEnglish: 'English',
       layoutDirection: 'Direction',
       layoutVertical: 'Vertical',
       layoutHorizontal: 'Horizontal',
@@ -109,6 +117,7 @@
       recentSkillsLimit: 'Recent skills limit',
       recentSkillsLayoutDirection: 'Recent skills panel orientation',
       recentSkillsGrowthDirection: 'Recent skills panel growth',
+      recentSkillsTrackCountTitle: 'Grid count',
       recentSkillsTrackCountRows: 'Rows',
       recentSkillsTrackCountColumns: 'Columns',
       growthRight: 'Right',
@@ -144,6 +153,7 @@
   function applyTranslations(ctx: ApplyTranslationsContext): void {
     const {
       appearanceSettingsTitle,
+      autoScaleToggleLabel,
       cardSizeControls,
       cardSizeLabel,
       currentLanguage,
@@ -182,6 +192,7 @@
       recentSkillsTrackCount,
       recentSkillsTrackCountControls,
       recentSkillsTrackCountLabel,
+      recentSkillsTrackCountTitle,
       reloadBtn,
       renderPlayers,
       renderPullInfo,
@@ -226,6 +237,7 @@
     if (frameGapLabel) frameGapLabel.textContent = translate('frameGapLabel');
     if (iconsPerRowLabel) iconsPerRowLabel.textContent = translate('iconsPerRowLabel');
     if (panelOpacityLabel) panelOpacityLabel.textContent = translate('panelOpacity');
+    if (autoScaleToggleLabel) autoScaleToggleLabel.textContent = translate('autoScaleToggle');
     if (hotkeyToggleInteractionLabel) hotkeyToggleInteractionLabel.textContent = translate('hotkeyToggleInteraction');
     if (hotkeyPickLogLabel) hotkeyPickLogLabel.textContent = translate('hotkeyPickLog');
     if (hotkeyToggleVisibilityLabel) hotkeyToggleVisibilityLabel.textContent = translate('hotkeyToggleVisibility');
@@ -236,6 +248,7 @@
     if (recentSkillsLimitLabel) recentSkillsLimitLabel.textContent = translate('recentSkillsLimit');
     if (recentSkillsLayoutDirectionLabel) recentSkillsLayoutDirectionLabel.textContent = translate('recentSkillsLayoutDirection');
     if (recentSkillsGrowthDirectionLabel) recentSkillsGrowthDirectionLabel.textContent = translate('recentSkillsGrowthDirection');
+    if (recentSkillsTrackCountTitle) recentSkillsTrackCountTitle.textContent = translate('recentSkillsTrackCountTitle');
     if (recentSkillsTrackCountLabel) {
       recentSkillsTrackCountLabel.textContent = recentSkillsLayoutDirection === 'horizontal'
         ? translate('recentSkillsTrackCountRows')
@@ -246,6 +259,10 @@
     if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
     recentSkillsLimitInput.value = String(recentSkillsLimit);
     languageSelect.value = currentLanguage;
+    const ruOption = languageSelect.querySelector('option[value=\"ru\"]');
+    const enOption = languageSelect.querySelector('option[value=\"en\"]');
+    if (ruOption) ruOption.textContent = translate('languageRussian');
+    if (enOption) enOption.textContent = translate('languageEnglish');
 
     if (layoutDirectionSelect) {
       layoutDirectionSelect.value = layoutDirection === 'horizontal' ? 'horizontal' : 'vertical';
@@ -316,3 +333,7 @@
     t,
   };
 })();
+
+
+
+

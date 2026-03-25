@@ -75,9 +75,12 @@ export interface ParserCacheEntry {
 
 export interface BrowserWindowLike {
   show(): void;
+  showInactive?(): void;
   hide(): void;
   focus(): void;
   isVisible(): boolean;
+  getBounds(): { x: number; y: number; width: number; height: number };
+  setBounds(bounds: { x: number; y: number; width: number; height: number }): void;
   setIgnoreMouseEvents(ignore: boolean, options?: { forward?: boolean }): void;
   setAlwaysOnTop(flag: boolean, level?: string): void;
   setVisibleOnAllWorkspaces(flag: boolean, options?: { visibleOnFullScreen?: boolean }): void;

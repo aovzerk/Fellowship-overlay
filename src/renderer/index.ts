@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
 function mustElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) {
@@ -42,10 +42,15 @@ const panelOpacityValueEl = mustElement<HTMLElement>('panelOpacityValue');
 const panelOpacityLabel = mustElement<HTMLElement>('panelOpacityLabel');
 const layoutDirectionSelect = mustElement<HTMLSelectElement>('layoutDirectionSelect');
 const layoutDirectionLabel = mustElement<HTMLElement>('layoutDirectionLabel');
+const frameGapLabel = document.getElementById('frameGapLabel') as HTMLElement | null;
+const iconsPerRowLabel = document.getElementById('iconsPerRowLabel') as HTMLElement | null;
 const cardSizeDownBtn = mustElement<HTMLButtonElement>('cardSizeDownBtn');
 const cardSizeUpBtn = mustElement<HTMLButtonElement>('cardSizeUpBtn');
 const cardSizeValueEl = mustElement<HTMLElement>('cardSizeValue');
 const cardSizeControls = mustElement<HTMLElement>('cardSizeControls');
+const cardSizeLabel = document.getElementById('cardSizeLabel') as HTMLElement | null;
+const autoScaleToggle = document.getElementById('autoScaleToggle') as HTMLInputElement | null;
+const autoScaleToggleLabel = document.getElementById('autoScaleToggleLabel') as HTMLElement | null;
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
@@ -63,6 +68,7 @@ const skillsModal = mustElement<HTMLElement>('skillsModal');
 const skillsCatalogEl = mustElement<HTMLElement>('skillsCatalog');
 const pullInfoEl = mustElement<HTMLElement>('pullInfo');
 const recentSkillsPanelEl = mustElement<HTMLElement>('recentSkillsPanel');
+const recentSkillsSettingsGroup = mustElement<HTMLElement>('recentSkillsSettingsGroup');
 const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle') as HTMLInputElement | null;
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
@@ -75,6 +81,7 @@ const recentSkillsTrackCountDownBtn = mustElement<HTMLButtonElement>('recentSkil
 const recentSkillsTrackCountUpBtn = mustElement<HTMLButtonElement>('recentSkillsTrackCountUpBtn');
 const recentSkillsTrackCountValueEl = mustElement<HTMLElement>('recentSkillsTrackCountValue');
 const recentSkillsTrackCountControls = mustElement<HTMLElement>('recentSkillsTrackCountControls');
+const recentSkillsTrackCountTitle = document.getElementById('recentSkillsTrackCountTitle') as HTMLElement | null;
 const recentSkillsTrackCountLabel = mustElement<HTMLElement>('recentSkillsTrackCountLabel');
 
 const {
@@ -129,6 +136,8 @@ let hudActive = true;
 let skillCatalog: SkillCatalog = { classes: [] };
 let selectedSkillsByClass: SkillSelectionMap = settingsController.loadSkillSelections();
 let cardScale = settingsController.loadCardScale();
+let autoScaleEnabled = settingsController.loadAutoScaleEnabled();
+let computedAutoScale = 1;
 let frameGap = settingsController.loadFrameGap();
 let iconsPerRow = settingsController.loadIconsPerRow();
 let panelOpacity = settingsController.loadPanelOpacity();
@@ -258,8 +267,13 @@ function getPartySlotIndex(player: { id: string } | null | undefined, index = 0)
   return index;
 }
 
+function getEffectiveCardScale(): number {
+  const autoMultiplier = autoScaleEnabled ? computedAutoScale : 1;
+  return settingsController.normalizeCardScaleValue(cardScale * autoMultiplier);
+}
+
 function getCardWidthForIconCount(iconCount: number, iconsInRow = iconsPerRow): number {
-  return getCardWidthForIconCountShared(cardScale, iconCount, iconsInRow);
+  return getCardWidthForIconCountShared(getEffectiveCardScale(), iconCount, iconsInRow);
 }
 
 function setLanguage(language: LanguageCode | string | null | undefined): void {
@@ -344,6 +358,7 @@ function updateOverlayVisibility(): void {
   overlayRoot.classList.toggle('party-hidden', !visibilitySettings.showParty);
   overlayRoot.classList.toggle('pull-hidden', !visibilitySettings.showPull);
   overlayRoot.classList.toggle('recent-skills-hidden', !visibilitySettings.showRecentSkills);
+  recentSkillsSettingsGroup.classList.toggle('hidden', !visibilitySettings.showRecentSkills);
 }
 
 function setPartyVisibility(enabled: boolean): void {
@@ -377,9 +392,14 @@ function setRecentSkillsLimit(value: unknown): void {
   renderRecentSkillsPanel(latestData?.recentSkills || []);
 }
 
+function updateAutoScaleUi(): void {
+  overlayRoot.style.setProperty('--card-scale', String(getEffectiveCardScale()));
+  cardSizeValueEl.textContent = Math.round(cardScale * 100) + '%';
+  if (autoScaleToggle) autoScaleToggle.checked = !!autoScaleEnabled;
+}
+
 function updateCardScaleUi(): void {
-  overlayRoot.style.setProperty('--card-scale', String(cardScale));
-  cardSizeValueEl.textContent = `${Math.round(cardScale * 100)}%`;
+  updateAutoScaleUi();
 }
 
 function applyAppearanceVariables(): void {
@@ -424,6 +444,15 @@ function updateRecentSkillsLayoutUi(): void {
 
 function rerenderPlayersIfNeeded(): void {
   if (latestData?.players) renderPlayers(latestData.players);
+}
+
+function setAutoScaleEnabled(enabled: boolean): void {
+  const normalized = !!enabled;
+  if (normalized === autoScaleEnabled) return;
+  autoScaleEnabled = normalized;
+  settingsController.saveAutoScaleEnabled(autoScaleEnabled);
+  updateAutoScaleUi();
+  rerenderPlayersIfNeeded();
 }
 
 function setCardScale(nextScale: number): void {
@@ -572,12 +601,14 @@ function handleHotkeyCapture(event: KeyboardEvent): void {
 function applyTranslations(): void {
   applyTranslationsShared({
     appearanceSettingsTitle,
+    autoScaleEnabled,    autoScaleToggle,
+    autoScaleToggleLabel,
     cardSizeControls,
-    cardSizeLabel: null,
+    cardSizeLabel,
     currentLanguage,
     filePathEl,
     frameGapControls,
-    frameGapLabel: null,
+    frameGapLabel,
     hotkeyOpenSettingsLabel,
     hotkeyPickLogLabel,
     hotkeyToggleInteractionLabel,
@@ -585,7 +616,7 @@ function applyTranslations(): void {
     hotkeysSettingsTitle,
     hudActive,
     iconsPerRowControls,
-    iconsPerRowLabel: null,
+    iconsPerRowLabel,
     languageLabel,
     languageSelect,
     layoutDirection,
@@ -610,6 +641,7 @@ function applyTranslations(): void {
     recentSkillsTrackCount,
     recentSkillsTrackCountControls,
     recentSkillsTrackCountLabel,
+    recentSkillsTrackCountTitle,
     reloadBtn,
     renderPlayers,
     renderPullInfo,
@@ -683,7 +715,7 @@ playerCardRenderer = createPlayerCardRenderer({
   applyCardLayout,
   cardMap,
   formatNumber,
-  getCardScale: () => cardScale,
+  getCardScale: () => getEffectiveCardScale(),
   getDefaultPosition,
   getFrameGap: () => frameGap,
   getIconsPerRow: () => iconsPerRow,
@@ -764,6 +796,10 @@ frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP
 frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
 iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
 iconsPerRowUpBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow + 1));
+autoScaleToggle?.addEventListener('change', (event: Event) => {
+  setAutoScaleEnabled((event.currentTarget as HTMLInputElement).checked);
+});
+
 panelOpacitySlider.addEventListener('input', (event: Event) => {
   const value = Number((event.currentTarget as HTMLInputElement).value || Math.round(DEFAULT_PANEL_OPACITY * 100));
   setPanelOpacity(value / 100);
@@ -840,6 +876,14 @@ window.api.onLanguageChanged((payload) => {
   setLanguage(payload?.language || 'ru');
 });
 
+window.api.onHudActivity((payload) => {
+  const nextAutoScale = Number(payload?.autoScale || 1);
+  computedAutoScale = Number.isFinite(nextAutoScale) && nextAutoScale > 0 ? nextAutoScale : 1;
+  updateAutoScaleUi();
+  rerenderPlayersIfNeeded();
+  setHudActiveState(!!payload?.active, payload?.foregroundExe || null);
+});
+
 window.api.getCurrentFile().then((result) => {
   setLogSourceText(result);
   updatePullPanelVisibility();
@@ -864,3 +908,11 @@ updatePullPanelVisibility();
 updateRecentSkillsPanelVisibility();
 
 })();
+
+
+
+
+
+
+
+

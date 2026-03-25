@@ -369,8 +369,11 @@
       const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
       const { iconSize, iconGap } = getScaledMetrics(getCardScale());
-      const rowCount = Math.max(1, Math.min(getIconsPerRow(), displayIcons.length || 0));
-      relicsBlock.style.width = `${(rowCount * iconSize) + (Math.max(0, rowCount - 1) * iconGap)}px`;
+      const columnCount = Math.max(1, Math.min(getIconsPerRow(), displayIcons.length || 0));
+      const rowCount = Math.max(1, Math.ceil((displayIcons.length || 0) / columnCount));
+      relicsBlock.style.setProperty('--tracked-columns', String(columnCount));
+      relicsBlock.style.setProperty('--tracked-rows', String(rowCount));
+      relicsBlock.style.width = `${(columnCount * iconSize) + (Math.max(0, columnCount - 1) * iconGap)}px`;
       relicsBlock.style.maxWidth = '100%';
       relicsBlock.style.margin = '0 auto';
       updateIconNodes(relicsBlock, displayIcons);

@@ -11,7 +11,7 @@
     const iconGap = Math.max(6, Math.round(8 * scale));
     const horizontalPadding = Math.round(20 * scale);
     const baseMinWidth = Math.round(180 * scale);
-    const borderAllowance = 2;
+    const borderAllowance = Math.max(6, Math.round(8 * scale));
     return { scale, iconSize, iconGap, horizontalPadding, baseMinWidth, borderAllowance };
   }
 
