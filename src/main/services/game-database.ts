@@ -31,6 +31,12 @@ export interface HeroAbilityAsset {
   icon: string | null;
 }
 
+interface DungeonFolderInfo {
+  dirName: string;
+  id: string | null;
+  absPath: string;
+}
+
 const GAME_DATA_ROOT_DIR = 'game-data';
 const GAME_DATA_CATALOGS_DIR = path.join(GAME_DATA_ROOT_DIR, 'catalogs');
 const GAME_DATA_DUNGEONS_DIR = path.join(GAME_DATA_ROOT_DIR, 'dungeons');
@@ -102,6 +108,7 @@ let skillDataCache: SkillDataMap | null = null;
 let mountsDataCache: RawMountsData | null = null;
 let mountIdSetCache: Set<number> | null = null;
 let heroFoldersCache: Map<string, HeroFolderInfo> | null = null;
+let dungeonFoldersByIdCache: Map<string, DungeonFolderInfo> | null = null;
 const heroAbilityAssetCache = new Map<string, HeroAbilityAsset | null>();
 const dungeonDataCache = new Map<string, DungeonData | null>();
 
@@ -166,6 +173,39 @@ function getHeroFolders(): Map<string, HeroFolderInfo> {
   return folders;
 }
 
+function getDungeonFoldersById(): Map<string, DungeonFolderInfo> {
+  if (dungeonFoldersByIdCache) return dungeonFoldersByIdCache;
+
+  const dungeonsDir = getDungeonsRootPath();
+  const folders = new Map<string, DungeonFolderInfo>();
+
+  try {
+    for (const entry of fs.readdirSync(dungeonsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const match = entry.name.match(/^(\d+)(?:[_-].*)?$/);
+      if (!match) continue;
+      folders.set(String(Number(match[1])), {
+        dirName: entry.name,
+        id: String(Number(match[1])),
+        absPath: path.join(dungeonsDir, entry.name),
+      });
+    }
+  } catch {}
+
+  dungeonFoldersByIdCache = folders;
+  return folders;
+}
+
+function getDungeonFilePathById(dungeonId: unknown): string | null {
+  const normalizedId = Number(dungeonId);
+  if (!Number.isFinite(normalizedId)) return null;
+
+  const folder = getDungeonFoldersById().get(String(normalizedId));
+  if (!folder?.absPath) return null;
+
+  return path.join(folder.absPath, DUNGEON_FILE_NAME);
+}
+
 function getAbilityAssetFromDirectory(rootPath: string, relativeDir: string, abilityId: unknown): HeroAbilityAsset | null {
   const normalizedAbilityId = String(Number(abilityId));
   if (!normalizedAbilityId || normalizedAbilityId === 'NaN') return null;
@@ -216,12 +256,30 @@ function getBestAbilityAsset(classId: unknown, abilityId: unknown): HeroAbilityA
 function loadDungeonDataByName(name: unknown): DungeonData | null {
   const normalized = String(name || '').trim();
   if (!normalized) return null;
-  if (dungeonDataCache.has(normalized)) return dungeonDataCache.get(normalized) || null;
+  if (dungeonDataCache.has(`name:${normalized}`)) return dungeonDataCache.get(`name:${normalized}`) || null;
 
   const data = readJsonFile<DungeonData | null>(getDungeonFilePath(normalized), null);
 
-  dungeonDataCache.set(normalized, data);
+  dungeonDataCache.set(`name:${normalized}`, data);
   return data;
+}
+
+function loadDungeonDataById(dungeonId: unknown): DungeonData | null {
+  const normalizedId = Number(dungeonId);
+  if (!Number.isFinite(normalizedId)) return null;
+
+  const cacheKey = `id:${normalizedId}`;
+  if (dungeonDataCache.has(cacheKey)) return dungeonDataCache.get(cacheKey) || null;
+
+  const filePath = getDungeonFilePathById(normalizedId);
+  const data = filePath ? readJsonFile<DungeonData | null>(filePath, null) : null;
+
+  dungeonDataCache.set(cacheKey, data);
+  return data;
+}
+
+function loadDungeonData(dungeonId: unknown, name?: unknown): DungeonData | null {
+  return loadDungeonDataById(dungeonId) || loadDungeonDataByName(name);
 }
 
 export {
@@ -250,6 +308,8 @@ export {
   getWeaponAbilityAsset,
   getWeaponsRootPath,
   isMountAbilityId,
+  loadDungeonData,
+  loadDungeonDataById,
   loadDungeonDataByName,
   normalizeName,
 };

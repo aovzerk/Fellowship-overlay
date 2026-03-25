@@ -2,7 +2,7 @@ import type { ParserCacheEntry } from '../../types/main-process';
 import type { ParserState } from '../../types/overlay';
 
 import * as fs from 'fs';
-import { loadDungeonDataByName } from './parser-dungeon';
+import { loadDungeonData } from './game-database';
 import { splitLogLine, unquote } from './parser-state';
 
 const READ_STREAM_CHUNK_SIZE = 1024 * 1024;
@@ -61,7 +61,7 @@ function getLineDungeonBoundaryKind(line: string): 'start' | 'zone' | null {
   if (event === 'DUNGEON_START') return 'start';
   if (event !== 'ZONE_CHANGE') return null;
 
-  return loadDungeonDataByName(unquote(parts[2])) ? 'zone' : null;
+  return loadDungeonData(parts[3], unquote(parts[2])) ? 'zone' : null;
 }
 
 function chooseRecentDungeonParseOffset(boundaryOffsets: number[], fallbackZoneOffset: number | null): number {
