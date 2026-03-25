@@ -74,16 +74,21 @@ export interface ParserCacheEntry {
 }
 
 export interface BrowserWindowLike {
+  isDestroyed?(): boolean;
   show(): void;
+  showInactive?(): void;
   hide(): void;
   focus(): void;
   isVisible(): boolean;
+  getBounds(): { x: number; y: number; width: number; height: number };
+  setBounds(bounds: { x: number; y: number; width: number; height: number }): void;
   setIgnoreMouseEvents(ignore: boolean, options?: { forward?: boolean }): void;
   setAlwaysOnTop(flag: boolean, level?: string): void;
   setVisibleOnAllWorkspaces(flag: boolean, options?: { visibleOnFullScreen?: boolean }): void;
   loadFile(filePath: string): void;
   on(event: string, listener: (...args: unknown[]) => void): void;
   webContents: {
+    isDestroyed?(): boolean;
     send(channel: string, payload?: unknown): void;
     once(event: string, listener: (...args: unknown[]) => void): void;
   };

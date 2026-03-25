@@ -4,6 +4,7 @@
     CARD_SCALE_KEY,
     CARD_SCALE_MAX,
     CARD_SCALE_MIN,
+    DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
     DEFAULT_HOTKEYS,
@@ -103,6 +104,10 @@
     return normalized;
   }
 
+  function normalizeAutoHideWithGameWindow(value: unknown): boolean {
+    return typeof value === 'boolean' ? value : DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW;
+  }
+
   function normalizeCardScaleValue(value: unknown): number {
     const normalized = Number(value);
     if (!Number.isFinite(normalized)) return DEFAULT_CARD_SCALE;
@@ -170,6 +175,7 @@
       visibilitySettings: normalizeVisibilitySettings(source.visibilitySettings),
       recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
       selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
+      autoHideWithGameWindow: normalizeAutoHideWithGameWindow(source.autoHideWithGameWindow),
       cardScale: normalizeCardScaleValue(source.cardScale),
       frameGap: normalizeFrameGap(source.frameGap),
       layoutDirection: normalizeLayoutDirection(source.layoutDirection),
@@ -231,6 +237,7 @@
     }
 
     return {
+      normalizeAutoHideWithGameWindow,
       normalizeCardScaleValue,
       normalizeFrameGap,
       normalizeIconsPerRow,
@@ -244,6 +251,9 @@
       normalizeRecentSkillsTrackCount,
       normalizeSkillSelections,
       normalizeVisibilitySettings,
+      loadAutoHideWithGameWindow() {
+        return normalizeAutoHideWithGameWindow(getOverlaySettings().autoHideWithGameWindow);
+      },
       loadCardScale() {
         return normalizeCardScaleValue(getOverlaySettings().cardScale);
       },
@@ -292,6 +302,9 @@
       },
       loadVisibilitySettings() {
         return normalizeVisibilitySettings(getOverlaySettings().visibilitySettings);
+      },
+      saveAutoHideWithGameWindow(enabled: boolean) {
+        saveOverlaySettingsPatch({ autoHideWithGameWindow: normalizeAutoHideWithGameWindow(enabled) });
       },
       saveCardScale(cardScale: number) {
         saveOverlaySettingsPatch({ cardScale });

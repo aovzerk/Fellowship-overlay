@@ -39,6 +39,7 @@ const DEFAULT_ICONS_PER_ROW = 3;
 const RECENT_SKILLS_TRACK_COUNT_MIN = 1;
 const RECENT_SKILLS_TRACK_COUNT_MAX = 6;
 const DEFAULT_RECENT_SKILLS_TRACK_COUNT = 3;
+const DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW = false;
 const DEFAULT_LAYOUT_DIRECTION: LayoutDirection = 'vertical';
 const DEFAULT_HOTKEYS: OverlayHotkeys = {
   toggleInteraction: 'F8',
@@ -202,6 +203,10 @@ function normalizeRecentSkillsTrackCount(value: unknown): number {
   return Math.round(clamp(normalized, RECENT_SKILLS_TRACK_COUNT_MIN, RECENT_SKILLS_TRACK_COUNT_MAX));
 }
 
+function normalizeAutoHideWithGameWindow(value: unknown): boolean {
+  return typeof value === 'boolean' ? value : DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW;
+}
+
 function normalizeStoredPath(value: unknown): string | null {
   const normalized = String(value || '').trim();
   return normalized || null;
@@ -253,6 +258,7 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
     recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
     recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
+    autoHideWithGameWindow: normalizeAutoHideWithGameWindow(source.autoHideWithGameWindow),
     hotkeys: normalizeHotkeys(source.hotkeys),
   };
 }
@@ -382,6 +388,7 @@ export {
   RECENT_SKILLS_TRACK_COUNT_MIN,
   clamp,
   createOverlaySettingsStore,
+  normalizeAutoHideWithGameWindow,
   normalizeLanguage,
   normalizeHotkeys,
 };

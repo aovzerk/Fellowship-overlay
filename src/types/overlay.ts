@@ -35,6 +35,7 @@ export interface OverlaySettings {
   language?: LanguageCode;
   logDirectoryPath?: string | null;
   currentFilePath?: string | null;
+  autoHideWithGameWindow?: boolean;
   playerPositions: PlayerPositions;
   panelPositions: OverlayPanelPositions;
   visibilitySettings: OverlayVisibilitySettings;
@@ -64,6 +65,11 @@ export interface WatchStatusPayload {
 export interface OverlayModePayload {
   clickThrough?: boolean;
   locked: boolean;
+}
+
+export interface HudActivityPayload {
+  active: boolean;
+  foregroundExe?: string | null;
 }
 
 export interface LanguagePayload {
@@ -403,6 +409,7 @@ export interface OverlayApi {
   onLogData(callback: (payload: LogDataPayload) => void): void;
   onWatchStatus(callback: (payload: WatchStatusPayload) => void): void;
   onOverlayMode(callback: (payload: OverlayModePayload) => void): void;
+  onHudActivity(callback: (payload: HudActivityPayload) => void): void;
   onLanguageChanged(callback: (payload: LanguagePayload) => void): void;
   onOpenSettings(callback: (payload: OpenSettingsPayload) => void): void;
   onRequestCloseSettings(callback: () => void): void;
@@ -431,6 +438,7 @@ export interface RendererConstantsApi {
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
   DEFAULT_RECENT_SKILLS_LIMIT: number;
+  DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW: boolean;
   DEFAULT_CARD_SCALE: number;
   DEFAULT_FRAME_GAP: number;
   DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
@@ -457,6 +465,8 @@ export interface ApplyTranslationsContext {
   appearanceSettingsTitle: HTMLElement;
   cardSizeControls: HTMLElement | null;
   cardSizeLabel: HTMLElement | null;
+  autoHideWithWindowToggle: HTMLInputElement | null;
+  autoHideWithWindowToggleLabel: HTMLElement | null;
   currentLanguage: LanguageCode;
   filePathEl: HTMLElement;
   frameGapControls: HTMLElement | null;
@@ -493,6 +503,7 @@ export interface ApplyTranslationsContext {
   recentSkillsTrackCount: number;
   recentSkillsTrackCountControls: HTMLElement | null;
   recentSkillsTrackCountLabel: HTMLElement | null;
+  recentSkillsTrackCountTitle: HTMLElement | null;
   reloadBtn: HTMLButtonElement;
   renderPlayers(players?: FinalizedState['players']): void;
   renderPullInfo(currentPull: CurrentPullSummary | null | undefined, dungeon: FinalizedDungeonState | null | undefined): void;
@@ -576,6 +587,7 @@ export interface RendererPanelsApi {
 }
 
 export interface OverlaySettingsController {
+  normalizeAutoHideWithGameWindow(value: unknown): boolean;
   normalizeCardScaleValue(value: unknown): number;
   normalizeFrameGap(value: unknown): number;
   normalizeIconsPerRow(value: unknown): number;
@@ -589,6 +601,7 @@ export interface OverlaySettingsController {
   normalizeSkillSelections(value: unknown): SkillSelectionMap;
   normalizeHotkeys(value: unknown): OverlayHotkeys;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
+  loadAutoHideWithGameWindow(): boolean;
   loadCardScale(): number;
   loadFrameGap(): number;
   loadIconsPerRow(): number;
@@ -604,6 +617,7 @@ export interface OverlaySettingsController {
   loadRecentSkillsTrackCount(): number;
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
+  saveAutoHideWithGameWindow(enabled: boolean): void;
   saveCardScale(cardScale: number): void;
   saveFrameGap(frameGap: number): void;
   saveIconsPerRow(iconsPerRow: number): void;
