@@ -8,7 +8,6 @@ import {
   getNpcPercentMeta,
   isBossEncounterName,
   isChickenizeAbility,
-  loadDungeonDataByName,
   markCurrentPullDeath,
   markNpcChickenized,
   resetCurrentPull,
@@ -46,6 +45,7 @@ import {
 } from './parser-state';
 import { findRecentDungeonParseOffset, getFileIdentity, processFileRange } from './parser-file';
 import { finalizeState } from './parser-finalize';
+import { loadDungeonData } from './game-database';
 
 const MAX_STORED_ENCOUNTERS = 2;
 const MAX_STORED_NPC_DEATHS = 400;
@@ -113,7 +113,7 @@ function processLine(state: ParserState, line: string): void {
       state.dungeon.name = dungeonName;
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
-      state.dungeon.data = loadDungeonDataByName(dungeonName);
+      state.dungeon.data = loadDungeonData(state.dungeon.id, dungeonName);
       state.dungeon.affixes = parts[5];
       state.dungeon.success = false;
       state.dungeon.completedPercent = 0;
@@ -126,7 +126,7 @@ function processLine(state: ParserState, line: string): void {
       state.dungeon.name = String(unquote(parts[2]) || '');
       state.dungeon.id = toNumber(parts[3]);
       state.dungeon.difficulty = toNumber(parts[4]);
-      state.dungeon.data = loadDungeonDataByName(state.dungeon.name);
+      state.dungeon.data = loadDungeonData(state.dungeon.id, state.dungeon.name);
       state.dungeon.affixes = parts[5];
       state.dungeon.success = parts[6] === '1';
       state.dungeon.durationMs = toNumber(parts[7]);
@@ -143,7 +143,8 @@ function processLine(state: ParserState, line: string): void {
     }
     case 'ZONE_CHANGE': {
       const dungeonName = String(unquote(parts[2]) || '');
-      const dungeonData = loadDungeonDataByName(dungeonName);
+      const dungeonId = toNumber(parts[3]);
+      const dungeonData = loadDungeonData(dungeonId, dungeonName);
       if (dungeonData) {
         resetDungeonScope(state);
       }
