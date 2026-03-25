@@ -710,8 +710,8 @@ button:hover {
 
 .settings-table {
   display: grid;
-  grid-template-columns: minmax(170px, 220px) 320px;
-  gap: 10px 14px;
+  grid-template-columns: minmax(160px, 190px) minmax(0, 300px);
+  gap: 10px 12px;
   align-items: center;
   justify-content: start;
   width: fit-content;
@@ -728,7 +728,7 @@ button:hover {
   min-width: 0;
   display: flex;
   justify-content: flex-start;
-  width: 320px;
+  width: 300px;
   max-width: 100%;
 }
 
@@ -737,7 +737,7 @@ button:hover {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 10px;
-  width: 320px;
+  width: 300px;
   max-width: 100%;
 }
 
@@ -745,7 +745,7 @@ button:hover {
 .settings-table .settings-field,
 .settings-table .slider-control,
 .settings-table .size-controls {
-  width: 320px;
+  width: 300px;
   max-width: 100%;
 }
 
@@ -774,7 +774,7 @@ button:hover {
 }
 
 .settings-table .slider-control {
-  width: 320px;
+  width: 300px;
   max-width: 100%;
 }
 
@@ -782,6 +782,10 @@ button:hover {
 .settings-table-control > .settings-field,
 .settings-table-control > .size-controls,
 .settings-table-control > .slider-control {
+  width: 100%;
+}
+
+.settings-table-control-inline > .size-controls {
   width: 100%;
 }
 
@@ -808,6 +812,7 @@ button:hover {
   width: 100%;
   box-sizing: border-box;
 }
+
 
 
 
