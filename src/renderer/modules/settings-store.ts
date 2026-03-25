@@ -4,7 +4,7 @@
     CARD_SCALE_KEY,
     CARD_SCALE_MAX,
     CARD_SCALE_MIN,
-    DEFAULT_AUTO_SCALE_ENABLED,
+    DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
     DEFAULT_HOTKEYS,
@@ -104,8 +104,8 @@
     return normalized;
   }
 
-  function normalizeAutoScaleEnabled(value: unknown): boolean {
-    return typeof value === 'boolean' ? value : DEFAULT_AUTO_SCALE_ENABLED;
+  function normalizeAutoHideWithGameWindow(value: unknown): boolean {
+    return typeof value === 'boolean' ? value : DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW;
   }
 
   function normalizeCardScaleValue(value: unknown): number {
@@ -175,7 +175,7 @@
       visibilitySettings: normalizeVisibilitySettings(source.visibilitySettings),
       recentSkillsLimit: normalizeRecentSkillsLimit(source.recentSkillsLimit),
       selectedSkillsByClass: normalizeSkillSelections(source.selectedSkillsByClass),
-      autoScaleEnabled: normalizeAutoScaleEnabled(source.autoScaleEnabled),
+      autoHideWithGameWindow: normalizeAutoHideWithGameWindow(source.autoHideWithGameWindow),
       cardScale: normalizeCardScaleValue(source.cardScale),
       frameGap: normalizeFrameGap(source.frameGap),
       layoutDirection: normalizeLayoutDirection(source.layoutDirection),
@@ -237,7 +237,7 @@
     }
 
     return {
-      normalizeAutoScaleEnabled,
+      normalizeAutoHideWithGameWindow,
       normalizeCardScaleValue,
       normalizeFrameGap,
       normalizeIconsPerRow,
@@ -251,8 +251,8 @@
       normalizeRecentSkillsTrackCount,
       normalizeSkillSelections,
       normalizeVisibilitySettings,
-      loadAutoScaleEnabled() {
-        return normalizeAutoScaleEnabled(getOverlaySettings().autoScaleEnabled);
+      loadAutoHideWithGameWindow() {
+        return normalizeAutoHideWithGameWindow(getOverlaySettings().autoHideWithGameWindow);
       },
       loadCardScale() {
         return normalizeCardScaleValue(getOverlaySettings().cardScale);
@@ -303,8 +303,8 @@
       loadVisibilitySettings() {
         return normalizeVisibilitySettings(getOverlaySettings().visibilitySettings);
       },
-      saveAutoScaleEnabled(enabled: boolean) {
-        saveOverlaySettingsPatch({ autoScaleEnabled: normalizeAutoScaleEnabled(enabled) });
+      saveAutoHideWithGameWindow(enabled: boolean) {
+        saveOverlaySettingsPatch({ autoHideWithGameWindow: normalizeAutoHideWithGameWindow(enabled) });
       },
       saveCardScale(cardScale: number) {
         saveOverlaySettingsPatch({ cardScale });

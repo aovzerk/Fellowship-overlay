@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -38,6 +38,13 @@
             <div class="settings-row">
               <button id="toggleLockBtn">Unlock overlay</button>
               <button id="skillsBtn">Skills</button>
+            </div>
+
+            <div class="settings-row settings-row-inline">
+              <label class="settings-toggle interactive" for="autoHideWithWindowToggle">
+                <input id="autoHideWithWindowToggle" type="checkbox" />
+                <span id="autoHideWithWindowToggleLabel">Auto hide with game window</span>
+              </label>
             </div>
 
             <div class="settings-row settings-row-inline settings-toggle-list">
@@ -159,12 +166,6 @@
                 </label>
               </div>
             </div>
-            <div class="settings-row settings-row-inline">
-              <label class="settings-toggle interactive" for="autoScaleToggle">
-                <input id="autoScaleToggle" type="checkbox" />
-                <span id="autoScaleToggleLabel">Auto scale with game window</span>
-              </label>
-            </div>
           </section>
 
           <section class="settings-group" id="hotkeysSettingsGroup">
@@ -220,6 +221,3 @@
   <script src="../../dist/renderer/index.js"></script>
 </body>
 </html>
-
-
-

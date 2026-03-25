@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
 function mustElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
   if (!element) {
@@ -49,8 +49,8 @@ const cardSizeUpBtn = mustElement<HTMLButtonElement>('cardSizeUpBtn');
 const cardSizeValueEl = mustElement<HTMLElement>('cardSizeValue');
 const cardSizeControls = mustElement<HTMLElement>('cardSizeControls');
 const cardSizeLabel = document.getElementById('cardSizeLabel') as HTMLElement | null;
-const autoScaleToggle = document.getElementById('autoScaleToggle') as HTMLInputElement | null;
-const autoScaleToggleLabel = document.getElementById('autoScaleToggleLabel') as HTMLElement | null;
+const autoHideWithWindowToggle = document.getElementById('autoHideWithWindowToggle') as HTMLInputElement | null;
+const autoHideWithWindowToggleLabel = document.getElementById('autoHideWithWindowToggleLabel') as HTMLElement | null;
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
@@ -136,8 +136,8 @@ let hudActive = true;
 let skillCatalog: SkillCatalog = { classes: [] };
 let selectedSkillsByClass: SkillSelectionMap = settingsController.loadSkillSelections();
 let cardScale = settingsController.loadCardScale();
-let autoScaleEnabled = settingsController.loadAutoScaleEnabled();
-let computedAutoScale = 1;
+let autoHideWithGameWindow = settingsController.loadAutoHideWithGameWindow();
+
 let frameGap = settingsController.loadFrameGap();
 let iconsPerRow = settingsController.loadIconsPerRow();
 let panelOpacity = settingsController.loadPanelOpacity();
@@ -268,8 +268,7 @@ function getPartySlotIndex(player: { id: string } | null | undefined, index = 0)
 }
 
 function getEffectiveCardScale(): number {
-  const autoMultiplier = autoScaleEnabled ? computedAutoScale : 1;
-  return settingsController.normalizeCardScaleValue(cardScale * autoMultiplier);
+  return settingsController.normalizeCardScaleValue(cardScale);
 }
 
 function getCardWidthForIconCount(iconCount: number, iconsInRow = iconsPerRow): number {
@@ -392,14 +391,13 @@ function setRecentSkillsLimit(value: unknown): void {
   renderRecentSkillsPanel(latestData?.recentSkills || []);
 }
 
-function updateAutoScaleUi(): void {
-  overlayRoot.style.setProperty('--card-scale', String(getEffectiveCardScale()));
-  cardSizeValueEl.textContent = Math.round(cardScale * 100) + '%';
-  if (autoScaleToggle) autoScaleToggle.checked = !!autoScaleEnabled;
+function updateAutoHideUi(): void {
+  if (autoHideWithWindowToggle) autoHideWithWindowToggle.checked = !!autoHideWithGameWindow;
 }
 
 function updateCardScaleUi(): void {
-  updateAutoScaleUi();
+  overlayRoot.style.setProperty('--card-scale', String(getEffectiveCardScale()));
+  cardSizeValueEl.textContent = Math.round(cardScale * 100) + '%';
 }
 
 function applyAppearanceVariables(): void {
@@ -446,13 +444,12 @@ function rerenderPlayersIfNeeded(): void {
   if (latestData?.players) renderPlayers(latestData.players);
 }
 
-function setAutoScaleEnabled(enabled: boolean): void {
+function setAutoHideWithGameWindow(enabled: boolean): void {
   const normalized = !!enabled;
-  if (normalized === autoScaleEnabled) return;
-  autoScaleEnabled = normalized;
-  settingsController.saveAutoScaleEnabled(autoScaleEnabled);
-  updateAutoScaleUi();
-  rerenderPlayersIfNeeded();
+  if (normalized === autoHideWithGameWindow) return;
+  autoHideWithGameWindow = normalized;
+  settingsController.saveAutoHideWithGameWindow(autoHideWithGameWindow);
+  updateAutoHideUi();
 }
 
 function setCardScale(nextScale: number): void {
@@ -601,8 +598,8 @@ function handleHotkeyCapture(event: KeyboardEvent): void {
 function applyTranslations(): void {
   applyTranslationsShared({
     appearanceSettingsTitle,
-    autoScaleEnabled,    autoScaleToggle,
-    autoScaleToggleLabel,
+    autoHideWithWindowToggle,
+    autoHideWithWindowToggleLabel,
     cardSizeControls,
     cardSizeLabel,
     currentLanguage,
@@ -796,8 +793,8 @@ frameGapDownBtn.addEventListener('click', () => setFrameGap(frameGap - FRAME_GAP
 frameGapUpBtn.addEventListener('click', () => setFrameGap(frameGap + FRAME_GAP_STEP));
 iconsPerRowDownBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow - 1));
 iconsPerRowUpBtn.addEventListener('click', () => setIconsPerRow(iconsPerRow + 1));
-autoScaleToggle?.addEventListener('change', (event: Event) => {
-  setAutoScaleEnabled((event.currentTarget as HTMLInputElement).checked);
+autoHideWithWindowToggle?.addEventListener('change', (event: Event) => {
+  setAutoHideWithGameWindow((event.currentTarget as HTMLInputElement).checked);
 });
 
 panelOpacitySlider.addEventListener('input', (event: Event) => {
@@ -877,10 +874,6 @@ window.api.onLanguageChanged((payload) => {
 });
 
 window.api.onHudActivity((payload) => {
-  const nextAutoScale = Number(payload?.autoScale || 1);
-  computedAutoScale = Number.isFinite(nextAutoScale) && nextAutoScale > 0 ? nextAutoScale : 1;
-  updateAutoScaleUi();
-  rerenderPlayersIfNeeded();
   setHudActiveState(!!payload?.active, payload?.foregroundExe || null);
 });
 
@@ -897,6 +890,7 @@ window.api.getLanguage().then((result) => {
 void ensureSkillCatalog();
 applyAppearanceVariables();
 updateCardScaleUi();
+updateAutoHideUi();
 updateFrameGapUi();
 updateIconsPerRowUi();
 updatePanelOpacityUi();
@@ -908,11 +902,3 @@ updatePullPanelVisibility();
 updateRecentSkillsPanelVisibility();
 
 })();
-
-
-
-
-
-
-
-
