@@ -15,9 +15,7 @@ function getCanonicalRelicId(rawId: number | string | null | undefined): number 
 }
 
 function getCanonicalRelicAbilityId(rawId: number | string | null | undefined): number | null {
-  if (rawId == null) return null;
-  const key = String(rawId);
-  return RELICS[key] ? Number(key) : null;
+  return getCanonicalRelicId(rawId);
 }
 
 function getRelicMetaByAnyId(rawId: number | string | null | undefined): RelicMeta | null {
