@@ -11,6 +11,7 @@
   const RELICS_ORDER_TOKEN = '__relics__';
   const TANK_CLASS_IDS = new Set([22, 13, 25]);
   const HEALER_CLASS_IDS = new Set([24, 14, 20]);
+  const GUNDE_CLASS_ID = 9;
 
   function updateIconNodes(container: HTMLElement, items: DisplayIcon[]): void {
     const existing = new Map<string, HTMLElement>();
@@ -66,6 +67,11 @@
     const correctedClientNowMs = Date.now() + Number(latestData?.timeCorrectionMs || 0);
     const latestLogTsMs = Date.parse(String(latestData?.latestLogTs || ''));
     return Math.max(correctedClientNowMs, Number.isFinite(latestLogTsMs) ? latestLogTsMs : 0);
+  }
+
+  function isGundeClass(player: PlayerState): boolean {
+    return Number(player?.classId || 0) === GUNDE_CLASS_ID
+      || String(player?.className || '').trim().toLowerCase() === 'gunde';
   }
 
   function getSpiritMaxByBlueStone(blueStone: unknown): number {
@@ -127,6 +133,8 @@
   }
 
   function getSpiritHighlight(player: PlayerState, spiritSnapshot: SpiritSnapshot | null): string {
+    if (isGundeClass(player)) return '';
+
     const currentSpirit = Number(spiritSnapshot?.current || 0);
     const blueStone = Number(player?.stones?.blue || 0);
 
@@ -134,6 +142,15 @@
     if (blueStone >= 450 && blueStone < 2640 && currentSpirit >= 95) return 'spirit-glow-blue';
     if (blueStone < 450 && currentSpirit >= 100) return 'spirit-glow-blue';
     return '';
+  }
+
+  function formatSpiritTotal(player: PlayerState, spiritSnapshot: SpiritSnapshot | null, formatNumber: (value: unknown) => string): string {
+    if (isGundeClass(player)) {
+      const spiritMax = Number(spiritSnapshot?.max || getSpiritMaxByBlueStone(player?.stones?.blue));
+      return `- / ${formatNumber(spiritMax)}`;
+    }
+
+    return spiritSnapshot ? `${formatNumber(spiritSnapshot.current)} / ${formatNumber(spiritSnapshot.max)}` : '-';
   }
 
   function getSelectedSkillEntriesForClass(skillCatalog: SkillCatalog, selectedSkillsByClass: SkillSelectionMap, classId: number | null): SkillCatalogAbility[] {
@@ -364,7 +381,7 @@
       playerName.textContent = player.name || t('unknown');
       playerClass.textContent = player.className || t('unknown');
       playerClass.style.color = classColor;
-      spiritEl.textContent = displaySpirit ? `${formatNumber(displaySpirit.current)} / ${formatNumber(displaySpirit.max)}` : '-';
+      spiritEl.textContent = formatSpiritTotal(player, displaySpirit, formatNumber);
       spiritEl.classList.remove('spirit-glow-blue');
       const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
