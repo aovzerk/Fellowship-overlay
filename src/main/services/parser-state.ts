@@ -39,6 +39,7 @@ const CLASS_INFO: Record<number, { name: string; color: string }> = {
   7: { name: 'Ardeos', color: '#eb6328' },
   2: { name: 'Elarion', color: '#935dff' },
   17: { name: 'Rime', color: '#1ea3ee' },
+  9: { name: 'Gunde', color: '#913539' },
 };
 
 function getClassInfo(classId: number | null): { id: number | null; name: string; color: string } {

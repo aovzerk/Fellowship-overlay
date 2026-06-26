@@ -70,8 +70,8 @@
 
   function getSpiritMaxByBlueStone(blueStone: unknown): number {
     const blue = Number(blueStone || 0);
-    if (blue >= 1200) return 130;
-    if (blue >= 120) return 110;
+    if (blue >= 600) return 130;
+    if (blue >= 100) return 110;
     return 100;
   }
 
@@ -130,9 +130,9 @@
     const currentSpirit = Number(spiritSnapshot?.current || 0);
     const blueStone = Number(player?.stones?.blue || 0);
 
-    if (blueStone >= 2640 && currentSpirit >= 85) return 'spirit-glow-blue';
-    if (blueStone >= 960 && blueStone < 2640 && currentSpirit >= 95) return 'spirit-glow-blue';
-    if (blueStone < 960 && currentSpirit >= 100) return 'spirit-glow-blue';
+    if (blueStone >= 1500 && currentSpirit >= 85) return 'spirit-glow-blue';
+    if (blueStone >= 450 && blueStone < 2640 && currentSpirit >= 95) return 'spirit-glow-blue';
+    if (blueStone < 450 && currentSpirit >= 100) return 'spirit-glow-blue';
     return '';
   }
 
@@ -165,8 +165,8 @@
 
   function getSkillCooldownModifier(player: PlayerState): number {
     const greenStone = Number(player?.stones?.green || 0);
-    if (greenStone >= 2640) return 0.88;
-    if (greenStone >= 960) return 0.96;
+    if (greenStone >= 1500) return 0.88;
+    if (greenStone >= 600) return 0.96;
     return 1;
   }
 
