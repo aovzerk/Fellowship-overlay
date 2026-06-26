@@ -206,8 +206,8 @@ function setPlayerStones(player: PlayerState, raw: unknown): void {
 
 function getSpiritMaxFromBlueStone(blueStone: unknown): number {
   const blue = Number(blueStone || 0);
-  if (blue >= 1200) return 130;
-  if (blue >= 120) return 110;
+  if (blue >= 600) return 130;
+  if (blue >= 100) return 110;
   return 100;
 }
 

@@ -26,3 +26,7 @@ declare module 'worker_threads' {
   export const workerData: any;
   export const Worker: any;
 }
+
+declare module 'child_process' {
+  export const execFile: any;
+}

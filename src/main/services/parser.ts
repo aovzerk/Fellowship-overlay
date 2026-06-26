@@ -53,6 +53,87 @@ const MAX_STORED_NPC_DEATHS = 400;
 const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
 const NPC_UNDERFLOW_FALLBACK_MS = 1500;
 const parserCache = new Map<string, ParserCacheEntry>();
+const RISING_SPIRIT_ID = 3115;
+const BLOODBOUND_SPIRIT_ID = 2296;
+const BLOODBOUND_SPIRIT_BUFF_ID = 3242;
+
+function isRisingSpiritRefund(abilityId: number | null, abilityName: string | null | undefined): boolean {
+  return Number(abilityId) === RISING_SPIRIT_ID
+    || String(abilityName || '').trim().toLowerCase() === 'rising spirit';
+}
+
+function isBloodboundSpiritSpend(abilityId: number | null, abilityName: string | null | undefined): boolean {
+  const normalizedName = String(abilityName || '').trim().toLowerCase();
+  return Number(abilityId) === BLOODBOUND_SPIRIT_ID
+    || Number(abilityId) === BLOODBOUND_SPIRIT_BUFF_ID
+    || normalizedName === 'bloodbound spirit';
+}
+
+function getRisingSpiritStack(player: ReturnType<typeof ensurePlayer>): number {
+  return Math.max(0, Math.floor(Number((player as typeof player & { __risingSpiritStack?: number }).__risingSpiritStack || 0)));
+}
+
+function setRisingSpiritStack(player: ReturnType<typeof ensurePlayer>, stack: number): void {
+  Object.defineProperty(player, '__risingSpiritStack', {
+    value: Math.max(0, Math.floor(Number(stack) || 0)),
+    writable: true,
+    configurable: true,
+    enumerable: false,
+  });
+}
+
+function updateSpiritFromRisingSpiritEffect(
+  state: ParserState,
+  event: string | null,
+  targetId: string | null | undefined,
+  targetName: string | null | undefined,
+  ts: string,
+  abilityId: number | null,
+  abilityName: string | null | undefined,
+  stackRaw: unknown,
+): void {
+  if (!isPlayerId(targetId)) return;
+  const player = ensurePlayer(state, targetId, targetName);
+
+  if (isBloodboundSpiritSpend(abilityId, abilityName)) {
+    setRisingSpiritStack(player, 0);
+    addSpiritSnapshot(player, ts, 0, 0, abilityId, abilityName || null);
+    return;
+  }
+
+  if (!isRisingSpiritRefund(abilityId, abilityName)) return;
+
+  if (event === 'EFFECT_REMOVED') {
+    setRisingSpiritStack(player, 0);
+    return;
+  }
+
+  const stack = Math.max(0, Math.floor(Number(stackRaw) || 0));
+  const previousStack = getRisingSpiritStack(player);
+  const gainedSpirit = event === 'EFFECT_APPLIED'
+    ? Math.max(1, stack || 1)
+    : Math.max(0, stack - previousStack);
+
+  setRisingSpiritStack(player, stack);
+  if (gainedSpirit <= 0) return;
+
+  const currentSpirit = Math.max(0, Number(player.spirit?.current || 0) + gainedSpirit);
+  addSpiritSnapshot(player, ts, currentSpirit, 0, abilityId, abilityName || null);
+}
+
+function updateSpiritFromBloodboundAbility(
+  state: ParserState,
+  sourceId: string | null | undefined,
+  sourceName: string | null | undefined,
+  ts: string,
+  abilityId: number | null,
+  abilityName: string | null | undefined,
+): void {
+  if (!isPlayerId(sourceId) || !isBloodboundSpiritSpend(abilityId, abilityName)) return;
+  const player = ensurePlayer(state, sourceId, sourceName);
+  setRisingSpiritStack(player, 0);
+  addSpiritSnapshot(player, ts, 0, 0, abilityId, abilityName || null);
+}
 
 function registerNpcDeath(state: ParserState, death: NpcDeathEntry, updateCurrentPull = true): void {
   const deathTs = death.ts || state.latestLogTs || new Date().toISOString();
@@ -315,6 +396,7 @@ function processLine(state: ParserState, line: string): void {
         addEncounterAbilityStat(state.currentEncounter, sourceId, sourceName, abilityId, abilityName, 'activation', 0, ts);
         markRelicUse(player, abilityId, ts);
         addRecentSkillActivation(state, player, abilityId, abilityName, ts);
+        updateSpiritFromBloodboundAbility(state, sourceId, sourceName, ts, abilityId, abilityName);
         if (isChickenizeAbility(abilityId, abilityName) && isNpcId(targetId)) {
           markNpcChickenized(state, ts, targetId, targetName);
         }
@@ -401,6 +483,7 @@ function processLine(state: ParserState, line: string): void {
       if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
         markNpcChickenized(state, ts, targetId, targetName);
       }
+      updateSpiritFromRisingSpiritEffect(state, event, targetId, targetName, ts, abilityId, abilityName, parts[9]);
       updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[17], abilityId, abilityName);
       break;
     }
