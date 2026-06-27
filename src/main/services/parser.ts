@@ -52,6 +52,9 @@ const MAX_STORED_ENCOUNTERS = 2;
 const MAX_STORED_NPC_DEATHS = 400;
 const MAX_STORED_ENCOUNTER_NPC_DEATHS = 200;
 const NPC_UNDERFLOW_FALLBACK_MS = 1500;
+// The cache now persists across parses (one long-lived worker), so cap how many
+// log files it retains to avoid unbounded memory growth when logs rotate.
+const MAX_CACHED_FILES = 3;
 const parserCache = new Map<string, ParserCacheEntry>();
 const RISING_SPIRIT_ID = 3115;
 const BLOODBOUND_SPIRIT_ID = 2296;
@@ -521,18 +524,39 @@ async function parseCombatLog(filePath: string): Promise<FinalizedState> {
   const currentIdentity = getFileIdentity(stat);
   const cached = parserCache.get(filePath);
 
+  // Reset only when there is no warm cache, the file was replaced/rotated
+  // (identity changed), or it was truncated below our last offset. Otherwise the
+  // file just grew: reuse the cached offset/state and read only the appended
+  // bytes — no tail scan, no dungeon re-parse.
   const shouldReset = !cached || cached.identity !== currentIdentity || stat.size < cached.offset;
   const startOffset = shouldReset ? await findRecentDungeonParseOffset(filePath, stat.size) : cached.offset;
   const entry: ParserCacheEntry = shouldReset
     ? { identity: currentIdentity, offset: startOffset, leftover: '', state: createState() }
     : cached;
 
-  await processFileRange(filePath, entry.offset, stat.size, entry, processLine);
+  try {
+    await processFileRange(filePath, entry.offset, stat.size, entry, processLine);
+  } catch (error) {
+    // A mid-stream read failure may have applied some lines without advancing the
+    // offset. Because the cache now persists, re-using this entry would re-apply
+    // those same lines (double counting). Drop it so the next parse starts clean.
+    parserCache.delete(filePath);
+    throw error;
+  }
 
   entry.offset = stat.size;
   entry.identity = currentIdentity;
 
+  // Re-insert to mark this file as most-recently-used, then evict the oldest
+  // entries so rotated/abandoned logs do not retain their full parser state.
+  parserCache.delete(filePath);
   parserCache.set(filePath, entry);
+  while (parserCache.size > MAX_CACHED_FILES) {
+    const oldestKey = parserCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    parserCache.delete(oldestKey);
+  }
+
   return finalizeState(entry.state);
 }
 

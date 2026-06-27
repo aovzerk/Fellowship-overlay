@@ -23,7 +23,8 @@ import type {
 } from '../types/overlay';
 
 import { app, BrowserWindow, ipcMain, dialog, screen, globalShortcut, Tray, Menu } from 'electron';
-import { execFile } from 'child_process';
+import { spawn } from 'child_process';
+import type { ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { disposeParserWorker, parseCombatLog } from './services/parser-runner';
@@ -85,6 +86,13 @@ let lastStableGameWindowState: GameWindowState | null = null;
 let consecutiveWindowMisses = 0;
 let settingsCloseGraceUntil = 0;
 let windowProbeScriptPath: string | null = null;
+// A single long-lived PowerShell process answers window probes. Spawning
+// PowerShell (and recompiling the Add-Type C# helper) on every 1s poll was a
+// recurring CPU spike that stuttered the cursor; the persistent process compiles
+// the helper once and then just runs the cheap probe per request.
+let probeProcess: ChildProcess | null = null;
+let probeStdoutBuffer = '';
+let probePending: { resolve: (line: string | null) => void; timer: ReturnType<typeof setTimeout> } | null = null;
 
 function getConfiguredHotkeys(): OverlayHotkeys {
   return settingsStore.getOverlaySettings().hotkeys;
@@ -184,7 +192,10 @@ function setClickThrough(enabled: boolean): void {
   const currentWin = getLiveWindow();
   if (!currentWin) return;
 
-  currentWin.setIgnoreMouseEvents(clickThroughEnabled, { forward: true });
+  // No { forward: true }: forwarding mouse-move messages to the overlay during
+  // click-through gameplay adds per-move work that can stutter the cursor, and the
+  // overlay needs no hover input while click-through (interaction is hotkey-toggled).
+  currentWin.setIgnoreMouseEvents(clickThroughEnabled);
   const payload: OverlayModePayload = {
     clickThrough: clickThroughEnabled,
     locked: !clickThroughEnabled,
@@ -195,7 +206,7 @@ function setClickThrough(enabled: boolean): void {
 function getPowerShellWindowProbeScript(): string {
   return [
     "$ErrorActionPreference = 'Stop'",
-    "$processes = @(Get-Process -Name '" + GAME_PROCESS_NAME + "' -ErrorAction SilentlyContinue)",
+    '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
     "Add-Type @'",
     'using System;',
     'using System.Text;',
@@ -217,6 +228,12 @@ function getPowerShellWindowProbeScript(): string {
     '  [DllImport("user32.dll", CharSet = CharSet.Auto)] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);',
     '}',
     "'@",
+    'while ($true) {',
+    '  $line = [Console]::In.ReadLine()',
+    '  if ($null -eq $line) { break }',
+    "  if ($line -eq 'exit') { break }",
+    '  try {',
+    "    $processes = @(Get-Process -Name '" + GAME_PROCESS_NAME + "' -ErrorAction SilentlyContinue)",
     '$pidSet = @{}',
     'foreach ($process in $processes) { $pidSet[[uint32]$process.Id] = $process }',
     '$windows = New-Object System.Collections.ArrayList',
@@ -261,7 +278,7 @@ function getPowerShellWindowProbeScript(): string {
     '  $workAreaWidth = [Math]::Max(0, $monitorInfo.rcWork.Right - $monitorInfo.rcWork.Left)',
     '  $workAreaHeight = [Math]::Max(0, $monitorInfo.rcWork.Bottom - $monitorInfo.rcWork.Top)',
     '}',
-    '@{',
+    '$payload = @{',
     '  found = $true;',
     '  active = [bool]$foregroundMatchesProcess;',
     '  visible = [bool]$best.visible;',
@@ -281,6 +298,11 @@ function getPowerShellWindowProbeScript(): string {
     '  processName = $processes[0].ProcessName;',
     '  title = [string]$best.title',
     '} | ConvertTo-Json -Compress',
+    '    [Console]::Out.WriteLine($payload)',
+    '  } catch {',
+    "    [Console]::Out.WriteLine('{\"found\":false}')",
+    '  }',
+    '}',
   ].join('\n');
 }
 function getFallbackGameWindowState(): GameWindowState {
@@ -312,56 +334,138 @@ function ensureWindowProbeScriptPath(): string {
     return windowProbeScriptPath;
   }
 
-  const probePath = path.join(app.getPath('temp'), 'fs-overlay-window-probe.ps1');
-  if (!fs.existsSync(probePath)) {
-    fs.writeFileSync(probePath, getPowerShellWindowProbeScript(), 'utf8');
-  }
+  // New filename so a stale one-shot script from an older build is never reused.
+  const probePath = path.join(app.getPath('temp'), 'fs-overlay-window-probe-loop.ps1');
+  fs.writeFileSync(probePath, getPowerShellWindowProbeScript(), 'utf8');
   windowProbeScriptPath = probePath;
   return probePath;
 }
 
-function fetchGameWindowState(): Promise<GameWindowState> {
-  return new Promise((resolve) => {
-    const probePath = ensureWindowProbeScriptPath();
+function resolveProbePending(line: string | null): void {
+  if (!probePending) return;
+  const pending = probePending;
+  probePending = null;
+  clearTimeout(pending.timer);
+  pending.resolve(line);
+}
 
-    execFile(
+function startProbeProcess(): ChildProcess | null {
+  try {
+    const scriptPath = ensureWindowProbeScriptPath();
+    const child = spawn(
       'powershell',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', probePath],
-      { windowsHide: true, timeout: 3000 },
-      (error, stdout) => {
-        if (error || !stdout) {
-          resolve(getFallbackGameWindowState());
-          return;
-        }
-
-        try {
-          const parsed = JSON.parse(String(stdout).trim()) as Partial<GameWindowState>;
-          resolve({
-            found: !!parsed.found,
-            active: !!parsed.active,
-            visible: !!parsed.visible,
-            minimized: !!parsed.minimized,
-            x: Number(parsed.x || 0),
-            y: Number(parsed.y || 0),
-            width: Number(parsed.width || 0),
-            height: Number(parsed.height || 0),
-            monitorX: Number(parsed.monitorX || 0),
-            monitorY: Number(parsed.monitorY || 0),
-            monitorWidth: Number(parsed.monitorWidth || 0),
-            monitorHeight: Number(parsed.monitorHeight || 0),
-            workAreaX: Number(parsed.workAreaX || 0),
-            workAreaY: Number(parsed.workAreaY || 0),
-            workAreaWidth: Number(parsed.workAreaWidth || 0),
-            workAreaHeight: Number(parsed.workAreaHeight || 0),
-            processName: parsed.processName ? String(parsed.processName) : null,
-            title: parsed.title ? String(parsed.title) : null,
-          });
-        } catch {
-          resolve(getFallbackGameWindowState());
-        }
-      },
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+      { windowsHide: true },
     );
+
+    child.stdout?.setEncoding('utf8');
+    child.stdout?.on('data', (chunk: string) => {
+      // Ignore output from a child that is no longer the active probe (e.g. a
+      // timed-out process killed mid-flight) so it can't resolve a newer request.
+      if (probeProcess !== child) return;
+      probeStdoutBuffer += chunk;
+      let newlineIndex = probeStdoutBuffer.indexOf('\n');
+      while (newlineIndex >= 0) {
+        const line = probeStdoutBuffer.slice(0, newlineIndex).trim();
+        probeStdoutBuffer = probeStdoutBuffer.slice(newlineIndex + 1);
+        if (line) resolveProbePending(line);
+        newlineIndex = probeStdoutBuffer.indexOf('\n');
+      }
+    });
+
+    const handleExit = (): void => {
+      // Only react if this is still the active process; a stale child's late exit
+      // must not clear the buffer or resolve the current request.
+      if (probeProcess !== child) return;
+      probeProcess = null;
+      probeStdoutBuffer = '';
+      resolveProbePending(null);
+    };
+    child.on('exit', handleExit);
+    child.on('error', handleExit);
+
+    probeProcess = child;
+    return child;
+  } catch {
+    return null;
+  }
+}
+
+function requestProbeLine(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const existing = probeProcess;
+    const child = existing || startProbeProcess();
+    if (!child || !child.stdin || !child.stdin.writable) {
+      resolve(null);
+      return;
+    }
+
+    // Probes are serialized upstream (gameWindowPollInFlight); if a stale request
+    // is somehow still pending, drop it rather than mismatch a response to it.
+    resolveProbePending(null);
+
+    // A freshly spawned process must compile the Add-Type C# helper before its
+    // first response, so give the cold start a larger budget than warm probes.
+    const timeoutMs = existing ? 3000 : 10000;
+    const timer = setTimeout(() => {
+      probePending = null;
+      // The process is stuck; kill it so the next poll spawns a fresh one.
+      try { child.kill(); } catch {}
+      if (probeProcess === child) probeProcess = null;
+      resolve(null);
+    }, timeoutMs);
+
+    probePending = { resolve, timer };
+    try {
+      child.stdin.write('probe\n');
+    } catch {
+      clearTimeout(timer);
+      probePending = null;
+      resolve(null);
+    }
   });
+}
+
+async function fetchGameWindowState(): Promise<GameWindowState> {
+  const line = await requestProbeLine();
+  if (!line) return getFallbackGameWindowState();
+
+  try {
+    const parsed = JSON.parse(line) as Partial<GameWindowState>;
+    if (!parsed.found) return getFallbackGameWindowState();
+    return {
+      found: !!parsed.found,
+      active: !!parsed.active,
+      visible: !!parsed.visible,
+      minimized: !!parsed.minimized,
+      x: Number(parsed.x || 0),
+      y: Number(parsed.y || 0),
+      width: Number(parsed.width || 0),
+      height: Number(parsed.height || 0),
+      monitorX: Number(parsed.monitorX || 0),
+      monitorY: Number(parsed.monitorY || 0),
+      monitorWidth: Number(parsed.monitorWidth || 0),
+      monitorHeight: Number(parsed.monitorHeight || 0),
+      workAreaX: Number(parsed.workAreaX || 0),
+      workAreaY: Number(parsed.workAreaY || 0),
+      workAreaWidth: Number(parsed.workAreaWidth || 0),
+      workAreaHeight: Number(parsed.workAreaHeight || 0),
+      processName: parsed.processName ? String(parsed.processName) : null,
+      title: parsed.title ? String(parsed.title) : null,
+    };
+  } catch {
+    return getFallbackGameWindowState();
+  }
+}
+
+function disposeGameWindowProbe(): void {
+  resolveProbePending(null);
+  const child = probeProcess;
+  probeProcess = null;
+  probeStdoutBuffer = '';
+  if (!child) return;
+  try { child.stdin?.write('exit\n'); } catch {}
+  try { child.kill(); } catch {}
 }
 
 function resolveOverlayBoundsForGameWindow(state: GameWindowState): { x: number; y: number; width: number; height: number } {
@@ -603,7 +707,7 @@ function createWindow(): void {
 
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  win.setIgnoreMouseEvents(true, { forward: true });
+  win.setIgnoreMouseEvents(true);
   win.loadFile(fromProjectRoot('src', 'renderer', 'index.html'));
 
   win.webContents.once('did-finish-load', () => {
@@ -735,6 +839,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   stopGameWindowTracking();
+  disposeGameWindowProbe();
   logDirectoryService.stopWatching();
   void disposeParserWorker();
   globalShortcut.unregisterAll();
