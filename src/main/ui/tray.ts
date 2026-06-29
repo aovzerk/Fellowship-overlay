@@ -45,9 +45,13 @@ function createTrayManager({
       else showWindow();
     });
 
+    // Register tray icon context menu for Windows and macOs
     tray.on('right-click', () => {
       tray?.popUpContextMenu(buildMenu());
     });
+
+    // Register tray icon context menu for Linux
+    tray.setContextMenu(buildMenu());
 
     return tray;
   }
