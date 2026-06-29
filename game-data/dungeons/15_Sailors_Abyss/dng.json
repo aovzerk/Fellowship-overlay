@@ -9,217 +9,217 @@
     "121": {
       "name": "Bael'Aurum",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "124": {
       "name": "Deathless Katrine",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "125": {
       "name": "First Mate Marrow",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "105": {
       "name": "Sinthara",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "286": {
       "name": "Anomalous Orb",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "128": {
       "name": "Barbarous Lasher",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "127": {
       "name": "Bilgerat",
       "score": 4,
-      "percent": 3.0534351145038165
+      "percent": 3.1
     },
     "110": {
       "name": "Bleachbone Brute",
       "score": 4,
-      "percent": 3.0534351145038165
+      "percent": 3.1
     },
     "120": {
       "name": "Chains",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "99": {
       "name": "Deepbound Magi",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "48": {
       "name": "Dire Rat",
       "score": 1,
-      "percent": 0.7633587786259541
+      "percent": 0.8
     },
     "281": {
       "name": "Eira the White Witch",
       "score": 20,
-      "percent": 15.267175572519085
+      "percent": 15.3
     },
     "274": {
       "name": "Emissary of the Shadow Lord",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "98": {
       "name": "Fading Raider",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "280": {
       "name": "Ghorn the Avalanche",
       "score": 20,
-      "percent": 15.267175572519085
+      "percent": 15.3
     },
     "116": {
       "name": "Gravescythe",
       "score": 2.5,
-      "percent": 1.9083969465648856
+      "percent": 1.9
     },
     "118": {
       "name": "Greedbound Prism",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "115": {
       "name": "Greedspawn Sentinel",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "112": {
       "name": "Gunpowder Rat",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "97": {
       "name": "Hollowed Corsair",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "109": {
       "name": "Jungle Stalker",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "282": {
       "name": "Krumbug the Naughty",
       "score": 20,
-      "percent": 15.267175572519085
+      "percent": 15.3
     },
     "278": {
       "name": "Large Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "100": {
       "name": "Lost Soul",
       "score": 0.5,
-      "percent": 0.38167938931297707
+      "percent": 0.4
     },
     "3": {
       "name": "Malevolent Shade",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "134": {
       "name": "Mancatcher",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "277": {
       "name": "Medium Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "32": {
       "name": "Nightmist Cutthroat",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "122": {
       "name": "Orb of Bael'Aurum",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "193": {
       "name": "Profane Invoker",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "12": {
       "name": "Raging Pillager",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "183": {
       "name": "Ruins Lasher",
       "score": 1,
-      "percent": 0.7633587786259541
+      "percent": 0.8
     },
     "114": {
       "name": "Saltsworn Scallywag",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "119": {
       "name": "Scuttlejack Cannoneer",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "113": {
       "name": "Shark",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "276": {
       "name": "Small Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "126": {
       "name": "Soulpowder Buccaneer",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "107": {
       "name": "Tide Witch",
       "score": 5,
-      "percent": 3.816793893129771
+      "percent": 3.8
     },
     "102": {
       "name": "Tormented Spectre",
       "score": 2,
-      "percent": 1.5267175572519083
+      "percent": 1.5
     },
     "103": {
       "name": "Vengeful Shade",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "94": {
       "name": "Water Elemental",
       "score": 3,
-      "percent": 2.2900763358778624
+      "percent": 2.3
     },
     "283": {
       "name": "Winter Trickster Rat",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "104": {
       "name": "Witchreef Lasher",
       "score": 1,
-      "percent": 0.7633587786259541
+      "percent": 0.8
     }
   }
 }

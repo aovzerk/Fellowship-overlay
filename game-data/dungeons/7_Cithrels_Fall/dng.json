@@ -11,112 +11,112 @@
     "169": {
       "name": "Ancient Koros",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "170": {
       "name": "Cithrel",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "168": {
       "name": "Noor, The Betrayer",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "166": {
       "name": "Blade of Cithrel",
       "score": 3,
-      "percent": 1.5957446808510638
+      "percent": 1.6
     },
     "157": {
       "name": "Coldheart Assassin",
       "score": 3,
-      "percent": 1.5957446808510638
+      "percent": 1.6
     },
     "167": {
       "name": "Corrupter",
       "score": 5,
-      "percent": 2.6595744680851063
+      "percent": 2.7
     },
     "163": {
       "name": "Deceitful Scholar",
       "score": 5,
-      "percent": 2.6595744680851063
+      "percent": 2.7
     },
     "281": {
       "name": "Eira the White Witch",
       "score": 20,
-      "percent": 10.638297872340425
+      "percent": 10.6
     },
     "153": {
       "name": "Eldrin Chronomancer",
       "score": 4,
-      "percent": 2.127659574468085
+      "percent": 2.1
     },
     "165": {
       "name": "Eldrin Recruit",
       "score": 1,
-      "percent": 0.5319148936170213
+      "percent": 0.5
     },
     "164": {
       "name": "Eldrin Sentinel",
       "score": 3,
-      "percent": 1.5957446808510638
+      "percent": 1.6
     },
     "274": {
       "name": "Emissary of the Shadow Lord",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "155": {
       "name": "Frozen Remnant",
       "score": 1,
-      "percent": 0.5319148936170213
+      "percent": 0.5
     },
     "280": {
       "name": "Ghorn the Avalanche",
       "score": 20,
-      "percent": 10.638297872340425
+      "percent": 10.6
     },
     "154": {
       "name": "Greater Ice Elemental",
       "score": 8,
-      "percent": 4.25531914893617
+      "percent": 4.3
     },
     "161": {
       "name": "Ice Shardling",
       "score": 1,
-      "percent": 0.5319148936170213
+      "percent": 0.5
     },
     "282": {
       "name": "Krumbug the Naughty",
       "score": 20,
-      "percent": 10.638297872340425
+      "percent": 10.6
     },
     "278": {
       "name": "Large Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "277": {
       "name": "Medium Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "276": {
       "name": "Small Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "160": {
       "name": "Spellbound Golem",
       "score": 5,
-      "percent": 2.6595744680851063
+      "percent": 2.7
     },
     "162": {
       "name": "Tundra Stalker",
       "score": 2,
-      "percent": 1.0638297872340425
+      "percent": 1.1
     }
   }
 }

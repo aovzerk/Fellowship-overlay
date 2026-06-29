@@ -9,122 +9,122 @@
     "315": {
       "name": "Overlord Varux",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "286": {
       "name": "Anomalous Orb",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "335": {
       "name": "Blood Crystal",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "324": {
       "name": "Clot Spawn",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "15": {
       "name": "Coldbrine Fiend",
       "score": 3,
-      "percent": 1.6666666666666667
+      "percent": 1.7
     },
     "314": {
       "name": "Dire Wolf",
       "score": 2,
-      "percent": 1.1111111111111112
+      "percent": 1.1
     },
     "274": {
       "name": "Emissary of the Shadow Lord",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "155": {
       "name": "Frozen Remnant",
       "score": 1,
-      "percent": 0.5555555555555556
+      "percent": 0.6
     },
     "280": {
       "name": "Ghorn the Avalanche",
       "score": 20,
-      "percent": 11.11111111111111
+      "percent": 11.1
     },
     "313": {
       "name": "Glacial Bear",
       "score": 7,
-      "percent": 3.888888888888889
+      "percent": 3.9
     },
     "154": {
       "name": "Greater Ice Elemental",
       "score": 8,
-      "percent": 4.444444444444445
+      "percent": 4.4
     },
     "334": {
       "name": "Heskyr Brood",
       "score": 1.5,
-      "percent": 0.8333333333333334
+      "percent": 0.8
     },
     "336": {
       "name": "Heskyr Magus",
       "score": 4,
-      "percent": 2.2222222222222223
+      "percent": 2.2
     },
     "333": {
       "name": "Heskyr Zealot",
       "score": 4,
-      "percent": 2.2222222222222223
+      "percent": 2.2
     },
     "152": {
       "name": "Ice Shardling",
       "score": 1,
-      "percent": 0.5555555555555556
+      "percent": 0.6
     },
     "161": {
       "name": "Ice Shardling",
       "score": 1,
-      "percent": 0.5555555555555556
+      "percent": 0.6
     },
     "278": {
       "name": "Large Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "277": {
       "name": "Medium Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "317": {
       "name": "Sanguine Crusher",
       "score": 6,
-      "percent": 3.3333333333333335
+      "percent": 3.3
     },
     "331": {
       "name": "Sanguine Disciple",
       "score": 6,
-      "percent": 3.3333333333333335
+      "percent": 3.3
     },
     "337": {
       "name": "Sanguine Sybling",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "276": {
       "name": "Small Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "160": {
       "name": "Spellbound Golem",
       "score": 5,
-      "percent": 2.7777777777777777
+      "percent": 2.8
     },
     "332": {
       "name": "Stalking Grim",
       "score": 2.5,
-      "percent": 1.3888888888888888
+      "percent": 1.4
     }
   }
 }

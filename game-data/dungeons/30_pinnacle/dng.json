@@ -11,107 +11,107 @@
     "319": {
       "name": "Han-Eth, Sentry of Xul",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "321": {
       "name": "Vel’korath the Sanctified, Vision of the Covenant",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "318": {
       "name": "Xul’vorith, Sentinel of the Bloodbound Gate",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "335": {
       "name": "Blood Crystal",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "322": {
       "name": "Blood Orb",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "324": {
       "name": "Clot Spawn",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "325": {
       "name": "Crimson Abomination",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "323": {
       "name": "Greater Clot Spawn",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "326": {
       "name": "Heart of Rot",
       "score": 6,
-      "percent": 2.2641509433962264
+      "percent": 2.3
     },
     "334": {
       "name": "Heskyr Brood",
       "score": 1.5,
-      "percent": 0.5660377358490566
+      "percent": 0.6
     },
     "336": {
       "name": "Heskyr Magus",
       "score": 4,
-      "percent": 1.509433962264151
+      "percent": 1.5
     },
     "333": {
       "name": "Heskyr Zealot",
       "score": 4,
-      "percent": 1.509433962264151
+      "percent": 1.5
     },
     "278": {
       "name": "Large Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "277": {
       "name": "Medium Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "317": {
       "name": "Sanguine Crusher",
       "score": 6,
-      "percent": 2.2641509433962264
+      "percent": 2.3
     },
     "331": {
       "name": "Sanguine Disciple",
       "score": 6,
-      "percent": 2.2641509433962264
+      "percent": 2.3
     },
     "316": {
       "name": "Sanguine Echo",
       "score": 2,
-      "percent": 0.7547169811320755
+      "percent": 0.8
     },
     "337": {
       "name": "Sanguine Sybling",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "276": {
       "name": "Small Chicken",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     },
     "332": {
       "name": "Stalking Grim",
       "score": 2.5,
-      "percent": 0.9433962264150944
+      "percent": 0.9
     },
     "320": {
       "name": "Vessel of Vel'korath",
       "score": 0,
-      "percent": 0
+      "percent": 0.0
     }
   }
 }
