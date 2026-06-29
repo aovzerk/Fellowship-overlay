@@ -10,82 +10,132 @@
     "140": {
       "name": "Akari the Everdawn Lord",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "121": {
+      "name": "Bael'Aurum",
+      "score": 0,
+      "percent": 0
     },
     "141": {
       "name": "Malgut the Fetid",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 18.2
-    },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 18.2
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 18.2
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
     },
     "142": {
       "name": "Blighted Dawnbloom",
       "score": 2,
-      "percent": 1.8
+      "percent": 1.8181818181818181
     },
     "139": {
       "name": "Bloodstone Goliath",
       "score": 5,
-      "percent": 4.5
+      "percent": 4.545454545454546
     },
     "135": {
       "name": "Bloodstone Totem",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "279": {
       "name": "Bloodstone Totem",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "275": {
+      "name": "Chicken",
+      "score": 0,
+      "percent": 0
     },
     "138": {
       "name": "Corrupted Totemic",
       "score": 4,
-      "percent": 3.6
+      "percent": 3.6363636363636362
     },
     "42": {
       "name": "Desecrator",
       "score": 3,
-      "percent": 2.7
+      "percent": 2.727272727272727
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 18.181818181818183
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 18.181818181818183
     },
     "41": {
       "name": "Gorestained Butcher",
       "score": 5,
-      "percent": 4.5
+      "percent": 4.545454545454546
     },
     "40": {
       "name": "Horned Seer",
       "score": 3,
-      "percent": 2.7
+      "percent": 2.727272727272727
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 18.181818181818183
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "3": {
+      "name": "Malevolent Shade",
+      "score": 0,
+      "percent": 0
     },
     "137": {
       "name": "Mangy Brute",
       "score": 1,
-      "percent": 0.9
+      "percent": 0.9090909090909091
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "122": {
+      "name": "Orb of Bael'Aurum",
+      "score": 0,
+      "percent": 0
     },
     "39": {
       "name": "Outrunner",
       "score": 2,
-      "percent": 1.8
+      "percent": 1.8181818181818181
     },
     "136": {
       "name": "Skittershard",
       "score": 1,
-      "percent": 0.9
+      "percent": 0.9090909090909091
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
     }
   }
 }

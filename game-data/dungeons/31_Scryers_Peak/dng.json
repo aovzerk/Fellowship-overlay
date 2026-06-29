@@ -1,0 +1,130 @@
+{
+  "map": "Scryer's Peak",
+  "zone_id": 31,
+  "killcount": 180,
+  "bossesID": [
+    315
+  ],
+  "mobs": {
+    "315": {
+      "name": "Overlord Varux",
+      "score": 0,
+      "percent": 0
+    },
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
+    },
+    "335": {
+      "name": "Blood Crystal",
+      "score": 0,
+      "percent": 0
+    },
+    "324": {
+      "name": "Clot Spawn",
+      "score": 0,
+      "percent": 0
+    },
+    "15": {
+      "name": "Coldbrine Fiend",
+      "score": 3,
+      "percent": 1.6666666666666667
+    },
+    "314": {
+      "name": "Dire Wolf",
+      "score": 2,
+      "percent": 1.1111111111111112
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "155": {
+      "name": "Frozen Remnant",
+      "score": 1,
+      "percent": 0.5555555555555556
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 11.11111111111111
+    },
+    "313": {
+      "name": "Glacial Bear",
+      "score": 7,
+      "percent": 3.888888888888889
+    },
+    "154": {
+      "name": "Greater Ice Elemental",
+      "score": 8,
+      "percent": 4.444444444444445
+    },
+    "334": {
+      "name": "Heskyr Brood",
+      "score": 1.5,
+      "percent": 0.8333333333333334
+    },
+    "336": {
+      "name": "Heskyr Magus",
+      "score": 4,
+      "percent": 2.2222222222222223
+    },
+    "333": {
+      "name": "Heskyr Zealot",
+      "score": 4,
+      "percent": 2.2222222222222223
+    },
+    "152": {
+      "name": "Ice Shardling",
+      "score": 1,
+      "percent": 0.5555555555555556
+    },
+    "161": {
+      "name": "Ice Shardling",
+      "score": 1,
+      "percent": 0.5555555555555556
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "317": {
+      "name": "Sanguine Crusher",
+      "score": 6,
+      "percent": 3.3333333333333335
+    },
+    "331": {
+      "name": "Sanguine Disciple",
+      "score": 6,
+      "percent": 3.3333333333333335
+    },
+    "337": {
+      "name": "Sanguine Sybling",
+      "score": 0,
+      "percent": 0
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "160": {
+      "name": "Spellbound Golem",
+      "score": 5,
+      "percent": 2.7777777777777777
+    },
+    "332": {
+      "name": "Stalking Grim",
+      "score": 2.5,
+      "percent": 1.3888888888888888
+    }
+  }
+}

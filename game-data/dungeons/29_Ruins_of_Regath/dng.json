@@ -1,0 +1,110 @@
+{
+  "map": "Ruins of Regath",
+  "zone_id": 29,
+  "killcount": 155,
+  "bossesID": [
+    330
+  ],
+  "mobs": {
+    "330": {
+      "name": "Xurath, Fist of the Warden",
+      "score": 0,
+      "percent": 0
+    },
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
+    },
+    "335": {
+      "name": "Blood Crystal",
+      "score": 0,
+      "percent": 0
+    },
+    "324": {
+      "name": "Clot Spawn",
+      "score": 0,
+      "percent": 0
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 12.903225806451612
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "326": {
+      "name": "Heart of Rot",
+      "score": 6,
+      "percent": 3.870967741935484
+    },
+    "334": {
+      "name": "Heskyr Brood",
+      "score": 1.5,
+      "percent": 0.967741935483871
+    },
+    "336": {
+      "name": "Heskyr Magus",
+      "score": 4,
+      "percent": 2.5806451612903225
+    },
+    "333": {
+      "name": "Heskyr Zealot",
+      "score": 4,
+      "percent": 2.5806451612903225
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "328": {
+      "name": "Meandering Acolyte",
+      "score": 2,
+      "percent": 1.2903225806451613
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "329": {
+      "name": "Restless Protector",
+      "score": 2,
+      "percent": 1.2903225806451613
+    },
+    "331": {
+      "name": "Sanguine Disciple",
+      "score": 6,
+      "percent": 3.870967741935484
+    },
+    "316": {
+      "name": "Sanguine Echo",
+      "score": 2,
+      "percent": 1.2903225806451613
+    },
+    "337": {
+      "name": "Sanguine Sybling",
+      "score": 0,
+      "percent": 0
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "332": {
+      "name": "Stalking Grim",
+      "score": 2.5,
+      "percent": 1.6129032258064515
+    },
+    "327": {
+      "name": "Undying Champion",
+      "score": 2,
+      "percent": 1.2903225806451613
+    }
+  }
+}

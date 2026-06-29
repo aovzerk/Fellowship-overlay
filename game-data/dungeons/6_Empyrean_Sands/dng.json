@@ -9,77 +9,132 @@
     "87": {
       "name": "Sin-Magir",
       "score": 0,
-      "percent": 0.0
-    },
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 15.4
-    },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 15.4
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 15.4
+      "percent": 0
     },
     "173": {
       "name": "Acolyte of Sinnari",
       "score": 3,
-      "percent": 2.3
+      "percent": 2.307692307692308
+    },
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
     },
     "128": {
       "name": "Barbarous Lasher",
       "score": 5,
-      "percent": 3.8
+      "percent": 3.8461538461538463
+    },
+    "275": {
+      "name": "Chicken",
+      "score": 0,
+      "percent": 0
     },
     "179": {
       "name": "Dunesnare Hunter",
       "score": 3,
-      "percent": 2.3
+      "percent": 2.307692307692308
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 15.384615384615385
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 15.384615384615385
     },
     "177": {
       "name": "Gravebreaker Brute",
       "score": 5,
-      "percent": 3.8
+      "percent": 3.8461538461538463
     },
     "116": {
       "name": "Gravescythe",
+      "score": 2.5,
+      "percent": 1.9230769230769231
+    },
+    "118": {
+      "name": "Greedbound Prism",
       "score": 2,
-      "percent": 1.5
+      "percent": 1.5384615384615385
     },
     "115": {
       "name": "Greedspawn Sentinel",
       "score": 5,
-      "percent": 3.8
+      "percent": 3.8461538461538463
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 15.384615384615385
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "100": {
+      "name": "Lost Soul",
+      "score": 0.5,
+      "percent": 0.38461538461538464
+    },
+    "3": {
+      "name": "Malevolent Shade",
+      "score": 0,
+      "percent": 0
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
     },
     "174": {
       "name": "Nightbound Magi",
       "score": 5,
-      "percent": 3.8
+      "percent": 3.8461538461538463
+    },
+    "264": {
+      "name": "Ruinous Star",
+      "score": 0,
+      "percent": 0
     },
     "183": {
       "name": "Ruins Lasher",
       "score": 1,
-      "percent": 0.8
+      "percent": 0.7692307692307693
     },
     "176": {
       "name": "Sandsworn Husk",
       "score": 2,
-      "percent": 1.5
+      "percent": 1.5384615384615385
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
     },
     "175": {
       "name": "Tombguard Reaver",
       "score": 3,
-      "percent": 2.3
+      "percent": 2.307692307692308
     },
     "94": {
       "name": "Water Elemental",
       "score": 3,
-      "percent": 2.3
+      "percent": 2.307692307692308
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
     }
   }
 }

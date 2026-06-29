@@ -6,75 +6,110 @@
     92
   ],
   "mobs": {
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 11.9
+    "92": {
+      "name": "Vexira, Mother of Nightmares",
+      "score": 0,
+      "percent": 0
     },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 11.9
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 11.9
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
     },
     "132": {
       "name": "Bully Basher",
       "score": 4,
-      "percent": 2.4
-    },
-    "131": {
-      "name": "Facestabber",
-      "score": 2,
-      "percent": 1.2
-    },
-    "130": {
-      "name": "Shinchopper",
-      "score": 1,
-      "percent": 0.6
+      "percent": 2.380952380952381
     },
     "268": {
       "name": "Carrion Horror",
       "score": 5,
-      "percent": 3.0
+      "percent": 2.976190476190476
     },
     "267": {
       "name": "Eggbearer",
       "score": 2,
-      "percent": 1.2
+      "percent": 1.1904761904761905
     },
-    "91": {
-      "name": "Gravesnare Kidnapper",
-      "score": 4,
-      "percent": 2.4
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 11.904761904761903
     },
-    "90": {
-      "name": "Rotheart Recluse",
-      "score": 3,
-      "percent": 1.8
-    },
-    "89": {
-      "name": "Spiderling",
+    "274": {
+      "name": "Emissary of the Shadow Lord",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
-    "266": {
-      "name": "Venomdrinker",
-      "score": 3,
-      "percent": 1.8
+    "131": {
+      "name": "Facestabber",
+      "score": 2,
+      "percent": 1.1904761904761905
     },
     "13": {
       "name": "Frenzied Looter",
       "score": 1,
-      "percent": 0.6
+      "percent": 0.5952380952380952
     },
-    "92": {
-      "name": "Vexira, Mother of Nightmares",
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 11.904761904761903
+    },
+    "91": {
+      "name": "Gravesnare Kidnapper",
+      "score": 4,
+      "percent": 2.380952380952381
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 11.904761904761903
+    },
+    "278": {
+      "name": "Large Chicken",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "3": {
+      "name": "Malevolent Shade",
+      "score": 0,
+      "percent": 0
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "90": {
+      "name": "Rotheart Recluse",
+      "score": 3,
+      "percent": 1.7857142857142856
+    },
+    "130": {
+      "name": "Shinchopper",
+      "score": 1,
+      "percent": 0.5952380952380952
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "89": {
+      "name": "Spiderling",
+      "score": 0,
+      "percent": 0
+    },
+    "266": {
+      "name": "Venomdrinker",
+      "score": 3,
+      "percent": 1.7857142857142856
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
     }
   }
 }

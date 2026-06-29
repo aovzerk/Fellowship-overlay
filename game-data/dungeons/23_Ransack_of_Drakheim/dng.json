@@ -11,107 +11,202 @@
     "18": {
       "name": "Auga Handhafi the Blind",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "28": {
       "name": "Chilgar the Drowned",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "25": {
       "name": "Fodir Kaldur",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 7.7
-    },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 7.7
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 7.7
+    "87": {
+      "name": "Sin-Magir",
+      "score": 0,
+      "percent": 0
     },
     "10": {
       "name": "Ashen Arsonist",
       "score": 3,
-      "percent": 1.2
+      "percent": 1.153846153846154
     },
     "34": {
       "name": "Bleakfrost Mystic",
       "score": 4,
-      "percent": 1.5
+      "percent": 1.5384615384615385
     },
     "33": {
       "name": "Bleakfrost Slaver",
       "score": 3,
-      "percent": 1.2
+      "percent": 1.153846153846154
+    },
+    "120": {
+      "name": "Chains",
+      "score": 0,
+      "percent": 0
     },
     "15": {
       "name": "Coldbrine Fiend",
       "score": 3,
-      "percent": 1.2
+      "percent": 1.153846153846154
     },
     "14": {
       "name": "Craven Hiisi",
       "score": 1,
-      "percent": 0.4
+      "percent": 0.38461538461538464
+    },
+    "314": {
+      "name": "Dire Wolf",
+      "score": 2,
+      "percent": 0.7692307692307693
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 7.6923076923076925
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "98": {
+      "name": "Fading Raider",
+      "score": 2,
+      "percent": 0.7692307692307693
     },
     "13": {
       "name": "Frenzied Looter",
       "score": 1,
-      "percent": 0.4
+      "percent": 0.38461538461538464
+    },
+    "155": {
+      "name": "Frozen Remnant",
+      "score": 1,
+      "percent": 0.38461538461538464
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 7.6923076923076925
+    },
+    "313": {
+      "name": "Glacial Bear",
+      "score": 7,
+      "percent": 2.6923076923076925
     },
     "269": {
       "name": "Grasping Pillar",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "97": {
+      "name": "Hollowed Corsair",
+      "score": 5,
+      "percent": 1.9230769230769231
     },
     "24": {
       "name": "Ice Tomb",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "11": {
       "name": "Icebite Reaver",
       "score": 5,
-      "percent": 1.9
+      "percent": 1.9230769230769231
     },
     "23": {
       "name": "Kaldurson Eldsupptok",
       "score": 15,
-      "percent": 5.8
+      "percent": 5.769230769230769
     },
     "22": {
       "name": "Kaldurson Isilagður",
       "score": 15,
-      "percent": 5.8
+      "percent": 5.769230769230769
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 7.6923076923076925
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "100": {
+      "name": "Lost Soul",
+      "score": 0.5,
+      "percent": 0.19230769230769232
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
     },
     "32": {
       "name": "Nightmist Cutthroat",
       "score": 3,
-      "percent": 1.2
+      "percent": 1.153846153846154
+    },
+    "31": {
+      "name": "Nightmist Fiend",
+      "score": 0,
+      "percent": 0
+    },
+    "17": {
+      "name": "Nightmist Fiend",
+      "score": 0,
+      "percent": 0
     },
     "29": {
       "name": "Nightmist Whisperer",
-      "score": 15,
-      "percent": 5.8
+      "score": 4,
+      "percent": 1.5384615384615385
     },
     "12": {
-      "name": "Pillager",
+      "name": "Raging Pillager",
       "score": 2,
-      "percent": 0.8
+      "percent": 0.7692307692307693
+    },
+    "264": {
+      "name": "Ruinous Star",
+      "score": 0,
+      "percent": 0
     },
     "30": {
       "name": "Shadow of Ulmorgat",
       "score": 5,
-      "percent": 1.9
+      "percent": 1.9230769230769231
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "102": {
+      "name": "Tormented Spectre",
+      "score": 2,
+      "percent": 0.7692307692307693
+    },
+    "103": {
+      "name": "Vengeful Shade",
+      "score": 3,
+      "percent": 1.153846153846154
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
+    },
+    "104": {
+      "name": "Witchreef Lasher",
+      "score": 1,
+      "percent": 0.38461538461538464
     }
   }
 }

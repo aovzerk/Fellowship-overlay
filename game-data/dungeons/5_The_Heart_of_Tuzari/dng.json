@@ -8,110 +8,165 @@
     199
   ],
   "mobs": {
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 8.4
-    },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 8.4
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 8.4
-    },
     "198": {
       "name": "Moar'gore, Master of Sacrifice",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "200": {
       "name": "Prophet Ez'rath",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "87": {
+      "name": "Sin-Magir",
+      "score": 0,
+      "percent": 0
     },
     "199": {
       "name": "Vun’Kahr, the Thorned Maw",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
     "10": {
       "name": "Ashen Arsonist",
       "score": 3,
-      "percent": 1.3
+      "percent": 1.2605042016806722
     },
     "128": {
       "name": "Barbarous Lasher",
       "score": 5,
-      "percent": 2.1
+      "percent": 2.100840336134454
+    },
+    "34": {
+      "name": "Bleakfrost Mystic",
+      "score": 4,
+      "percent": 1.680672268907563
+    },
+    "33": {
+      "name": "Bleakfrost Slaver",
+      "score": 3,
+      "percent": 1.2605042016806722
     },
     "201": {
       "name": "Bloodfang",
       "score": 3,
-      "percent": 1.3
+      "percent": 1.2605042016806722
     },
     "185": {
       "name": "Bloodfang Raider",
       "score": 3,
-      "percent": 1.3
+      "percent": 1.2605042016806722
+    },
+    "184": {
+      "name": "Chosen",
+      "score": 0,
+      "percent": 0
+    },
+    "15": {
+      "name": "Coldbrine Fiend",
+      "score": 3,
+      "percent": 1.2605042016806722
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 8.403361344537815
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
     },
     "189": {
       "name": "Executioner",
       "score": 5,
-      "percent": 2.1
+      "percent": 2.100840336134454
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 8.403361344537815
     },
     "191": {
       "name": "Hellcaller",
       "score": 4,
-      "percent": 1.7
+      "percent": 1.680672268907563
     },
     "186": {
       "name": "Hulking Bulgore",
       "score": 4,
-      "percent": 1.7
+      "percent": 1.680672268907563
     },
     "192": {
       "name": "Initiate",
       "score": 1,
-      "percent": 0.4
+      "percent": 0.42016806722689076
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 8.403361344537815
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
     },
     "134": {
       "name": "Mancatcher",
       "score": 2,
-      "percent": 0.8
+      "percent": 0.8403361344537815
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
     },
     "32": {
       "name": "Nightmist Cutthroat",
       "score": 3,
-      "percent": 1.3
-    },
-    "12": {
-      "name": "Pillager",
-      "score": 2,
-      "percent": 0.8
+      "percent": 1.2605042016806722
     },
     "193": {
       "name": "Profane Invoker",
-      "score": 4,
-      "percent": 1.7
+      "score": 3,
+      "percent": 1.2605042016806722
+    },
+    "12": {
+      "name": "Raging Pillager",
+      "score": 2,
+      "percent": 0.8403361344537815
+    },
+    "183": {
+      "name": "Ruins Lasher",
+      "score": 1,
+      "percent": 0.42016806722689076
     },
     "190": {
       "name": "Sickle",
       "score": 1,
-      "percent": 0.4
+      "percent": 0.42016806722689076
     },
     "182": {
       "name": "Slaughtervine",
       "score": 1,
-      "percent": 0.4
+      "percent": 0.42016806722689076
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
     },
     "202": {
       "name": "Twisted Root",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
     }
   }
 }

@@ -7,90 +7,160 @@
     43
   ],
   "mobs": {
+    "44": {
+      "name": "Drazhul the Fleshbroker",
+      "score": 0,
+      "percent": 0
+    },
+    "43": {
+      "name": "Slavetrader Brull",
+      "score": 0,
+      "percent": 0
+    },
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
+    },
+    "128": {
+      "name": "Barbarous Lasher",
+      "score": 5,
+      "percent": 3.125
+    },
+    "201": {
+      "name": "Bloodfang",
+      "score": 3,
+      "percent": 1.875
+    },
+    "185": {
+      "name": "Bloodfang Raider",
+      "score": 3,
+      "percent": 1.875
+    },
+    "120": {
+      "name": "Chains",
+      "score": 0,
+      "percent": 0
+    },
+    "42": {
+      "name": "Desecrator",
+      "score": 3,
+      "percent": 1.875
+    },
+    "246": {
+      "name": "Dredge",
+      "score": 1,
+      "percent": 0.625
+    },
     "281": {
       "name": "Eira the White Witch",
       "score": 20,
       "percent": 12.5
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "13": {
+      "name": "Frenzied Looter",
+      "score": 1,
+      "percent": 0.625
     },
     "280": {
       "name": "Ghorn the Avalanche",
       "score": 20,
       "percent": 12.5
     },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 12.5
-    },
-    "201": {
-      "name": "Bloodfang",
-      "score": 3,
-      "percent": 1.9
+    "41": {
+      "name": "Gorestained Butcher",
+      "score": 5,
+      "percent": 3.125
     },
     "191": {
       "name": "Hellcaller",
       "score": 4,
       "percent": 2.5
     },
-    "185": {
-      "name": "Bloodfang Raider",
+    "40": {
+      "name": "Horned Seer",
       "score": 3,
-      "percent": 1.9
+      "percent": 1.875
     },
-    "182": {
-      "name": "Slaughtervine",
+    "192": {
+      "name": "Initiate",
       "score": 1,
-      "percent": 0.6
+      "percent": 0.625
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 12.5
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "3": {
+      "name": "Malevolent Shade",
+      "score": 0,
+      "percent": 0
     },
     "134": {
       "name": "Mancatcher",
       "score": 2,
-      "percent": 1.2
+      "percent": 1.25
     },
-    "42": {
-      "name": "Desecrator",
-      "score": 3,
-      "percent": 1.9
+    "137": {
+      "name": "Mangy Brute",
+      "score": 1,
+      "percent": 0.625
     },
-    "41": {
-      "name": "Gorestained Butcher",
-      "score": 5,
-      "percent": 3.1
-    },
-    "40": {
-      "name": "Horned Seer",
-      "score": 3,
-      "percent": 1.9
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
     },
     "39": {
       "name": "Outrunner",
       "score": 2,
-      "percent": 1.2
+      "percent": 1.25
+    },
+    "183": {
+      "name": "Ruins Lasher",
+      "score": 1,
+      "percent": 0.625
+    },
+    "182": {
+      "name": "Slaughtervine",
+      "score": 1,
+      "percent": 0.625
     },
     "38": {
       "name": "Slavebind Totem",
       "score": 4,
       "percent": 2.5
     },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
     "37": {
       "name": "Urrak Slaver",
       "score": 3,
-      "percent": 1.9
+      "percent": 1.875
     },
     "36": {
       "name": "Urrak Witch",
-      "score": 3,
-      "percent": 1.9
+      "score": 4,
+      "percent": 2.5
     },
-    "44": {
-      "name": "Drazhul the Fleshbroker",
+    "283": {
+      "name": "Winter Trickster Rat",
       "score": 0,
-      "percent": 0.0
-    },
-    "43": {
-      "name": "Slavetrader Brull",
-      "score": 0,
-      "percent": 0.0
+      "percent": 0
     }
   }
 }

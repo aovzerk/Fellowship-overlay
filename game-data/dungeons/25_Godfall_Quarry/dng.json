@@ -10,72 +10,137 @@
     "172": {
       "name": "Godfall Titan",
       "score": 0,
-      "percent": 0.0
-    },
-    "281": {
-      "name": "Eira the White Witch",
-      "score": 20,
-      "percent": 15.4
-    },
-    "280": {
-      "name": "Ghorn the Avalanche",
-      "score": 20,
-      "percent": 15.4
-    },
-    "282": {
-      "name": "Krumbug the Naughty",
-      "score": 20,
-      "percent": 15.4
+      "percent": 0
     },
     "270": {
       "name": "Vaerith Vorn",
       "score": 0,
-      "percent": 0.0
+      "percent": 0
     },
-    "241": {
-      "name": "Godfall Wardstone",
-      "score": 2,
-      "percent": 1.5
-    },
-    "243": {
-      "name": "Task Master",
-      "score": 4,
-      "percent": 3.1
-    },
-    "244": {
-      "name": "Nezari Bolter",
-      "score": 2,
-      "percent": 1.5
-    },
-    "245": {
-      "name": "Quarry Stalker",
-      "score": 2,
-      "percent": 1.5
-    },
-    "246": {
-      "name": "Dredge",
-      "score": 1,
-      "percent": 0.8
-    },
-    "247": {
-      "name": "Enforcer",
-      "score": 5,
-      "percent": 3.8
+    "286": {
+      "name": "Anomalous Orb",
+      "score": 0,
+      "percent": 0
     },
     "248": {
       "name": "Arcane Warden",
       "score": 4,
-      "percent": 3.1
+      "percent": 3.076923076923077
+    },
+    "142": {
+      "name": "Blighted Dawnbloom",
+      "score": 2,
+      "percent": 1.5384615384615385
+    },
+    "135": {
+      "name": "Bloodstone Totem",
+      "score": 0,
+      "percent": 0
+    },
+    "138": {
+      "name": "Corrupted Totemic",
+      "score": 4,
+      "percent": 3.076923076923077
+    },
+    "246": {
+      "name": "Dredge",
+      "score": 1,
+      "percent": 0.7692307692307693
+    },
+    "281": {
+      "name": "Eira the White Witch",
+      "score": 20,
+      "percent": 15.384615384615385
+    },
+    "274": {
+      "name": "Emissary of the Shadow Lord",
+      "score": 0,
+      "percent": 0
+    },
+    "247": {
+      "name": "Enforcer",
+      "score": 5,
+      "percent": 3.8461538461538463
     },
     "249": {
       "name": "Enraged Earth Elemental",
       "score": 7,
-      "percent": 5.4
+      "percent": 5.384615384615385
+    },
+    "280": {
+      "name": "Ghorn the Avalanche",
+      "score": 20,
+      "percent": 15.384615384615385
+    },
+    "241": {
+      "name": "Godfall Wardstone",
+      "score": 2,
+      "percent": 1.5384615384615385
+    },
+    "40": {
+      "name": "Horned Seer",
+      "score": 3,
+      "percent": 2.307692307692308
+    },
+    "282": {
+      "name": "Krumbug the Naughty",
+      "score": 20,
+      "percent": 15.384615384615385
+    },
+    "278": {
+      "name": "Large Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "3": {
+      "name": "Malevolent Shade",
+      "score": 0,
+      "percent": 0
+    },
+    "137": {
+      "name": "Mangy Brute",
+      "score": 1,
+      "percent": 0.7692307692307693
+    },
+    "277": {
+      "name": "Medium Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "244": {
+      "name": "Nezari Bolter",
+      "score": 2,
+      "percent": 1.5384615384615385
+    },
+    "39": {
+      "name": "Outrunner",
+      "score": 2,
+      "percent": 1.5384615384615385
+    },
+    "245": {
+      "name": "Quarry Stalker",
+      "score": 2,
+      "percent": 1.5384615384615385
     },
     "136": {
       "name": "Skittershard",
       "score": 1,
-      "percent": 0.8
+      "percent": 0.7692307692307693
+    },
+    "276": {
+      "name": "Small Chicken",
+      "score": 0,
+      "percent": 0
+    },
+    "243": {
+      "name": "Task Master",
+      "score": 4,
+      "percent": 3.076923076923077
+    },
+    "283": {
+      "name": "Winter Trickster Rat",
+      "score": 0,
+      "percent": 0
     }
   }
 }
