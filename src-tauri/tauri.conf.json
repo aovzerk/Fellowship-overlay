@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fellowship Overlay",
+  "version": "1.6.2",
+  "identifier": "com.aov.fellowshipoverlay",
+  "build": {
+    "frontendDist": "app-ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "Fellowship Overlay",
+        "url": "index.html",
+        "width": 1280,
+        "height": 720,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "shadow": false,
+        "focus": false,
+        "backgroundColor": "#00000000"
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": [
+      "../icons/icon.ico",
+      "../icons/icon.png",
+      "../icons/icon-256.png",
+      "../icons/icon-128.png",
+      "../icons/icon-32.png"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "skip"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "../icons/icon.ico"
+      }
+    }
+  }
+}

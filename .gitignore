@@ -3,3 +3,5 @@ node_modules
 release
 settings.json
 Fellowship-overlay.zip
+src-tauri/app-ui
+src-tauri/target

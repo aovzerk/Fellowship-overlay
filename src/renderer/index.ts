@@ -248,6 +248,14 @@ function setLogSourceText(source: { filePath?: string | null; directoryPath?: st
   setLogSourceTextShared(filePathEl, t, source);
 }
 
+function setWatchStatusFromSource(source: { watching?: boolean; directoryPath?: string | null } | null | undefined): void {
+  if (!source?.watching) return;
+  lastWatchStatusMessage = currentLanguage === 'ru'
+    ? 'Слежение за папкой и последним логом активно'
+    : 'Watching folder for the newest log file';
+  watchStatusEl.textContent = lastWatchStatusMessage;
+}
+
 function formatPercent(value: unknown): string {
   return formatPercentShared(currentLanguage, value);
 }
@@ -840,7 +848,9 @@ window.api.onOverlayMode((payload) => {
   rerenderPlayersIfNeeded();
 });
 
-window.api.onOpenSettings(() => {
+window.api.onOpenSettings((payload) => {
+  setLogSourceText(payload);
+  setWatchStatusFromSource(payload);
   void openSettingsModal();
 });
 
@@ -879,6 +889,10 @@ window.api.onHudActivity((payload) => {
 
 window.api.getCurrentFile().then((result) => {
   setLogSourceText(result);
+  setWatchStatusFromSource(result);
+  if (result?.filePath || result?.directoryPath) {
+    void window.api.reloadCurrentFile();
+  }
   updatePullPanelVisibility();
   updateRecentSkillsPanelVisibility();
 });

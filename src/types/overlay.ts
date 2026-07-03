@@ -55,6 +55,7 @@ export interface OverlaySettings {
 export interface LogSourceInfo {
   filePath?: string | null;
   directoryPath?: string | null;
+  watching?: boolean;
 }
 
 export interface WatchStatusPayload {
