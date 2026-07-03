@@ -125,6 +125,7 @@ impl ParserState {
 
 struct ParserCache {
     file_path: PathBuf,
+    identity: String,
     offset: u64,
     leftover: String,
     state: ParserState,
@@ -133,6 +134,32 @@ struct ParserCache {
 }
 
 static PARSER_CACHE: OnceLock<Mutex<Option<ParserCache>>> = OnceLock::new();
+
+#[cfg(target_os = "windows")]
+fn get_file_identity(metadata: &fs::Metadata) -> String {
+    metadata
+        .created()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_nanos().to_string())
+        .unwrap_or_else(|| "0".to_string())
+}
+
+#[cfg(unix)]
+fn get_file_identity(metadata: &fs::Metadata) -> String {
+    use std::os::unix::fs::MetadataExt;
+    format!("{}:{}", metadata.dev(), metadata.ino())
+}
+
+#[cfg(not(any(target_os = "windows", unix)))]
+fn get_file_identity(metadata: &fs::Metadata) -> String {
+    metadata
+        .created()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_nanos().to_string())
+        .unwrap_or_else(|| "0".to_string())
+}
 
 fn player_map_key(id: &str) -> String {
     id.to_string()
@@ -741,12 +768,15 @@ fn parse_log_file(file_path: &Path) -> Result<ParsedLog, String> {
     let metadata = fs::metadata(file_path).map_err(|error| error.to_string())?;
     let size = metadata.len();
     let modified = metadata.modified().ok();
+    let identity = get_file_identity(&metadata);
     let cache_mutex = PARSER_CACHE.get_or_init(|| Mutex::new(None));
     let mut cache_slot = cache_mutex.lock().map_err(|error| error.to_string())?;
 
     let can_reuse = cache_slot
         .as_ref()
-        .map(|cache| cache.file_path == file_path && size >= cache.offset)
+        .map(|cache| {
+            cache.file_path == file_path && cache.identity == identity && size >= cache.offset
+        })
         .unwrap_or(false);
 
     if !can_reuse {
@@ -756,6 +786,7 @@ fn parse_log_file(file_path: &Path) -> Result<ParsedLog, String> {
         process_file_range(file_path, start_offset, size, &mut leftover, &mut state)?;
         *cache_slot = Some(ParserCache {
             file_path: file_path.to_path_buf(),
+            identity,
             offset: size,
             leftover,
             state,
@@ -763,13 +794,16 @@ fn parse_log_file(file_path: &Path) -> Result<ParsedLog, String> {
             modified,
         });
     } else if let Some(cache) = cache_slot.as_mut() {
-        process_file_range(
+        if let Err(error) = process_file_range(
             file_path,
             cache.offset,
             size,
             &mut cache.leftover,
             &mut cache.state,
-        )?;
+        ) {
+            *cache_slot = None;
+            return Err(error);
+        }
         cache.offset = size;
         cache.size = size;
         cache.modified = modified;
