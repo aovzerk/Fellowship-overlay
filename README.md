@@ -81,3 +81,21 @@ npm i          # install dependencies
 npm start      # run in development mode
 npm run dist   # build application
 ```
+
+### Build Tauri portable
+
+Requirements:
+- Node.js 20+
+- Rust toolchain with Cargo available in `PATH`
+
+PowerShell:
+```powershell
+$env:PATH="$env:USERPROFILE\.cargo\bin;$env:PATH"
+npm run tauri:app:build
+npm run tauri:app:package
+```
+
+The portable executable will be created at:
+```text
+release\Fellowship Overlay Portable\Fellowship Overlay.exe
+```
