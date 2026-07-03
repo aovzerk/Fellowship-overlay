@@ -128,6 +128,7 @@ export interface SkillCatalogClass {
 
 export interface SkillCatalog {
   classes: SkillCatalogClass[];
+  assetsByAbilityId?: Record<string, SkillCatalogAbility>;
 }
 
 export interface SpiritSnapshot {

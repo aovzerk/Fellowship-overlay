@@ -62,10 +62,59 @@ function findAbilityAsset(classId, abilityId) {
   };
 }
 
+function addAsset(assetMap, abilityId, asset) {
+  const normalizedAbilityId = String(Number(abilityId));
+  if (!normalizedAbilityId || normalizedAbilityId === "NaN" || !asset?.icon) return;
+  if (assetMap[normalizedAbilityId]) return;
+  assetMap[normalizedAbilityId] = {
+    id: Number(normalizedAbilityId),
+    name: asset.name || `Skill ${normalizedAbilityId}`,
+    cooldown: 0,
+    icon: asset.icon,
+  };
+}
+
+function addAssetsFromDirectory(assetMap, sourceDir, relativeDir) {
+  try {
+    for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const match = entry.name.match(/^(\d+)[_-]/);
+      if (!match) continue;
+      addAsset(assetMap, match[1], {
+        name: normalizeName(entry.name) || `Skill ${Number(match[1])}`,
+        icon: path.posix.join("game-data", relativeDir, entry.name),
+      });
+    }
+  } catch {}
+}
+
+function buildAbilityAssetMap() {
+  const assetsByAbilityId = {};
+  const heroesDir = path.join(rootDir, "game-data", "heroes");
+
+  for (const entry of fs.readdirSync(heroesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    addAssetsFromDirectory(
+      assetsByAbilityId,
+      path.join(heroesDir, entry.name),
+      path.posix.join("heroes", entry.name),
+    );
+  }
+
+  addAssetsFromDirectory(
+    assetsByAbilityId,
+    path.join(rootDir, "game-data", "weapons"),
+    "weapons",
+  );
+
+  return assetsByAbilityId;
+}
+
 function buildSkillCatalog() {
   const skills = readJson(path.join(rootDir, "game-data", "catalogs", "skills.json"), {});
   const heroesDir = path.join(rootDir, "game-data", "heroes");
   const heroFolders = new Map();
+  const assetsByAbilityId = buildAbilityAssetMap();
 
   for (const entry of fs.readdirSync(heroesDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -96,7 +145,7 @@ function buildSkillCatalog() {
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return { classes };
+  return { classes, assetsByAbilityId };
 }
 
 function buildIndexHtml() {

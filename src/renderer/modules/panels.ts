@@ -16,7 +16,10 @@
   function resolveRecentSkillIcon(skillCatalog: SkillCatalog, entry: RecentSkillActivation | null | undefined): string {
     if (entry?.icon) return entry.icon;
     const catalogEntry = getAbilityCatalogEntry(skillCatalog, entry?.classId ?? null, entry?.abilityId ?? null);
-    return catalogEntry?.icon || getDefaultSkillIcon();
+    const assetEntry = entry?.abilityId == null
+      ? null
+      : skillCatalog.assetsByAbilityId?.[String(Number(entry.abilityId))] || null;
+    return catalogEntry?.icon || assetEntry?.icon || getDefaultSkillIcon();
   }
 
   function updatePullPanelVisibility({ filePathEl, latestData, pullInfoEl, translate, visibilitySettings }: PullPanelVisibilityArgs): void {
