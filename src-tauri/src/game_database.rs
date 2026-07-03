@@ -2,10 +2,13 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 mod embedded_game_data {
     include!(concat!(env!("OUT_DIR"), "/embedded_game_data.rs"));
 }
+
+static RELIC_DATA_CACHE: OnceLock<Value> = OnceLock::new();
 
 pub fn load_dungeon_data(dungeon_id: Option<i64>, name: Option<&str>) -> Option<Value> {
     dungeon_id
@@ -30,10 +33,7 @@ pub fn extract_relics_from_parts(parts: &[String]) -> Vec<Value> {
 
     for part in parts {
         for raw_id in extract_tuple_ids(part) {
-            let canonical_id = item_mapping
-                .get(&raw_id.to_string())
-                .and_then(Value::as_i64)
-                .or_else(|| relics.contains_key(&raw_id.to_string()).then_some(raw_id));
+            let canonical_id = get_canonical_relic_id_from_data(raw_id, &relics, &item_mapping);
             let Some(canonical_id) = canonical_id else {
                 continue;
             };
@@ -60,13 +60,41 @@ pub fn extract_relics_from_parts(parts: &[String]) -> Vec<Value> {
     found
 }
 
+pub fn get_canonical_relic_id(raw_id: Option<i64>) -> Option<i64> {
+    let raw_id = raw_id?;
+    let relic_data = load_relic_data();
+    let relics = relic_data.get("relics").and_then(Value::as_object)?;
+    let item_mapping = relic_data
+        .get("item_mapping")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default();
+    get_canonical_relic_id_from_data(raw_id, relics, &item_mapping)
+}
+
+fn get_canonical_relic_id_from_data(
+    raw_id: i64,
+    relics: &serde_json::Map<String, Value>,
+    item_mapping: &serde_json::Map<String, Value>,
+) -> Option<i64> {
+    item_mapping
+        .get(&raw_id.to_string())
+        .and_then(Value::as_i64)
+        .or_else(|| relics.contains_key(&raw_id.to_string()).then_some(raw_id))
+}
+
 fn load_relic_data() -> Value {
-    for root in game_data_roots() {
-        if let Some(data) = read_json(root.join("catalogs").join("relics.json")) {
-            return data;
-        }
-    }
-    serde_json::from_str(embedded_game_data::RELICS_JSON).unwrap_or_else(|_| serde_json::json!({}))
+    RELIC_DATA_CACHE
+        .get_or_init(|| {
+            for root in game_data_roots() {
+                if let Some(data) = read_json(root.join("catalogs").join("relics.json")) {
+                    return data;
+                }
+            }
+            serde_json::from_str(embedded_game_data::RELICS_JSON)
+                .unwrap_or_else(|_| serde_json::json!({}))
+        })
+        .clone()
 }
 
 fn extract_tuple_ids(raw: &str) -> Vec<i64> {

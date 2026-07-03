@@ -730,10 +730,11 @@ fn process_file_range(
     let mut file = File::open(file_path).map_err(|error| error.to_string())?;
     file.seek(SeekFrom::Start(start))
         .map_err(|error| error.to_string())?;
-    let mut raw = String::new();
+    let mut raw_bytes = Vec::new();
     file.take(end - start)
-        .read_to_string(&mut raw)
+        .read_to_end(&mut raw_bytes)
         .map_err(|error| error.to_string())?;
+    let raw = String::from_utf8_lossy(&raw_bytes);
 
     let mut combined = String::new();
     if !leftover.is_empty() {

@@ -1,9 +1,10 @@
+use crate::game_database::get_canonical_relic_id;
 use crate::parser::PlayerAccum;
 use crate::parser_line_utils::{ms_to_iso_utc, parse_ts_ms};
 use serde_json::{json, Value};
 
 pub fn mark_relic_use(player: &mut PlayerAccum, ability_id: Option<i64>, ts: &str) {
-    let Some(ability_id) = ability_id else {
+    let Some(canonical_id) = get_canonical_relic_id(ability_id) else {
         return;
     };
     let modifier = relic_cooldown_modifier(player);
@@ -11,7 +12,7 @@ pub fn mark_relic_use(player: &mut PlayerAccum, ability_id: Option<i64>, ts: &st
         return;
     };
     for relic in player.relics.iter_mut() {
-        if relic["id"].as_i64() != Some(ability_id) {
+        if relic["id"].as_i64() != Some(canonical_id) {
             continue;
         }
         relic["lastUsedAt"] = json!(ts);
@@ -21,13 +22,13 @@ pub fn mark_relic_use(player: &mut PlayerAccum, ability_id: Option<i64>, ts: &st
 }
 
 pub fn is_equipped_relic_ability(player: &PlayerAccum, ability_id: Option<i64>) -> bool {
-    let Some(ability_id) = ability_id else {
+    let Some(canonical_id) = get_canonical_relic_id(ability_id) else {
         return false;
     };
     player
         .relics
         .iter()
-        .any(|relic| relic["id"].as_i64() == Some(ability_id))
+        .any(|relic| relic["id"].as_i64() == Some(canonical_id))
 }
 
 pub fn reset_player_relic_cooldowns(player: &mut PlayerAccum) {
