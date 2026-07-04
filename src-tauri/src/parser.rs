@@ -348,6 +348,8 @@ fn process_line(state: &mut ParserState, line: &str) {
             let source_name = unquote(parts.get(3));
             let ability_id = to_i64(parts.get(4));
             let ability_name = unquote(parts.get(5));
+            let target_id = parts.get(7).cloned().unwrap_or_default();
+            let target_name = unquote(parts.get(8));
             let player = ensure_player(&mut state.players, &source_id, Some(source_name.clone()));
             if event == "ABILITY_ACTIVATED" {
                 let is_equipped_relic = is_equipped_relic_ability(player, ability_id);
@@ -371,6 +373,11 @@ fn process_line(state: &mut ParserState, line: &str) {
                 );
                 mark_relic_use(player, ability_id, &ts);
                 update_spirit_from_bloodbound_ability(player, &ts, ability_id, &ability_name);
+                if is_chickenize_ability(ability_id, &ability_name) && is_npc_id(&target_id) {
+                    state
+                        .dungeon
+                        .mark_npc_chickenized(&ts, &target_id, Some(&target_name));
+                }
                 if !is_equipped_relic
                     && state.recent_skills_player_id.as_deref() == Some(source_id.as_str())
                 {
@@ -440,7 +447,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     parts.get(23),
                     parts.get(24),
                 );
-                if is_chickenize_ability(ability_id, &ability_name) {
+                if source_id.starts_with("Player-") && is_chickenize_ability(ability_id, &ability_name) {
                     state
                         .dungeon
                         .mark_npc_chickenized(&ts, &target_id, Some(&target_name));

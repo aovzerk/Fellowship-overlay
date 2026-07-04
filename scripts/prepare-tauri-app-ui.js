@@ -161,6 +161,18 @@ function buildIndexHtml() {
       '<script src="./dist/renderer/modules/panels.js"></script>',
     ].join("\n  "),
   );
+  html = html.replace(
+    '<script src="./dist/renderer/index.js"></script>',
+    [
+      '<script>',
+      '    window.FellowshipTauriShim.settingsReady.finally(() => {',
+      '      const script = document.createElement("script");',
+      '      script.src = "./dist/renderer/index.js";',
+      '      document.body.appendChild(script);',
+      '    });',
+      '  </script>',
+    ].join("\n"),
+  );
 
   return html;
 }

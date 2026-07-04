@@ -6,6 +6,7 @@
   const OLD_SETTINGS_KEY = "fellowship-overlay-tauri-settings-v1";
   const CARD_SCALE_MIGRATION_KEY = "__cardScaleMigrated";
   const OLD_CARD_SCALE_MIGRATION_KEY = "__tauriCardScaleMigrated";
+  let settingsCache = null;
 
   const defaultSettings = () => {
     const constants = window.OverlayRendererConstants || {};
@@ -20,6 +21,9 @@
 
   function readSettings() {
     try {
+      if (settingsCache && typeof settingsCache === "object") {
+        return { ...defaultSettings(), ...settingsCache };
+      }
       let raw = localStorage.getItem(SETTINGS_KEY);
       if (!raw) {
         raw = localStorage.getItem(OLD_SETTINGS_KEY);
@@ -47,6 +51,7 @@
   }
 
   function writeSettings(settings) {
+    settingsCache = { ...defaultSettings(), ...(settings || {}) };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
@@ -75,6 +80,22 @@
     }
   }
 
+  const settingsReady = (async () => {
+    if (!invoke) {
+      settingsCache = readSettings();
+      return settingsCache;
+    }
+
+    const backendSettings = await call("get_overlay_settings", undefined, null);
+    if (backendSettings && typeof backendSettings === "object" && !Array.isArray(backendSettings)) {
+      writeSettings(backendSettings);
+      return settingsCache;
+    }
+
+    settingsCache = readSettings();
+    return settingsCache;
+  })();
+
   async function loadSkillCatalog() {
     try {
       const response = await fetch("./skill-catalog.json", { cache: "no-store" });
@@ -97,7 +118,7 @@
     };
   }
 
-  window.FellowshipTauriShim = { overrideAssetPathFormatter };
+  window.FellowshipTauriShim = { overrideAssetPathFormatter, settingsReady };
 
   window.api = {
     pickLogFile: async () => call("pick_log_file", undefined, {

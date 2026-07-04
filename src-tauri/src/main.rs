@@ -211,6 +211,14 @@ fn start_hud_activity_monitor(app: &AppHandle) {
                 (true, None)
             };
 
+            let settings_open = {
+                let state = app.state::<OverlayStateStore>();
+                is_settings_modal_open(&state)
+            };
+            if auto_hide_enabled && !settings_open {
+                set_visible_from_app(&app, active);
+            }
+
             if last_active != Some(active) || last_foreground_exe != foreground_exe {
                 emit_hud_activity(&app, active, foreground_exe.clone());
                 last_active = Some(active);
@@ -595,6 +603,9 @@ fn toggle_click_through_from_app(app: &AppHandle) {
 fn set_visible_from_app(app: &AppHandle, visible: bool) {
     let state = app.state::<OverlayStateStore>();
     with_main_window(app, |window| {
+        if current_state(&state).visible == visible {
+            return;
+        }
         let result = if visible {
             window.show()
         } else {

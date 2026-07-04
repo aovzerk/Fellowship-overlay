@@ -129,7 +129,9 @@ function resetDungeonScope(state: ParserState): void {
 
 function isChickenizeAbility(abilityId: number | null, abilityName: string | null | undefined): boolean {
   if (Number(abilityId) === CHICKENIZE_RELIC_ID) return true;
-  return String(abilityName || '').trim().toLowerCase() === 'chickenize';
+  if (Number(abilityId) === 5252) return true;
+  const normalizedName = String(abilityName || '').trim().toLowerCase();
+  return normalizedName === 'chickenize' || normalizedName === 'курификатор';
 }
 
 function shouldTreatNpcAsBossSpawned(state: ParserState, templateId: number | null, ts: string | null = null): boolean {

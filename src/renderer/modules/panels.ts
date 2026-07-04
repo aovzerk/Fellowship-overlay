@@ -153,7 +153,6 @@
       ? ''
       : `<div class="pull-stat"><span>${escapeHtml(translate('pullAlive'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, alivePercent))}%</strong></div>`;
     const totalLine = `<div class="pull-stat"><span>${escapeHtml(dungeonEnded ? translate('pullTotal') : translate('pullProjected'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}%</strong></div>`;
-
     pullInfoEl.innerHTML = `
       <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
       <div class="pull-stats">

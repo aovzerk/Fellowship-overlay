@@ -13,9 +13,7 @@ function assertExists(targetPath, label) {
 
 assertExists(exePath, "Tauri release exe");
 
-fs.rmSync(outputDir, { recursive: true, force: true });
 fs.mkdirSync(outputDir, { recursive: true });
-
 fs.copyFileSync(exePath, path.join(outputDir, "Fellowship Overlay.exe"));
 
 const files = [];

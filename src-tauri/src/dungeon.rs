@@ -629,7 +629,9 @@ struct NpcPercentMeta {
 
 pub fn is_chickenize_ability(ability_id: Option<i64>, ability_name: &str) -> bool {
     ability_id == Some(CHICKENIZE_RELIC_ID)
+        || ability_id == Some(5252)
         || ability_name.trim().eq_ignore_ascii_case("chickenize")
+        || ability_name.trim().eq_ignore_ascii_case("курификатор")
 }
 
 fn create_dungeon_state() -> Value {

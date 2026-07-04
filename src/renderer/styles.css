@@ -25,8 +25,11 @@ body {
   pointer-events: none;
 }
 
-#overlay-root.hud-hidden #playersContainer {
+#overlay-root.hud-hidden #playersContainer,
+#overlay-root.hud-hidden #pullInfo,
+#overlay-root.hud-hidden #recentSkillsPanel {
   opacity: 0;
+  pointer-events: none;
 }
 
 .interactive {
@@ -132,10 +135,15 @@ button:hover {
   opacity: 0.9;
 }
 
+#playersContainer,
+#pullInfo,
+#recentSkillsPanel {
+  transition: opacity 0.2s ease;
+}
+
 #playersContainer {
   position: absolute;
   inset: 0;
-  transition: opacity 0.2s ease;
 }
 
 .floating-card {
@@ -617,14 +625,35 @@ button:hover {
 
 .pull-mob {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: calc(10px * var(--card-scale));
   font-size: calc(18px * var(--card-scale));
+}
+
+.pull-mob-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pull-mob.dead {
   opacity: 0.5;
   text-decoration: line-through;
+}
+
+.pull-mob.chickenized {
+  color: #ffd36a;
+  text-decoration: none;
+}
+
+.pull-mob.chickenized strong {
+  color: #8cffb0;
+}
+
+.pull-mob-original {
+  color: rgba(255, 211, 106, 0.72);
+  font-size: 0.82em;
+  font-weight: 700;
 }
 
 .pull-empty {
