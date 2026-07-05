@@ -5,6 +5,7 @@ import { computeRelicCooldownState } from './parser-relics';
 import { parseTs } from './parser-line-utils';
 import {
   MAX_RECENT_SKILL_ACTIVATIONS,
+  buildPlayerBuffUptimes,
   buildUsesPerBoss,
   isLikelyCombatAbility,
   serializeAbilityStat,
@@ -29,6 +30,11 @@ function finalizeState(state: ParserState): FinalizedState {
   const correctedClientNowMs = Date.now() + timeCorrectionMs;
   const cooldownNowMs = Math.max(correctedClientNowMs, latestLogTs || 0);
   const hidePlayersUntilPartyResolved = shouldHidePlayersUntilPartyResolved(state);
+  const dungeonStartedAtMs = parseTs(state.dungeon.startedAt);
+  const dungeonEndedAtMs = parseTs(state.dungeon.endedAt);
+  const buffNowMs = dungeonEndedAtMs || latestLogTs || cooldownNowMs;
+  const buffWindowStartMs = dungeonStartedAtMs != null ? dungeonStartedAtMs : buffNowMs;
+  const buffWindowDurationMs = Math.max(0, (buffNowMs || 0) - (buffWindowStartMs || buffNowMs || 0));
 
   const encounters: FinalizedEncounter[] = state.encounters.map((encounter) => {
     const abilitiesByPlayer = [...encounter.abilitiesByPlayer.entries()].map(([playerKey, abilitiesMap]) => ({
@@ -67,6 +73,7 @@ function finalizeState(state: ParserState): FinalizedState {
         abilities,
         combatAbilities,
         usesPerBoss: buildUsesPerBoss(player, state.encounters),
+        buffUptimes: buildPlayerBuffUptimes(player, buffNowMs, buffWindowDurationMs),
       };
     })
     .sort((a, b) => b.damageDone - a.damageDone);

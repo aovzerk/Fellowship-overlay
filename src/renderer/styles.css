@@ -1,4 +1,4 @@
-﻿html, body {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -525,7 +525,8 @@ button:hover {
 
 #overlay-root.party-hidden #playersContainer,
 #overlay-root.pull-hidden #pullInfo,
-#overlay-root.recent-skills-hidden #recentSkillsPanel {
+#overlay-root.recent-skills-hidden #recentSkillsPanel,
+#overlay-root.buffs-button-hidden #buffsBtn {
   display: none;
 }
 
@@ -646,6 +647,24 @@ button:hover {
   color: #ffd36a;
 }
 
+
+
+.floating-buffs-button {
+  position: fixed;
+  left: 16px;
+  top: 380px;
+  z-index: 1000;
+  min-width: calc(150px * var(--card-scale));
+  padding: calc(18px * var(--card-scale)) calc(18px * var(--card-scale));
+  box-sizing: border-box;
+  font-size: calc(18px * var(--card-scale));
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.floating-buffs-button.drag-enabled {
+  cursor: move;
+}
 
 .recent-skills-panel {
   position: fixed;
@@ -816,3 +835,213 @@ button:hover {
 
 
 
+
+.buffs-modal-card {
+  width: min(1120px, calc(100vw - 40px));
+}
+
+.buffs-modal-body {
+  max-height: calc(100vh - 150px);
+}
+
+.buff-summary-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.buff-player-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.buff-player-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.buff-player-header:hover,
+.buff-player-header:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.buff-player-title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.buff-player-arrow {
+  width: 18px;
+  flex: 0 0 18px;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.78;
+}
+
+.buff-player-name {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.buff-player-class {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.buff-player-count {
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.buff-table {
+  display: grid;
+}
+
+.buff-table.hidden {
+  display: none;
+}
+
+.buff-player-header[aria-expanded="false"] {
+  border-bottom: 0;
+}
+
+.buff-table-head,
+.buff-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 86px minmax(140px, 180px);
+  gap: 12px;
+  align-items: center;
+}
+
+.buff-table-head {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.68;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.buff-row {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.buff-row:last-child {
+  border-bottom: 0;
+}
+
+.buff-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.buff-meta {
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: 0.66;
+}
+
+.buff-source {
+  opacity: 0.78;
+}
+
+.buff-duration-cell,
+.buff-percent-cell {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.buff-percent-cell {
+  display: grid;
+  gap: 5px;
+}
+
+.buff-percent-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.buff-percent-bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+@media (max-width: 760px) {
+  .buff-table-head {
+    display: none;
+  }
+
+  .buff-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .buff-duration-cell,
+  .buff-percent-cell {
+    font-size: 12px;
+  }
+}
+
+.buff-search-row {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 12px;
+  background: rgba(15, 23, 42, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.buff-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+  font: inherit;
+  font-weight: 700;
+}
+
+.buff-search-input:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.buff-search-input::placeholder {
+  color: rgba(248, 250, 252, 0.54);
+}

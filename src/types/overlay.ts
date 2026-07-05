@@ -17,11 +17,13 @@ export interface OverlayVisibilitySettings {
   showParty: boolean;
   showPull: boolean;
   showRecentSkills: boolean;
+  showBuffsButton: boolean;
 }
 
 export interface OverlayPanelPositions {
   pullInfo: Point;
   recentSkills: Point;
+  buffsButton: Point;
 }
 
 export interface OverlayHotkeys {
@@ -151,6 +153,22 @@ export interface AbilityStat {
   lastActivationTs: string | null;
 }
 
+export interface BuffUptimeEntry {
+  id: number | null;
+  name: string | null;
+  sourceId: string | null;
+  sourceName: string | null;
+  uptimeMs: number;
+  uptimePercent: number;
+  applications: number;
+  refreshes: number;
+  active: boolean;
+  currentStacks: number;
+  firstAppliedAt: string | null;
+  lastAppliedAt: string | null;
+  lastRemovedAt: string | null;
+}
+
 export interface SerializedAbilityStat extends AbilityStat {
   activationTimestamps: string[];
 }
@@ -212,6 +230,7 @@ export interface PlayerState {
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];
   usesPerBoss?: UsesPerBossEntry[];
+  buffUptimes?: BuffUptimeEntry[];
 }
 
 export interface PlayerValueAmount {
@@ -397,7 +416,9 @@ export interface OverlayApi {
   toggleOverlayLock(): Promise<{ locked: boolean }>;
   toggleOverlayVisibility(): Promise<{ visible: boolean }>;
   setSettingsModalOpen(open: boolean): Promise<{ ok: boolean }>;
+  openInteractiveModal(): Promise<{ locked: boolean }>;
   closeInteractiveModal(): Promise<{ locked: boolean }>;
+  setInteractiveRegionActive(active: boolean): void;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;
@@ -436,6 +457,7 @@ export interface RendererConstantsApi {
   RECENT_SKILLS_TRACK_COUNT_MAX: number;
   DEFAULT_PULL_PANEL_POSITION: Point;
   DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point;
+  DEFAULT_BUFFS_BUTTON_POSITION: Point;
   DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings;
   DEFAULT_RECENT_SKILLS_LIMIT: number;
   DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW: boolean;
@@ -514,6 +536,8 @@ export interface ApplyTranslationsContext {
   settingsModalTitle: HTMLElement;
   showPartyToggle: HTMLInputElement | null;
   showPartyToggleLabel: HTMLElement | null;
+  showBuffsButtonToggle: HTMLInputElement | null;
+  showBuffsButtonToggleLabel: HTMLElement | null;
   showPullToggle: HTMLInputElement | null;
   showPullToggleLabel: HTMLElement | null;
   showRecentSkillsToggle: HTMLInputElement | null;
@@ -602,6 +626,7 @@ export interface OverlaySettingsController {
   normalizeHotkeys(value: unknown): OverlayHotkeys;
   normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings;
   loadAutoHideWithGameWindow(): boolean;
+  loadBuffsButtonPosition(): Point;
   loadCardScale(): number;
   loadFrameGap(): number;
   loadIconsPerRow(): number;
@@ -618,6 +643,7 @@ export interface OverlaySettingsController {
   loadSkillSelections(): SkillSelectionMap;
   loadVisibilitySettings(): OverlayVisibilitySettings;
   saveAutoHideWithGameWindow(enabled: boolean): void;
+  saveBuffsButtonPosition(position: Point): void;
   saveCardScale(cardScale: number): void;
   saveFrameGap(frameGap: number): void;
   saveIconsPerRow(iconsPerRow: number): void;

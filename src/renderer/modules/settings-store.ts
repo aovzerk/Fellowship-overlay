@@ -5,6 +5,7 @@
     CARD_SCALE_MAX,
     CARD_SCALE_MIN,
     DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW,
+    DEFAULT_BUFFS_BUTTON_POSITION,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
     DEFAULT_HOTKEYS,
@@ -63,6 +64,7 @@
     return {
       pullInfo: normalizePosition(source.pullInfo, DEFAULT_PULL_PANEL_POSITION),
       recentSkills: normalizePosition(source.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+      buffsButton: normalizePosition(source.buffsButton, DEFAULT_BUFFS_BUTTON_POSITION),
     };
   }
 
@@ -78,6 +80,9 @@
       showRecentSkills: typeof source.showRecentSkills === 'boolean'
         ? source.showRecentSkills
         : DEFAULT_VISIBILITY_SETTINGS.showRecentSkills,
+      showBuffsButton: typeof source.showBuffsButton === 'boolean'
+        ? source.showBuffsButton
+        : DEFAULT_VISIBILITY_SETTINGS.showBuffsButton,
     };
   }
 
@@ -254,6 +259,9 @@
       loadAutoHideWithGameWindow() {
         return normalizeAutoHideWithGameWindow(getOverlaySettings().autoHideWithGameWindow);
       },
+      loadBuffsButtonPosition() {
+        return normalizePosition(getOverlaySettings().panelPositions?.buffsButton, DEFAULT_BUFFS_BUTTON_POSITION);
+      },
       loadCardScale() {
         return normalizeCardScaleValue(getOverlaySettings().cardScale);
       },
@@ -305,6 +313,13 @@
       },
       saveAutoHideWithGameWindow(enabled: boolean) {
         saveOverlaySettingsPatch({ autoHideWithGameWindow: normalizeAutoHideWithGameWindow(enabled) });
+      },
+      saveBuffsButtonPosition(position: Point) {
+        saveOverlaySettingsPatch({
+          panelPositions: {
+            buffsButton: normalizePosition(position, DEFAULT_BUFFS_BUTTON_POSITION),
+          } as OverlayPanelPositions,
+        });
       },
       saveCardScale(cardScale: number) {
         saveOverlaySettingsPatch({ cardScale });

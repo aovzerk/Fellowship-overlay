@@ -19,6 +19,7 @@ const pickFileBtn = mustElement<HTMLButtonElement>('pickFileBtn');
 const reloadBtn = mustElement<HTMLButtonElement>('reloadBtn');
 const toggleLockBtn = mustElement<HTMLButtonElement>('toggleLockBtn');
 const skillsBtn = mustElement<HTMLButtonElement>('skillsBtn');
+const buffsBtn = mustElement<HTMLButtonElement>('buffsBtn');
 const hotkeysSettingsTitle = mustElement<HTMLElement>('hotkeysSettingsTitle');
 const hotkeyToggleInteractionLabel = mustElement<HTMLElement>('hotkeyToggleInteractionLabel');
 const hotkeyPickLogLabel = mustElement<HTMLElement>('hotkeyPickLogLabel');
@@ -52,6 +53,7 @@ const cardSizeLabel = document.getElementById('cardSizeLabel') as HTMLElement | 
 const autoHideWithWindowToggle = document.getElementById('autoHideWithWindowToggle') as HTMLInputElement | null;
 const autoHideWithWindowToggleLabel = document.getElementById('autoHideWithWindowToggleLabel') as HTMLElement | null;
 const closeSkillsModalBtn = mustElement<HTMLButtonElement>('closeSkillsModalBtn');
+const closeBuffsModalBtn = mustElement<HTMLButtonElement>('closeBuffsModalBtn');
 const languageSelect = mustElement<HTMLSelectElement>('languageSelect');
 const languageLabel = mustElement<HTMLElement>('languageLabel');
 const showPartyToggle = document.getElementById('showPartyToggle') as HTMLInputElement | null;
@@ -60,17 +62,24 @@ const showPartyToggleLabel = document.getElementById('showPartyToggleLabel') as 
 const showPullToggleLabel = document.getElementById('showPullToggleLabel') as HTMLElement | null;
 const skillsModalTitle = mustElement<HTMLElement>('skillsModalTitle');
 const skillsModalSubtitle = mustElement<HTMLElement>('skillsModalSubtitle');
+const buffsModalTitle = mustElement<HTMLElement>('buffsModalTitle');
+const buffsModalSubtitle = mustElement<HTMLElement>('buffsModalSubtitle');
 const filePathEl = mustElement<HTMLElement>('filePath');
 const watchStatusEl = mustElement<HTMLElement>('watchStatus');
 const hudStatusEl = mustElement<HTMLElement>('hudStatus');
 const overlayRoot = mustElement<HTMLElement>('overlay-root');
 const skillsModal = mustElement<HTMLElement>('skillsModal');
+const buffsModal = mustElement<HTMLElement>('buffsModal');
 const skillsCatalogEl = mustElement<HTMLElement>('skillsCatalog');
+const buffSearchInput = mustElement<HTMLInputElement>('buffSearchInput');
+const buffsSummaryEl = mustElement<HTMLElement>('buffsSummary');
 const pullInfoEl = mustElement<HTMLElement>('pullInfo');
 const recentSkillsPanelEl = mustElement<HTMLElement>('recentSkillsPanel');
 const recentSkillsSettingsGroup = mustElement<HTMLElement>('recentSkillsSettingsGroup');
 const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle') as HTMLInputElement | null;
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
+const showBuffsButtonToggle = document.getElementById('showBuffsButtonToggle') as HTMLInputElement | null;
+const showBuffsButtonToggleLabel = document.getElementById('showBuffsButtonToggleLabel') as HTMLElement | null;
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
 const recentSkillsLayoutDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsLayoutDirectionSelect');
@@ -104,6 +113,7 @@ const {
 const {
   clamp,
   escapeHtml,
+  formatDurationMs,
   formatNumber: formatNumberShared,
   formatPercent: formatPercentShared,
 } = window.OverlayRendererFormatters;
@@ -153,6 +163,10 @@ let recentSkillsTrackCount = settingsController.loadRecentSkillsTrackCount();
 let playerCardRenderer: PlayerCardRenderer | null = null;
 let settingsModalOpen = false;
 let listeningHotkeyAction: HotkeyAction | null = null;
+let buffSearchQuery = '';
+let floatingInteractiveRegionActive = false;
+let buffsModalOpenedFromClickThrough = false;
+const expandedBuffPlayerKeys = new Set<string>();
 
 function t(key: string): string {
   return translateText(currentLanguage, key);
@@ -349,6 +363,14 @@ function saveRecentSkillsPanelPosition(position: Point): void {
   settingsController.saveRecentSkillsPanelPosition(position);
 }
 
+function loadBuffsButtonPosition(): Point {
+  return settingsController.loadBuffsButtonPosition();
+}
+
+function saveBuffsButtonPosition(position: Point): void {
+  settingsController.saveBuffsButtonPosition(position);
+}
+
 function saveVisibilitySettings(): void {
   settingsController.saveVisibilitySettings(visibilitySettings);
 }
@@ -357,6 +379,8 @@ function updateOverlayVisibility(): void {
   overlayRoot.classList.toggle('party-hidden', !visibilitySettings.showParty);
   overlayRoot.classList.toggle('pull-hidden', !visibilitySettings.showPull);
   overlayRoot.classList.toggle('recent-skills-hidden', !visibilitySettings.showRecentSkills);
+  overlayRoot.classList.toggle('buffs-button-hidden', !visibilitySettings.showBuffsButton);
+  buffsBtn.classList.toggle('hidden', !visibilitySettings.showBuffsButton);
   recentSkillsSettingsGroup.classList.toggle('hidden', !visibilitySettings.showRecentSkills);
 }
 
@@ -378,6 +402,50 @@ function setRecentSkillsVisibility(enabled: boolean): void {
   saveVisibilitySettings();
   updateOverlayVisibility();
   updateRecentSkillsPanelVisibility();
+}
+
+function setBuffsButtonVisibility(enabled: boolean): void {
+  visibilitySettings = { ...visibilitySettings, showBuffsButton: !!enabled };
+  saveVisibilitySettings();
+  updateOverlayVisibility();
+  if (!visibilitySettings.showBuffsButton) setFloatingInteractiveRegionActive(false);
+}
+
+function elementContainsViewportPoint(element: HTMLElement | null | undefined, x: number, y: number): boolean {
+  if (!element || element.classList.contains('hidden')) return false;
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0
+    && rect.height > 0
+    && x >= rect.left
+    && x <= rect.right
+    && y >= rect.top
+    && y <= rect.bottom;
+}
+
+function setFloatingInteractiveRegionActive(active: boolean): void {
+  const nextActive = !!active && !overlayLocked;
+  if (floatingInteractiveRegionActive === nextActive) return;
+  floatingInteractiveRegionActive = nextActive;
+  window.api.setInteractiveRegionActive(nextActive);
+}
+
+function updateFloatingInteractiveRegionAt(x: number, y: number): void {
+  if (overlayLocked) {
+    setFloatingInteractiveRegionActive(false);
+    return;
+  }
+
+  const overBuffsButton = visibilitySettings.showBuffsButton
+    && !buffsBtn.classList.contains('hidden')
+    && elementContainsViewportPoint(buffsBtn, x, y);
+  const overBuffsModal = !buffsModal.classList.contains('hidden')
+    && elementContainsViewportPoint(buffsModal.querySelector<HTMLElement>('.buffs-modal-card') || buffsModal, x, y);
+
+  setFloatingInteractiveRegionActive(overBuffsButton || overBuffsModal);
+}
+
+function handleFloatingInteractiveRegionMouseMove(event: MouseEvent): void {
+  updateFloatingInteractiveRegionAt(event.clientX, event.clientY);
 }
 
 function saveSkillSelections(): void {
@@ -565,6 +633,193 @@ function renderSkillsModal(): void {
   });
 }
 
+function formatBuffDuration(ms: unknown): string {
+  return formatDurationMs(Math.max(0, Number(ms || 0)));
+}
+
+function normalizeBuffSearchTerm(value: unknown): string {
+  return String(value || '').trim().toLocaleLowerCase();
+}
+
+function getBuffPlayerKey(player: FinalizedState['players'][number], index: number): string {
+  return String(player.id || player.name || index);
+}
+
+function updateBuffsButtonDragState(): void {
+  buffsBtn.classList.toggle('drag-enabled', overlayLocked);
+}
+
+function initializeBuffsButton(): void {
+  const position = loadBuffsButtonPosition();
+  buffsBtn.style.left = `${position.x}px`;
+  buffsBtn.style.top = `${position.y}px`;
+  updateBuffsButtonDragState();
+
+  let dragging = false;
+  let moved = false;
+  let startMouseX = 0;
+  let startMouseY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let suppressNextClick = false;
+
+  function onMove(event: MouseEvent): void {
+    if (!dragging) return;
+    const dx = event.clientX - startMouseX;
+    const dy = event.clientY - startMouseY;
+    if (!moved && Math.hypot(dx, dy) < 3) return;
+
+    moved = true;
+    const maxX = Math.max(0, window.innerWidth - buffsBtn.offsetWidth - 6);
+    const maxY = Math.max(0, window.innerHeight - buffsBtn.offsetHeight - 6);
+    const left = clamp(startLeft + dx, 0, maxX);
+    const top = clamp(startTop + dy, 0, maxY);
+    buffsBtn.style.left = `${left}px`;
+    buffsBtn.style.top = `${top}px`;
+  }
+
+  function onUp(): void {
+    if (!dragging) return;
+    dragging = false;
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+
+    if (!moved) return;
+    suppressNextClick = true;
+    saveBuffsButtonPosition({
+      x: parseFloat(buffsBtn.style.left || '0'),
+      y: parseFloat(buffsBtn.style.top || '0'),
+    });
+    window.setTimeout(() => {
+      suppressNextClick = false;
+    }, 0);
+  }
+
+  buffsBtn.addEventListener('mousedown', (event: MouseEvent) => {
+    if (!overlayLocked || event.button !== 0) return;
+    dragging = true;
+    moved = false;
+    startMouseX = event.clientX;
+    startMouseY = event.clientY;
+    startLeft = parseFloat(buffsBtn.style.left || '0');
+    startTop = parseFloat(buffsBtn.style.top || '0');
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    event.stopPropagation();
+  });
+
+  buffsBtn.addEventListener('click', (event: MouseEvent) => {
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    openBuffsModal();
+  });
+}
+
+function renderBuffsModal(): void {
+  const players = latestData?.players || [];
+  const query = normalizeBuffSearchTerm(buffSearchQuery);
+
+  if (!players.length) {
+    buffsSummaryEl.innerHTML = `<div class="pull-empty">${escapeHtml(t('noBuffData'))}</div>`;
+    return;
+  }
+
+  const playerCards = players.map((player, playerIndex) => {
+    const playerName = String(player.name || t('unknown'));
+    const playerMatches = query.length > 0 && normalizeBuffSearchTerm(playerName).includes(query);
+    const buffs = [...(player.buffUptimes || [])]
+      .filter((buff) => Number(buff.uptimeMs || 0) > 0 || Number(buff.applications || 0) > 0 || Number(buff.refreshes || 0) > 0)
+      .filter((buff) => {
+        if (!query || playerMatches) return true;
+        return normalizeBuffSearchTerm(`${buff.name || ''} ${buff.sourceName || ''}`).includes(query);
+      })
+      .sort((a, b) => Number(b.uptimeMs || 0) - Number(a.uptimeMs || 0));
+
+    if (query && !playerMatches && !buffs.length) return '';
+
+    const rows = buffs.length
+      ? buffs.map((buff) => {
+        const percent = clamp(Number(buff.uptimePercent || 0), 0, 100);
+        const stacks = Number(buff.currentStacks || 0);
+        const stackText = stacks > 1 ? ` · ${escapeHtml(t('buffStacks'))}: ${escapeHtml(String(stacks))}` : '';
+        const sourceText = buff.sourceName ? `<span class="buff-source">${escapeHtml(buff.sourceName)}</span>` : '';
+
+        return `
+          <div class="buff-row">
+            <div class="buff-name-cell">
+              <div class="buff-name">${escapeHtml(buff.name || t('unknown'))}</div>
+              <div class="buff-meta">${escapeHtml(t('buffApplications'))}: ${escapeHtml(String(Number(buff.applications || 0)))} · ${escapeHtml(t('buffRefreshes'))}: ${escapeHtml(String(Number(buff.refreshes || 0)))}${stackText} ${sourceText}</div>
+            </div>
+            <div class="buff-duration-cell">${escapeHtml(formatBuffDuration(buff.uptimeMs))}</div>
+            <div class="buff-percent-cell">
+              <span>${escapeHtml(formatPercent(percent))}%</span>
+              <div class="buff-percent-bar"><div style="width:${percent.toFixed(2)}%"></div></div>
+            </div>
+          </div>
+        `;
+      }).join('')
+      : `<div class="pull-empty">${escapeHtml(t('noPlayerBuffs'))}</div>`;
+
+    const playerKey = getBuffPlayerKey(player, playerIndex);
+    const isExpanded = expandedBuffPlayerKeys.has(playerKey);
+    const toggleTitle = isExpanded ? t('collapseBuffPlayer') : t('expandBuffPlayer');
+
+    return `
+      <section class="buff-player-card">
+        <button class="buff-player-header" type="button" data-buff-player-key="${escapeHtml(playerKey)}" aria-expanded="${isExpanded ? 'true' : 'false'}" title="${escapeHtml(toggleTitle)}">
+          <div class="buff-player-title">
+            <span class="buff-player-arrow" aria-hidden="true">${isExpanded ? '▾' : '▸'}</span>
+            <div>
+              <div class="buff-player-name">${escapeHtml(player.name || t('unknown'))}</div>
+              <div class="buff-player-class" style="color:${escapeHtml(player.classColor || '#6b7280')}">${escapeHtml(player.className || t('unknown'))}</div>
+            </div>
+          </div>
+          <div class="buff-player-count">${escapeHtml(String(buffs.length))}</div>
+        </button>
+        <div class="buff-table ${isExpanded ? '' : 'hidden'}">
+          <div class="buff-table-head">
+            <span>${escapeHtml(t('buffColumnName'))}</span>
+            <span>${escapeHtml(t('buffColumnUptime'))}</span>
+            <span>${escapeHtml(t('buffColumnPercent'))}</span>
+          </div>
+          ${rows}
+        </div>
+      </section>
+    `;
+  }).filter(Boolean).join('');
+
+  buffsSummaryEl.innerHTML = playerCards
+    ? `<div class="buff-summary-grid">${playerCards}</div>`
+    : `<div class="pull-empty">${escapeHtml(t('noBuffSearchResults'))}</div>`;
+}
+
+function openBuffsModal(): void {
+  buffsModalOpenedFromClickThrough = !overlayLocked;
+  if (buffsModalOpenedFromClickThrough) {
+    void window.api.openInteractiveModal();
+  }
+  expandedBuffPlayerKeys.clear();
+  renderBuffsModal();
+  buffsModal.classList.remove('hidden');
+  window.setTimeout(() => {
+    buffSearchInput.focus();
+    buffSearchInput.select();
+  }, 0);
+}
+
+function closeBuffsModal(): void {
+  buffsModal.classList.add('hidden');
+  setFloatingInteractiveRegionActive(false);
+  if (buffsModalOpenedFromClickThrough) {
+    void window.api.closeInteractiveModal();
+  }
+  buffsModalOpenedFromClickThrough = false;
+}
+
 function handleHotkeyCapture(event: KeyboardEvent): void {
   if (!listeningHotkeyAction) return;
 
@@ -649,6 +904,8 @@ function applyTranslations(): void {
     settingsModalTitle,
     showPartyToggle,
     showPartyToggleLabel,
+    showBuffsButtonToggle,
+    showBuffsButtonToggleLabel,
     showPullToggle,
     showPullToggleLabel,
     showRecentSkillsToggle,
@@ -663,6 +920,12 @@ function applyTranslations(): void {
     visibilitySettings,
     watchStatusEl,
   });
+  buffsBtn.textContent = t('buffs');
+  buffsBtn.title = t('buffUptimeTitle');
+  buffsModalTitle.textContent = t('buffUptimeTitle');
+  buffsModalSubtitle.textContent = t('buffUptimeSubtitle');
+  buffSearchInput.placeholder = t('buffSearchPlaceholder');
+  renderBuffsModal();
   if (!listeningHotkeyAction) setHotkeyStatus();
   updateHotkeyButtons();
 }
@@ -748,6 +1011,8 @@ initializePanel({
   savePosition: saveRecentSkillsPanelPosition,
 });
 
+initializeBuffsButton();
+
 pickFileBtn.addEventListener('click', async () => {
   const result = await window.api.pickLogFile();
   if (!result?.canceled) setLogSourceText(result);
@@ -764,6 +1029,26 @@ toggleLockBtn.addEventListener('click', async () => {
 });
 
 skillsBtn.addEventListener('click', openSkillsModal);
+buffSearchInput.addEventListener('input', (event: Event) => {
+  buffSearchQuery = (event.currentTarget as HTMLInputElement).value;
+  renderBuffsModal();
+});
+
+buffsSummaryEl.addEventListener('click', (event: MouseEvent) => {
+  const toggle = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('[data-buff-player-key]');
+  if (!toggle) return;
+
+  const playerKey = toggle.dataset.buffPlayerKey || '';
+  if (!playerKey) return;
+
+  if (expandedBuffPlayerKeys.has(playerKey)) {
+    expandedBuffPlayerKeys.delete(playerKey);
+  } else {
+    expandedBuffPlayerKeys.add(playerKey);
+  }
+
+  renderBuffsModal();
+});
 showPartyToggle?.addEventListener('change', (event: Event) => {
   setPartyVisibility((event.currentTarget as HTMLInputElement).checked);
 });
@@ -772,6 +1057,9 @@ showPullToggle?.addEventListener('change', (event: Event) => {
 });
 showRecentSkillsToggle?.addEventListener('change', (event: Event) => {
   setRecentSkillsVisibility((event.currentTarget as HTMLInputElement).checked);
+});
+showBuffsButtonToggle?.addEventListener('change', (event: Event) => {
+  setBuffsButtonVisibility((event.currentTarget as HTMLInputElement).checked);
 });
 recentSkillsLimitInput.addEventListener('change', (event: Event) => {
   setRecentSkillsLimit((event.currentTarget as HTMLInputElement).value);
@@ -807,6 +1095,7 @@ layoutDirectionSelect.addEventListener('change', (event: Event) => {
 cardSizeDownBtn.addEventListener('click', () => setCardScale(cardScale - CARD_SCALE_STEP));
 cardSizeUpBtn.addEventListener('click', () => setCardScale(cardScale + CARD_SCALE_STEP));
 closeSkillsModalBtn.addEventListener('click', closeSkillsModal);
+closeBuffsModalBtn.addEventListener('click', closeBuffsModal);
 closeSettingsModalBtn.addEventListener('click', () => {
   void closeSettingsModal();
 });
@@ -822,12 +1111,18 @@ languageSelect.addEventListener('change', async (event: Event) => {
 skillsModal.addEventListener('mousedown', (event: MouseEvent) => {
   if (event.target === skillsModal) closeSkillsModal();
 });
+buffsModal.addEventListener('mousedown', (event: MouseEvent) => {
+  if (event.target === buffsModal) closeBuffsModal();
+});
 settingsModal.addEventListener('mousedown', (event: MouseEvent) => {
   if (event.target === settingsModal) {
     void closeSettingsModal();
   }
 });
 document.addEventListener('keydown', handleHotkeyCapture, true);
+document.addEventListener('mousemove', handleFloatingInteractiveRegionMouseMove, true);
+document.addEventListener('mouseleave', () => setFloatingInteractiveRegionActive(false), true);
+window.addEventListener('blur', () => setFloatingInteractiveRegionActive(false));
 
 window.api.onWatchStatus((payload) => {
   lastWatchStatusMessage = payload?.message || t('noWatching');
@@ -836,7 +1131,9 @@ window.api.onWatchStatus((payload) => {
 
 window.api.onOverlayMode((payload) => {
   overlayLocked = !!payload?.locked;
+  setFloatingInteractiveRegionActive(false);
   toggleLockBtn.textContent = overlayLocked ? t('unlockOverlay') : t('lockOverlay');
+  updateBuffsButtonDragState();
   rerenderPlayersIfNeeded();
 });
 
@@ -857,6 +1154,7 @@ window.api.onLogData((payload) => {
     playersContainer.innerHTML = `<div class="panel player-card interactive floating-card" style="left:16px;top:64px;">${escapeHtml(t('errorPrefix'))}: ${escapeHtml(payload?.error || 'unknown')}</div>`;
     cardMap.clear();
     renderRecentSkillsPanel([]);
+    renderBuffsModal();
     updatePullPanelVisibility();
     updateRecentSkillsPanelVisibility();
     return;
@@ -864,6 +1162,7 @@ window.api.onLogData((payload) => {
 
   latestData = payload.data || null;
   renderPlayers(latestData?.players || []);
+  renderBuffsModal();
   updateRecentSkillsPanelVisibility();
 
   if (!cooldownTimer) cooldownTimer = setInterval(tickCooldowns, 1000);

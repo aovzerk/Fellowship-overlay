@@ -24,9 +24,16 @@ declare module 'electron' {
 declare module 'worker_threads' {
   export const parentPort: any;
   export const workerData: any;
-  export const Worker: any;
+  export class Worker {
+    constructor(filename: string, options?: any);
+    on(event: string, listener: (...args: any[]) => void): this;
+    postMessage(message: any): void;
+    terminate(): Promise<number>;
+  }
 }
 
 declare module 'child_process' {
   export const execFile: any;
+  export const spawn: any;
+  export type ChildProcess = any;
 }

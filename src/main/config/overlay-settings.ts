@@ -22,8 +22,9 @@ import * as path from 'path';
 const DEFAULT_LANGUAGE: LanguageCode = 'en';
 const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
 const DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point = { x: 16, y: 200 };
+const DEFAULT_BUFFS_BUTTON_POSITION: Point = { x: 16, y: 380 };
 const DEFAULT_RECENT_SKILLS_LIMIT = 7;
-const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false };
+const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false, showBuffsButton: false };
 const CARD_SCALE_MIN = 0.30;
 const CARD_SCALE_MAX = 1.8;
 const DEFAULT_CARD_SCALE = 0.7;
@@ -120,6 +121,7 @@ function normalizePanelPositions(value: unknown): OverlayPanelPositions {
   return {
     pullInfo: normalizePosition(source.pullInfo, DEFAULT_PULL_PANEL_POSITION),
     recentSkills: normalizePosition(source.recentSkills, DEFAULT_RECENT_SKILLS_PANEL_POSITION),
+    buffsButton: normalizePosition(source.buffsButton, DEFAULT_BUFFS_BUTTON_POSITION),
   };
 }
 
@@ -135,6 +137,9 @@ function normalizeVisibilitySettings(value: unknown): OverlayVisibilitySettings 
     showRecentSkills: typeof source.showRecentSkills === 'boolean'
       ? source.showRecentSkills
       : DEFAULT_VISIBILITY_SETTINGS.showRecentSkills,
+    showBuffsButton: typeof source.showBuffsButton === 'boolean'
+      ? source.showBuffsButton
+      : DEFAULT_VISIBILITY_SETTINGS.showBuffsButton,
   };
 }
 
@@ -363,6 +368,7 @@ function createOverlaySettingsStore({ settingsFile }: { settingsFile: string }):
 export {
   CARD_SCALE_MAX,
   CARD_SCALE_MIN,
+  DEFAULT_BUFFS_BUTTON_POSITION,
   DEFAULT_CARD_SCALE,
   DEFAULT_FRAME_GAP,
   DEFAULT_HOTKEYS,

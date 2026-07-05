@@ -76,6 +76,7 @@ const SETTINGS_CLOSE_GRACE_MS = 3000;
 
 let win: BrowserWindowLike | null = null;
 let clickThroughEnabled = true;
+let interactiveRegionActive = false;
 let isQuitting = false;
 let settingsModalOpen = false;
 let overlayVisibilityRequested = true;
@@ -186,21 +187,44 @@ const logDirectoryService: LogDirectoryService = createLogDirectoryService({
   sendLogData,
 });
 
+function applyMouseInputMode(): void {
+  const currentWin = getLiveWindow();
+  if (!currentWin) return;
+
+  if (clickThroughEnabled && !interactiveRegionActive) {
+    currentWin.setIgnoreMouseEvents(true, { forward: true });
+    return;
+  }
+
+  currentWin.setIgnoreMouseEvents(false);
+}
+
 function setClickThrough(enabled: boolean): void {
   clickThroughEnabled = !!enabled;
+  interactiveRegionActive = false;
+
+  applyMouseInputMode();
 
   const currentWin = getLiveWindow();
   if (!currentWin) return;
 
-  // No { forward: true }: forwarding mouse-move messages to the overlay during
-  // click-through gameplay adds per-move work that can stutter the cursor, and the
-  // overlay needs no hover input while click-through (interaction is hotkey-toggled).
-  currentWin.setIgnoreMouseEvents(clickThroughEnabled);
   const payload: OverlayModePayload = {
     clickThrough: clickThroughEnabled,
     locked: !clickThroughEnabled,
   };
   currentWin.webContents.send('overlay-mode', payload);
+}
+
+function setInteractiveRegionActive(active: boolean): void {
+  const nextActive = clickThroughEnabled && !!active;
+  if (interactiveRegionActive === nextActive) return;
+  interactiveRegionActive = nextActive;
+  applyMouseInputMode();
+}
+
+function openInteractiveModal(): { locked: boolean } {
+  if (clickThroughEnabled) setClickThrough(false);
+  return { locked: !clickThroughEnabled };
 }
 
 function getPowerShellWindowProbeScript(): string {
@@ -707,7 +731,7 @@ function createWindow(): void {
 
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  win.setIgnoreMouseEvents(true);
+  win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(fromProjectRoot('src', 'renderer', 'index.html'));
 
   win.webContents.once('did-finish-load', () => {
@@ -784,7 +808,11 @@ app.whenReady().then(() => {
     setSettingsModalOpen(!!open);
     return { ok: true };
   });
+  ipcMain.handle('open-interactive-modal', async (): Promise<{ locked: boolean }> => openInteractiveModal());
   ipcMain.handle('close-interactive-modal', async (): Promise<{ locked: boolean }> => closeInteractiveModal());
+  ipcMain.on('set-interactive-region-active', (_: unknown, active: boolean): void => {
+    setInteractiveRegionActive(!!active);
+  });
   ipcMain.handle('get-current-file', async (): Promise<LogSourceInfo> => ({
     filePath: settingsStore.getCurrentFilePath(),
     directoryPath: settingsStore.getCurrentDirectoryPath(),
