@@ -149,6 +149,9 @@
     setInteractiveRegionActive: (active) => {
       void call("set_interactive_region_active", { active: !!active }, null);
     },
+    setInteractiveRegionBounds: (bounds) => {
+      void call("set_interactive_region_bounds", { bounds: bounds || null }, null);
+    },
     getCurrentFile: async () => call("get_current_file", undefined, {
       filePath: readSettings().currentFilePath || null,
       directoryPath: readSettings().logDirectoryPath || null,

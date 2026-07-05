@@ -389,6 +389,7 @@ function updateOverlayVisibility(): void {
   overlayRoot.classList.toggle('recent-skills-hidden', !visibilitySettings.showRecentSkills);
   overlayRoot.classList.toggle('buffs-button-hidden', !visibilitySettings.showBuffsButton);
   buffsBtn.classList.toggle('hidden', !visibilitySettings.showBuffsButton);
+  syncBuffsButtonInteractiveBounds();
   recentSkillsSettingsGroup.classList.toggle('hidden', !visibilitySettings.showRecentSkills);
 }
 
@@ -450,6 +451,26 @@ function updateFloatingInteractiveRegionAt(x: number, y: number): void {
     && elementContainsViewportPoint(buffsModal.querySelector<HTMLElement>('.buffs-modal-card') || buffsModal, x, y);
 
   setFloatingInteractiveRegionActive(overBuffsButton || overBuffsModal);
+}
+
+function syncBuffsButtonInteractiveBounds(): void {
+  if (!visibilitySettings.showBuffsButton || buffsBtn.classList.contains('hidden')) {
+    window.api.setInteractiveRegionBounds(null);
+    return;
+  }
+
+  const rect = buffsBtn.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    window.api.setInteractiveRegionBounds(null);
+    return;
+  }
+
+  window.api.setInteractiveRegionBounds({
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  });
 }
 
 function handleFloatingInteractiveRegionMouseMove(event: MouseEvent): void {
@@ -662,6 +683,7 @@ function initializeBuffsButton(): void {
   buffsBtn.style.left = `${position.x}px`;
   buffsBtn.style.top = `${position.y}px`;
   updateBuffsButtonDragState();
+  window.setTimeout(syncBuffsButtonInteractiveBounds, 0);
 
   let dragging = false;
   let moved = false;
@@ -684,6 +706,7 @@ function initializeBuffsButton(): void {
     const top = clamp(startTop + dy, 0, maxY);
     buffsBtn.style.left = `${left}px`;
     buffsBtn.style.top = `${top}px`;
+    syncBuffsButtonInteractiveBounds();
   }
 
   function onUp(): void {
@@ -698,6 +721,7 @@ function initializeBuffsButton(): void {
       x: parseFloat(buffsBtn.style.left || '0'),
       y: parseFloat(buffsBtn.style.top || '0'),
     });
+    syncBuffsButtonInteractiveBounds();
     window.setTimeout(() => {
       suppressNextClick = false;
     }, 0);
@@ -930,6 +954,7 @@ function applyTranslations(): void {
   });
   buffsBtn.textContent = t('buffs');
   buffsBtn.title = t('buffUptimeTitle');
+  syncBuffsButtonInteractiveBounds();
   buffsModalTitle.textContent = t('buffUptimeTitle');
   buffsModalSubtitle.textContent = t('buffUptimeSubtitle');
   buffSearchInput.placeholder = t('buffSearchPlaceholder');
@@ -1128,6 +1153,7 @@ settingsModal.addEventListener('mousedown', (event: MouseEvent) => {
   }
 });
 document.addEventListener('keydown', handleHotkeyCapture, true);
+window.addEventListener('resize', syncBuffsButtonInteractiveBounds);
 document.addEventListener('mousemove', handleFloatingInteractiveRegionMouseMove, true);
 document.addEventListener('mouseleave', () => setFloatingInteractiveRegionActive(false), true);
 window.addEventListener('blur', () => setFloatingInteractiveRegionActive(false));

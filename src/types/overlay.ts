@@ -422,6 +422,7 @@ export interface OverlayApi {
   openInteractiveModal(): Promise<{ locked: boolean }>;
   closeInteractiveModal(): Promise<{ locked: boolean }>;
   setInteractiveRegionActive(active: boolean): void;
+  setInteractiveRegionBounds(bounds: { x: number; y: number; width: number; height: number } | null): void;
   getCurrentFile(): Promise<LogSourceInfo>;
   getSkillCatalog(): Promise<SkillCatalog>;
   getLanguage(): Promise<LanguagePayload>;

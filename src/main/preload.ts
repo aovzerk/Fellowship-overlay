@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
   openInteractiveModal: (): Promise<{ locked: boolean }> => ipcRenderer.invoke('open-interactive-modal'),
   closeInteractiveModal: (): Promise<{ locked: boolean }> => ipcRenderer.invoke('close-interactive-modal'),
   setInteractiveRegionActive: (active: boolean): void => { ipcRenderer.send('set-interactive-region-active', active); },
+  setInteractiveRegionBounds: (): void => {},
   getCurrentFile: (): Promise<unknown> => ipcRenderer.invoke('get-current-file'),
   getSkillCatalog: (): Promise<unknown> => ipcRenderer.invoke('get-skill-catalog'),
   getLanguage: (): Promise<{ language: LanguageCode }> => ipcRenderer.invoke('get-language'),

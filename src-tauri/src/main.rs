@@ -10,7 +10,7 @@ mod parser_relics;
 mod parser_spirit;
 mod settings;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use settings::{
     default_settings, load_settings, merge_json, path_to_string, save_settings, settings_path,
@@ -28,13 +28,15 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, State, WebviewWindow};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Shortcut, ShortcutState};
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::Foundation::CloseHandle;
+use windows_sys::Win32::Foundation::{CloseHandle, POINT};
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Threading::{
     OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION,
 };
 #[cfg(target_os = "windows")]
-use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+use windows_sys::Win32::UI::WindowsAndMessaging::{
+    GetCursorPos, GetForegroundWindow, GetWindowThreadProcessId,
+};
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const GAME_PROCESS_CANDIDATES: &[&str] = &[
@@ -51,6 +53,7 @@ struct OverlayStateStore {
     visible: Mutex<bool>,
     settings_modal_open: Mutex<bool>,
     interactive_region_active: Mutex<bool>,
+    interactive_region_bounds: Mutex<Option<InteractiveRegionBounds>>,
 }
 
 struct BackendState {
@@ -65,6 +68,15 @@ struct BackendState {
 struct OverlayState {
     click_through: bool,
     visible: bool,
+}
+
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InteractiveRegionBounds {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 }
 
 #[derive(Clone, Serialize)]
@@ -227,6 +239,80 @@ fn start_hud_activity_monitor(app: &AppHandle) {
             }
         }
     });
+}
+
+#[cfg(target_os = "windows")]
+fn start_interactive_region_monitor(app: &AppHandle) {
+    let app = app.clone();
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(25));
+
+        let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
+            continue;
+        };
+        let state = app.state::<OverlayStateStore>();
+        let click_through = state
+            .click_through
+            .lock()
+            .map(|value| *value)
+            .unwrap_or(false);
+        if !click_through {
+            continue;
+        }
+
+        let bounds = state
+            .interactive_region_bounds
+            .lock()
+            .ok()
+            .and_then(|value| *value);
+        let Some(bounds) = bounds else {
+            continue;
+        };
+        let Ok(position) = window.outer_position() else {
+            continue;
+        };
+        let Some((cursor_x, cursor_y)) = windows_cursor_position() else {
+            continue;
+        };
+
+        let local_x = cursor_x - f64::from(position.x);
+        let local_y = cursor_y - f64::from(position.y);
+        let margin = 6.0;
+        let inside = local_x >= bounds.x - margin
+            && local_x <= bounds.x + bounds.width + margin
+            && local_y >= bounds.y - margin
+            && local_y <= bounds.y + bounds.height + margin;
+
+        let changed = state
+            .interactive_region_active
+            .lock()
+            .map(|mut active| {
+                if *active == inside {
+                    false
+                } else {
+                    *active = inside;
+                    true
+                }
+            })
+            .unwrap_or(false);
+        if changed {
+            let _ = apply_cursor_input_mode(&window, &state);
+        }
+    });
+}
+
+#[cfg(not(target_os = "windows"))]
+fn start_interactive_region_monitor(_app: &AppHandle) {}
+
+#[cfg(target_os = "windows")]
+fn windows_cursor_position() -> Option<(f64, f64)> {
+    let mut point = POINT { x: 0, y: 0 };
+    let ok = unsafe { GetCursorPos(&mut point) };
+    if ok == 0 {
+        None
+    } else {
+        Some((f64::from(point.x), f64::from(point.y)))
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -586,6 +672,9 @@ fn prepare_native_dialog(app: &AppHandle) {
         if let Ok(mut interactive_region_active) = state.interactive_region_active.lock() {
             *interactive_region_active = false;
         }
+        if let Ok(mut interactive_region_bounds) = state.interactive_region_bounds.lock() {
+            *interactive_region_bounds = None;
+        }
         emit_state(&window, &state);
     });
 }
@@ -600,6 +689,9 @@ fn restore_after_native_dialog(app: &AppHandle) {
         }
         if let Ok(mut interactive_region_active) = state.interactive_region_active.lock() {
             *interactive_region_active = false;
+        }
+        if let Ok(mut interactive_region_bounds) = state.interactive_region_bounds.lock() {
+            *interactive_region_bounds = None;
         }
         let _ = window.set_focus();
         emit_state(&window, &state);
@@ -953,6 +1045,18 @@ fn set_interactive_region_active(
 }
 
 #[tauri::command]
+fn set_interactive_region_bounds(
+    state: State<OverlayStateStore>,
+    bounds: Option<InteractiveRegionBounds>,
+) -> Result<Value, String> {
+    *state
+        .interactive_region_bounds
+        .lock()
+        .map_err(|error| error.to_string())? = bounds;
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
 fn get_overlay_settings(backend: State<BackendState>) -> Value {
     backend
         .settings
@@ -1065,6 +1169,7 @@ fn main() {
             visible: Mutex::new(true),
             settings_modal_open: Mutex::new(false),
             interactive_region_active: Mutex::new(false),
+            interactive_region_bounds: Mutex::new(None),
         })
         .manage(BackendState {
             settings_path: settings_file,
@@ -1077,6 +1182,7 @@ fn main() {
             configure_shortcuts(app)?;
             configure_tray(app)?;
             start_hud_activity_monitor(app.handle());
+            start_interactive_region_monitor(app.handle());
             let backend = app.state::<BackendState>();
             restore_backend_watch_state(app.handle(), &backend);
 
@@ -1102,6 +1208,7 @@ fn main() {
             open_interactive_modal,
             close_interactive_modal,
             set_interactive_region_active,
+            set_interactive_region_bounds,
             get_overlay_settings,
             save_overlay_settings,
             get_current_file,
