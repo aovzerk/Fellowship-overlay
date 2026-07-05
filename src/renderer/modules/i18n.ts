@@ -8,6 +8,7 @@
       lockOverlay: 'Закрепить оверлей',
       unlockOverlay: 'Разблокировать оверлей',
       skills: 'Способности',
+      buffs: 'Бафы',
       language: 'Язык',
       cardSizeTitle: 'Размер карточки',
       cardSizeLabel: 'Размер карточки',
@@ -45,6 +46,7 @@
       showParty: 'Показывать группу и кулдауны',
       showPull: 'Показывать информацию по пулам и %',
       showRecentSkills: 'Показывать последние скиллы',
+      showBuffsButton: 'Показывать кнопку бафов',
       recentSkillsLimit: 'Лимит последних скиллов',
       recentSkillsLayoutDirection: 'Ориентация панели последних скиллов',
       recentSkillsGrowthDirection: 'Рост панели последних скиллов',
@@ -72,6 +74,20 @@
       chickenizedInfo: 'Chickenize',
       chickenizedSuffix: 'моб(ов) = 0%',
       chickenizedAlive: 'живы',
+      buffUptimeTitle: 'Аптайм бафов',
+      buffUptimeSubtitle: 'Сводка по игрокам за текущее подземелье',
+      buffSearchPlaceholder: 'Поиск по бафу или игроку',
+      expandBuffPlayer: 'Развернуть игрока',
+      collapseBuffPlayer: 'Свернуть игрока',
+      noBuffData: 'Нет данных по бафам',
+      noPlayerBuffs: 'Бафы не найдены',
+      noBuffSearchResults: 'Поиск ничего не нашёл',
+      buffColumnName: 'Баф',
+      buffColumnUptime: 'Аптайм',
+      buffColumnPercent: '%',
+      buffApplications: 'Наложений',
+      buffRefreshes: 'Обновлений',
+      buffStacks: 'стаков',
     },
     en: {
       htmlLang: 'en',
@@ -80,6 +96,7 @@
       lockOverlay: 'Lock overlay',
       unlockOverlay: 'Unlock overlay',
       skills: 'Skills',
+      buffs: 'Buffs',
       language: 'Language',
       cardSizeTitle: 'Card size',
       cardSizeLabel: 'Card size',
@@ -117,6 +134,7 @@
       showParty: 'Show party and cooldowns',
       showPull: 'Show pull and % info',
       showRecentSkills: 'Show recent skills',
+      showBuffsButton: 'Show buffs button',
       recentSkillsLimit: 'Recent skills limit',
       recentSkillsLayoutDirection: 'Recent skills panel orientation',
       recentSkillsGrowthDirection: 'Recent skills panel growth',
@@ -144,6 +162,20 @@
       chickenizedInfo: 'Chickenize',
       chickenizedSuffix: 'mob(s) = 0%',
       chickenizedAlive: 'alive',
+      buffUptimeTitle: 'Buff uptime',
+      buffUptimeSubtitle: 'Buff summary by player for the current dungeon',
+      buffSearchPlaceholder: 'Search buff or player',
+      expandBuffPlayer: 'Expand player',
+      collapseBuffPlayer: 'Collapse player',
+      noBuffData: 'No buff data',
+      noPlayerBuffs: 'No buffs found',
+      noBuffSearchResults: 'No matches found',
+      buffColumnName: 'Buff',
+      buffColumnUptime: 'Uptime',
+      buffColumnPercent: '%',
+      buffApplications: 'Applications',
+      buffRefreshes: 'Refreshes',
+      buffStacks: 'stacks',
     },
   };
 
@@ -211,6 +243,8 @@
       showPartyToggleLabel,
       showPullToggle,
       showPullToggleLabel,
+      showBuffsButtonToggle,
+      showBuffsButtonToggleLabel,
       showRecentSkillsToggle,
       showRecentSkillsToggleLabel,
       skillsBtn,
@@ -251,6 +285,7 @@
     if (showPartyToggleLabel) showPartyToggleLabel.textContent = translate('showParty');
     if (showPullToggleLabel) showPullToggleLabel.textContent = translate('showPull');
     if (showRecentSkillsToggleLabel) showRecentSkillsToggleLabel.textContent = translate('showRecentSkills');
+    if (showBuffsButtonToggleLabel) showBuffsButtonToggleLabel.textContent = translate('showBuffsButton');
     if (recentSkillsLimitLabel) recentSkillsLimitLabel.textContent = translate('recentSkillsLimit');
     if (recentSkillsLayoutDirectionLabel) recentSkillsLayoutDirectionLabel.textContent = translate('recentSkillsLayoutDirection');
     if (recentSkillsGrowthDirectionLabel) recentSkillsGrowthDirectionLabel.textContent = translate('recentSkillsGrowthDirection');
@@ -263,6 +298,7 @@
     if (showPartyToggle) showPartyToggle.checked = !!visibilitySettings.showParty;
     if (showPullToggle) showPullToggle.checked = !!visibilitySettings.showPull;
     if (showRecentSkillsToggle) showRecentSkillsToggle.checked = !!visibilitySettings.showRecentSkills;
+    if (showBuffsButtonToggle) showBuffsButtonToggle.checked = !!visibilitySettings.showBuffsButton;
     recentSkillsLimitInput.value = String(recentSkillsLimit);
     languageSelect.value = currentLanguage;
     const ruOption = languageSelect.querySelector('option[value=\"ru\"]');

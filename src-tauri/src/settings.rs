@@ -11,12 +11,14 @@ pub fn default_settings() -> Value {
         "playerPositions": {},
         "panelPositions": {
             "pullInfo": { "x": 16, "y": 12 },
-            "recentSkills": { "x": 16, "y": 200 }
+            "recentSkills": { "x": 16, "y": 200 },
+            "buffsButton": { "x": 16, "y": 380 }
         },
         "visibilitySettings": {
             "showParty": true,
             "showPull": false,
-            "showRecentSkills": false
+            "showRecentSkills": false,
+            "showBuffsButton": false
         },
         "recentSkillsLimit": 7,
         "selectedSkillsByClass": {},

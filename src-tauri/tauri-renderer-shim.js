@@ -140,8 +140,14 @@
     setSettingsModalOpen: async (open) => {
       return call("set_settings_modal_open", { open: !!open }, { ok: true });
     },
+    openInteractiveModal: async () => {
+      return call("open_interactive_modal", undefined, { locked: false });
+    },
     closeInteractiveModal: async () => {
       return call("close_interactive_modal", undefined, { locked: true });
+    },
+    setInteractiveRegionActive: (active) => {
+      void call("set_interactive_region_active", { active: !!active }, null);
     },
     getCurrentFile: async () => call("get_current_file", undefined, {
       filePath: readSettings().currentFilePath || null,

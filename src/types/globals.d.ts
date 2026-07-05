@@ -56,6 +56,7 @@ type SkillCatalogClass = import('./overlay').SkillCatalogClass;
 type SkillCatalog = import('./overlay').SkillCatalog;
 type SpiritSnapshot = import('./overlay').SpiritSnapshot;
 type AbilityStat = import('./overlay').AbilityStat;
+type BuffUptimeEntry = import('./overlay').BuffUptimeEntry;
 type SerializedAbilityStat = import('./overlay').SerializedAbilityStat;
 type RecentSkillActivation = import('./overlay').RecentSkillActivation;
 type RelicMeta = import('./overlay').RelicMeta;

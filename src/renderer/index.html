@@ -11,6 +11,7 @@
     <div id="playersContainer"></div>
     <div id="pullInfo" class="panel pull-panel"></div>
     <div id="recentSkillsPanel" class="panel recent-skills-panel"></div>
+    <button id="buffsBtn" class="panel floating-buffs-button interactive hidden" type="button">Buffs</button>
 
     <div id="settingsModal" class="modal-overlay hidden interactive">
       <div class="panel modal-card settings-modal-card">
@@ -59,6 +60,10 @@
               <label class="settings-toggle interactive" for="showRecentSkillsToggle">
                 <input id="showRecentSkillsToggle" type="checkbox" />
                 <span id="showRecentSkillsToggleLabel">Show recent skills</span>
+              </label>
+              <label class="settings-toggle interactive" for="showBuffsButtonToggle">
+                <input id="showBuffsButtonToggle" type="checkbox" />
+                <span id="showBuffsButtonToggleLabel">Show buffs button</span>
               </label>
             </div>
           </section>
@@ -205,6 +210,24 @@
         </div>
         <div class="modal-body">
           <div id="skillsCatalog"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="buffsModal" class="modal-overlay hidden interactive">
+      <div class="panel modal-card buffs-modal-card">
+        <div class="modal-header">
+          <div>
+            <div id="buffsModalTitle" class="modal-title">Buff uptime</div>
+            <div id="buffsModalSubtitle" class="modal-subtitle">Buff summary by player</div>
+          </div>
+          <button id="closeBuffsModalBtn" class="danger-btn">×</button>
+        </div>
+        <div class="modal-body buffs-modal-body">
+          <div class="buff-search-row">
+            <input id="buffSearchInput" class="buff-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Поиск по бафу или игроку" />
+          </div>
+          <div id="buffsSummary"></div>
         </div>
       </div>
     </div>

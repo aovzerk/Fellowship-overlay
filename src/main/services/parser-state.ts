@@ -1,6 +1,7 @@
 import type { AbilityStatKind } from '../../types/main-process';
 import type {
   AbilityStat,
+  BuffUptimeEntry,
   EncounterState,
   ParserState,
   PlayerState,
@@ -19,12 +20,33 @@ import {
 } from './parser-dungeon';
 import { DEFAULT_SKILL_ICON_REL_PATH, getBestAbilityAsset, isMountAbilityId } from './game-database';
 import { getPlayerEquippedRelicByAbilityId } from './parser-relics';
+import { parseTs } from './parser-line-utils';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
 const MAX_SPIRIT_HISTORY = 120;
 
 type InternalPlayerState = Omit<PlayerState, 'abilities'> & {
   abilities: Map<string, AbilityStat>;
+};
+
+type InternalBuffUptimeStat = {
+  id: number | null;
+  name: string | null;
+  sourceId: string | null;
+  sourceName: string | null;
+  totalMs: number;
+  applications: number;
+  refreshes: number;
+  activeSince: string | null;
+  activeSources: Set<string>;
+  currentStacks: number;
+  firstAppliedAt: string | null;
+  lastAppliedAt: string | null;
+  lastRemovedAt: string | null;
+};
+
+type BuffTrackedPlayer = PlayerState & {
+  __buffUptimeStats?: Map<string, InternalBuffUptimeStat>;
 };
 
 const CLASS_INFO: Record<number, { name: string; color: string }> = {
@@ -394,6 +416,206 @@ function addToMapNumber(map: Map<string, number>, key: string, amount: number): 
   map.set(key, (map.get(key) || 0) + amount);
 }
 
+function getBuffKey(abilityId: number | null | undefined, abilityName: string | null | undefined): string {
+  return `${abilityId ?? 'unknown'}::${abilityName || 'unknown'}`;
+}
+
+function getBuffSourceKey(sourceId: string | null | undefined, sourceName: string | null | undefined): string {
+  return `${sourceId || 'unknown'}::${sourceName || 'unknown'}`;
+}
+
+function getPlayerBuffStats(player: PlayerState): Map<string, InternalBuffUptimeStat> {
+  const trackedPlayer = player as BuffTrackedPlayer;
+  if (!trackedPlayer.__buffUptimeStats) {
+    Object.defineProperty(trackedPlayer, '__buffUptimeStats', {
+      value: new Map<string, InternalBuffUptimeStat>(),
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+  }
+  return trackedPlayer.__buffUptimeStats as Map<string, InternalBuffUptimeStat>;
+}
+
+function createBuffUptimeStat(
+  abilityId: number | null,
+  abilityName: string | null | undefined,
+  sourceId: string | null | undefined,
+  sourceName: string | null | undefined,
+): InternalBuffUptimeStat {
+  return {
+    id: abilityId,
+    name: abilityName || null,
+    sourceId: sourceId || null,
+    sourceName: sourceName || null,
+    totalMs: 0,
+    applications: 0,
+    refreshes: 0,
+    activeSince: null,
+    activeSources: new Set<string>(),
+    currentStacks: 0,
+    firstAppliedAt: null,
+    lastAppliedAt: null,
+    lastRemovedAt: null,
+  };
+}
+
+function closeBuffInterval(stat: InternalBuffUptimeStat, ts: string): void {
+  if (!stat.activeSince) return;
+  const startMs = parseTs(stat.activeSince);
+  const endMs = parseTs(ts);
+  if (startMs != null && endMs != null && endMs >= startMs) {
+    stat.totalMs += endMs - startMs;
+  }
+  stat.activeSince = null;
+  stat.activeSources.clear();
+}
+
+function markPlayerBuffEffect(
+  player: PlayerState,
+  event: string | null | undefined,
+  ts: string,
+  sourceId: string | null | undefined,
+  sourceName: string | null | undefined,
+  abilityId: number | null,
+  abilityName: string | null | undefined,
+  auraType: string | null | undefined,
+  stackRaw: unknown,
+): void {
+  if (String(auraType || '').trim().toUpperCase() !== 'BUFF') return;
+  if (abilityId == null && !abilityName) return;
+
+  const eventName = String(event || '').trim().toUpperCase();
+  if (eventName !== 'EFFECT_APPLIED' && eventName !== 'EFFECT_REFRESHED' && eventName !== 'EFFECT_REMOVED') return;
+
+  const tsMs = parseTs(ts);
+  if (tsMs == null) return;
+
+  const stats = getPlayerBuffStats(player);
+  const key = getBuffKey(abilityId, abilityName || null);
+  let stat = stats.get(key);
+  if (!stat) {
+    stat = createBuffUptimeStat(abilityId, abilityName || null, sourceId, sourceName);
+    stats.set(key, stat);
+  }
+
+  if (!stat.sourceId && sourceId) stat.sourceId = sourceId;
+  if (!stat.sourceName && sourceName) stat.sourceName = sourceName;
+  stat.currentStacks = Math.max(0, Math.floor(Number(stackRaw) || 0));
+
+  const sourceKey = getBuffSourceKey(sourceId, sourceName);
+
+  if (eventName === 'EFFECT_REMOVED') {
+    stat.lastRemovedAt = ts;
+    const hadSource = stat.activeSources.delete(sourceKey);
+    if (stat.activeSources.size === 0 || (!hadSource && stat.activeSources.size <= 1)) {
+      closeBuffInterval(stat, ts);
+    }
+    return;
+  }
+
+  if (eventName === 'EFFECT_APPLIED') stat.applications += 1;
+  if (eventName === 'EFFECT_REFRESHED') stat.refreshes += 1;
+  if (!stat.firstAppliedAt) stat.firstAppliedAt = ts;
+  stat.lastAppliedAt = ts;
+
+  if (stat.activeSources.size === 0 || !stat.activeSince) {
+    stat.activeSince = ts;
+  }
+  stat.activeSources.add(sourceKey);
+}
+
+function splitCommaOutsideQuotes(raw: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+      current += ch;
+      continue;
+    }
+    if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+
+  result.push(current.trim());
+  return result;
+}
+
+function markCombatantInfoBuffs(player: PlayerState, ts: string, raw: unknown): void {
+  if (typeof raw !== 'string' || !raw.startsWith('[') || !raw.endsWith(']')) return;
+
+  const matches = [...raw.matchAll(/\(([^()]*)\)/g)];
+  matches.forEach((match) => {
+    const fields = splitCommaOutsideQuotes(match[1] || '');
+    if (fields.length < 7) return;
+
+    const sourceId = fields[0] || null;
+    const sourceName = String(unquote(fields[1]) || '') || null;
+    const abilityId = toNumber(fields[2]);
+    const abilityName = String(unquote(fields[3]) || '') || null;
+    const stack = toNumber(fields[5]) || 0;
+    const auraType = fields[6] || null;
+
+    markPlayerBuffEffect(
+      player,
+      'EFFECT_APPLIED',
+      ts,
+      sourceId,
+      sourceName,
+      abilityId,
+      abilityName,
+      auraType,
+      stack,
+    );
+  });
+}
+
+function buildPlayerBuffUptimes(player: PlayerState, nowMs: number, windowDurationMs: number): BuffUptimeEntry[] {
+  const stats = (player as BuffTrackedPlayer).__buffUptimeStats;
+  if (!stats?.size) return [];
+
+  const normalizedWindowMs = Math.max(0, Number(windowDurationMs || 0));
+
+  return [...stats.values()]
+    .map((stat) => {
+      let uptimeMs = Math.max(0, Number(stat.totalMs || 0));
+      const activeSinceMs = parseTs(stat.activeSince);
+      if (activeSinceMs != null && Number.isFinite(nowMs) && nowMs >= activeSinceMs) {
+        uptimeMs += nowMs - activeSinceMs;
+      }
+      const uptimePercent = normalizedWindowMs > 0 ? Math.min(100, (uptimeMs / normalizedWindowMs) * 100) : 0;
+
+      return {
+        id: stat.id,
+        name: stat.name,
+        sourceId: stat.sourceId,
+        sourceName: stat.sourceName,
+        uptimeMs,
+        uptimePercent,
+        applications: stat.applications,
+        refreshes: stat.refreshes,
+        active: !!stat.activeSince,
+        currentStacks: stat.currentStacks,
+        firstAppliedAt: stat.firstAppliedAt,
+        lastAppliedAt: stat.lastAppliedAt,
+        lastRemovedAt: stat.lastRemovedAt,
+      };
+    })
+    .filter((entry) => entry.uptimeMs > 0 || entry.applications > 0 || entry.refreshes > 0)
+    .sort((a, b) => {
+      if (b.uptimeMs !== a.uptimeMs) return b.uptimeMs - a.uptimeMs;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+}
+
 function createEncounter(name: string | null, id: number | null, startedAt: string): EncounterState {
   return {
     id,
@@ -567,6 +789,7 @@ export {
   addRecentSkillActivation,
   addSpiritSnapshot,
   addToMapNumber,
+  buildPlayerBuffUptimes,
   buildUsesPerBoss,
   createEncounter,
   createState,
@@ -574,6 +797,8 @@ export {
   extractSpiritFromResourceList,
   extractSpiritStatFromCombatantInfo,
   getPlayerSpiritMax,
+  markCombatantInfoBuffs,
+  markPlayerBuffEffect,
   getActorKey,
   isLikelyCombatAbility,
   isNpcId,

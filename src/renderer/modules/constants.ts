@@ -19,7 +19,8 @@
   const PANEL_OPACITY_MAX = 1;
   const DEFAULT_PULL_PANEL_POSITION: Point = { x: 16, y: 12 };
   const DEFAULT_RECENT_SKILLS_PANEL_POSITION: Point = { x: 16, y: 200 };
-  const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false };
+  const DEFAULT_BUFFS_BUTTON_POSITION: Point = { x: 16, y: 380 };
+  const DEFAULT_VISIBILITY_SETTINGS: OverlayVisibilitySettings = { showParty: true, showPull: false, showRecentSkills: false, showBuffsButton: false };
   const DEFAULT_RECENT_SKILLS_LIMIT = 7;
   const DEFAULT_CARD_SCALE = 1;
   const DEFAULT_FRAME_GAP = 12;
@@ -42,6 +43,7 @@
     panelPositions: {
       pullInfo: { ...DEFAULT_PULL_PANEL_POSITION },
       recentSkills: { ...DEFAULT_RECENT_SKILLS_PANEL_POSITION },
+      buffsButton: { ...DEFAULT_BUFFS_BUTTON_POSITION },
     },
     visibilitySettings: { ...DEFAULT_VISIBILITY_SETTINGS },
     recentSkillsLimit: DEFAULT_RECENT_SKILLS_LIMIT,
@@ -71,6 +73,7 @@
     PANEL_OPACITY_MIN,
     RECENT_SKILLS_TRACK_COUNT_MAX,
     RECENT_SKILLS_TRACK_COUNT_MIN,
+    DEFAULT_BUFFS_BUTTON_POSITION,
     DEFAULT_CARD_SCALE,
     DEFAULT_FRAME_GAP,
     DEFAULT_HOTKEYS,

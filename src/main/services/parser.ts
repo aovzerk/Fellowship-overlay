@@ -26,6 +26,8 @@ import {
   addRecentSkillActivation,
   addSpiritSnapshot,
   addToMapNumber,
+  markCombatantInfoBuffs,
+  markPlayerBuffEffect,
   createEncounter,
   createState,
   ensurePlayer,
@@ -333,6 +335,7 @@ function processLine(state: ParserState, line: string): void {
         setPlayerClass(player, classId);
         setPlayerStones(player, parts[10]);
         setPlayerRelics(player, extractRelicsFromCombatantInfo(parts));
+        markCombatantInfoBuffs(player, ts, parts[13]);
         const spiritStatValue = extractSpiritStatFromCombatantInfo(parts[8]);
         if (spiritStatValue != null) {
           player.spiritStatValue = spiritStatValue;
@@ -485,6 +488,19 @@ function processLine(state: ParserState, line: string): void {
       if (isNpcId(targetId) && isPlayerId(sourceId)) touchCurrentPull(state, ts, targetId, targetName);
       if (isPlayerId(sourceId) && isNpcId(targetId) && isChickenizeAbility(abilityId, abilityName)) {
         markNpcChickenized(state, ts, targetId, targetName);
+      }
+      if (isPlayerId(targetId)) {
+        markPlayerBuffEffect(
+          ensurePlayer(state, targetId, targetName),
+          event,
+          ts,
+          sourceId,
+          sourceName,
+          abilityId,
+          abilityName,
+          parts[10],
+          parts[9],
+        );
       }
       updateSpiritFromRisingSpiritEffect(state, event, targetId, targetName, ts, abilityId, abilityName, parts[9]);
       updateSpiritFromResourcePart(state, targetId, targetName, ts, parts[17], abilityId, abilityName);

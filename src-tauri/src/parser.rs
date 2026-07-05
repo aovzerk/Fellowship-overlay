@@ -17,7 +17,7 @@ use crate::parser_spirit::{
     update_spirit_from_rising_spirit_effect,
 };
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -67,6 +67,24 @@ pub(crate) struct PlayerAccum {
     spirit_stat_value: Option<f64>,
     spirit_regen_per_second: f64,
     pub(crate) rising_spirit_stack: i64,
+    buff_uptimes: HashMap<String, BuffUptimeAccum>,
+}
+
+#[derive(Default, Clone)]
+struct BuffUptimeAccum {
+    id: Option<i64>,
+    name: Option<String>,
+    source_id: Option<String>,
+    source_name: Option<String>,
+    total_ms: i64,
+    applications: i64,
+    refreshes: i64,
+    active_since: Option<String>,
+    active_sources: HashSet<String>,
+    current_stacks: i64,
+    first_applied_at: Option<String>,
+    last_applied_at: Option<String>,
+    last_removed_at: Option<String>,
 }
 
 struct ParsedLog {
@@ -212,6 +230,234 @@ fn add_to_map_number(map: &mut HashMap<String, f64>, key: String, amount: f64) {
     *map.entry(key).or_insert(0.0) += amount;
 }
 
+fn buff_key(ability_id: Option<i64>, ability_name: Option<&str>) -> String {
+    format!(
+        "{}::{}",
+        ability_id
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| "unknown".to_string()),
+        ability_name.unwrap_or("unknown")
+    )
+}
+
+fn buff_source_key(source_id: Option<&str>, source_name: Option<&str>) -> String {
+    format!(
+        "{}::{}",
+        source_id.unwrap_or("unknown"),
+        source_name.unwrap_or("unknown")
+    )
+}
+
+fn close_buff_interval(stat: &mut BuffUptimeAccum, ts: &str) {
+    let Some(active_since) = stat.active_since.as_deref() else {
+        return;
+    };
+    if let (Some(start_ms), Some(end_ms)) = (parse_ts_ms(active_since), parse_ts_ms(ts)) {
+        if end_ms >= start_ms {
+            stat.total_ms += end_ms - start_ms;
+        }
+    }
+    stat.active_since = None;
+    stat.active_sources.clear();
+}
+
+fn mark_player_buff_effect(
+    player: &mut PlayerAccum,
+    event: &str,
+    ts: &str,
+    source_id: Option<&str>,
+    source_name: Option<&str>,
+    ability_id: Option<i64>,
+    ability_name: Option<&str>,
+    aura_type: Option<&str>,
+    stack_raw: Option<&String>,
+) {
+    if !aura_type.unwrap_or("").trim().eq_ignore_ascii_case("BUFF") {
+        return;
+    }
+    if ability_id.is_none() && ability_name.unwrap_or("").is_empty() {
+        return;
+    }
+    if !matches!(
+        event,
+        "EFFECT_APPLIED" | "EFFECT_REFRESHED" | "EFFECT_REMOVED"
+    ) {
+        return;
+    }
+    if parse_ts_ms(ts).is_none() {
+        return;
+    }
+
+    let key = buff_key(ability_id, ability_name);
+    let source_key = buff_source_key(source_id, source_name);
+    let stat = player
+        .buff_uptimes
+        .entry(key)
+        .or_insert_with(|| BuffUptimeAccum {
+            id: ability_id,
+            name: ability_name.map(str::to_string),
+            source_id: source_id.map(str::to_string),
+            source_name: source_name.map(str::to_string),
+            ..BuffUptimeAccum::default()
+        });
+
+    if stat.source_id.is_none() {
+        stat.source_id = source_id.map(str::to_string);
+    }
+    if stat.source_name.is_none() {
+        stat.source_name = source_name.map(str::to_string);
+    }
+    stat.current_stacks = stack_raw
+        .and_then(|value| value.parse::<f64>().ok())
+        .filter(|value| value.is_finite())
+        .map(|value| value.max(0.0).floor() as i64)
+        .unwrap_or(0);
+
+    if event == "EFFECT_REMOVED" {
+        stat.last_removed_at = Some(ts.to_string());
+        let had_source = stat.active_sources.remove(&source_key);
+        if stat.active_sources.is_empty() || (!had_source && stat.active_sources.len() <= 1) {
+            close_buff_interval(stat, ts);
+        }
+        return;
+    }
+
+    if event == "EFFECT_APPLIED" {
+        stat.applications += 1;
+    }
+    if event == "EFFECT_REFRESHED" {
+        stat.refreshes += 1;
+    }
+    if stat.first_applied_at.is_none() {
+        stat.first_applied_at = Some(ts.to_string());
+    }
+    stat.last_applied_at = Some(ts.to_string());
+
+    if stat.active_sources.is_empty() || stat.active_since.is_none() {
+        stat.active_since = Some(ts.to_string());
+    }
+    stat.active_sources.insert(source_key);
+}
+
+fn split_comma_outside_quotes(raw: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+
+    for ch in raw.chars() {
+        if ch == '"' {
+            in_quotes = !in_quotes;
+            current.push(ch);
+            continue;
+        }
+        if ch == ',' && !in_quotes {
+            result.push(current.trim().to_string());
+            current.clear();
+            continue;
+        }
+        current.push(ch);
+    }
+
+    result.push(current.trim().to_string());
+    result
+}
+
+fn mark_combatant_info_buffs(player: &mut PlayerAccum, ts: &str, raw: Option<&String>) {
+    let Some(raw) = raw else {
+        return;
+    };
+    if !raw.starts_with('[') || !raw.ends_with(']') {
+        return;
+    }
+
+    let mut start: Option<usize> = None;
+    for (index, ch) in raw.char_indices() {
+        if ch == '(' {
+            start = Some(index + ch.len_utf8());
+        } else if ch == ')' {
+            if let Some(start_index) = start.take() {
+                let fields = split_comma_outside_quotes(&raw[start_index..index]);
+                if fields.len() < 7 {
+                    continue;
+                }
+                let source_id = fields.first().map(String::as_str);
+                let source_name = Some(unquote(fields.get(1)));
+                let ability_id = to_i64(fields.get(2));
+                let ability_name = Some(unquote(fields.get(3)));
+                let aura_type = fields.get(6).map(String::as_str);
+                mark_player_buff_effect(
+                    player,
+                    "EFFECT_APPLIED",
+                    ts,
+                    source_id,
+                    source_name.as_deref(),
+                    ability_id,
+                    ability_name.as_deref(),
+                    aura_type,
+                    fields.get(5),
+                );
+            }
+        }
+    }
+}
+
+fn build_player_buff_uptimes(
+    player: &PlayerAccum,
+    now_ms: i64,
+    window_duration_ms: i64,
+) -> Vec<Value> {
+    let normalized_window_ms = window_duration_ms.max(0) as f64;
+    let mut values: Vec<Value> = player
+        .buff_uptimes
+        .values()
+        .filter_map(|stat| {
+            let mut uptime_ms = stat.total_ms.max(0);
+            if let Some(active_since_ms) = stat.active_since.as_deref().and_then(parse_ts_ms) {
+                if now_ms >= active_since_ms {
+                    uptime_ms += now_ms - active_since_ms;
+                }
+            }
+            if uptime_ms <= 0 && stat.applications <= 0 && stat.refreshes <= 0 {
+                return None;
+            }
+            let uptime_percent = if normalized_window_ms > 0.0 {
+                ((uptime_ms as f64 / normalized_window_ms) * 100.0).min(100.0)
+            } else {
+                0.0
+            };
+            Some(json!({
+                "id": stat.id,
+                "name": stat.name,
+                "sourceId": stat.source_id,
+                "sourceName": stat.source_name,
+                "uptimeMs": uptime_ms,
+                "uptimePercent": uptime_percent,
+                "applications": stat.applications,
+                "refreshes": stat.refreshes,
+                "active": stat.active_since.is_some(),
+                "currentStacks": stat.current_stacks,
+                "firstAppliedAt": stat.first_applied_at,
+                "lastAppliedAt": stat.last_applied_at,
+                "lastRemovedAt": stat.last_removed_at,
+            }))
+        })
+        .collect();
+
+    values.sort_by(|left, right| {
+        right["uptimeMs"]
+            .as_i64()
+            .unwrap_or(0)
+            .cmp(&left["uptimeMs"].as_i64().unwrap_or(0))
+            .then_with(|| {
+                left["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .cmp(right["name"].as_str().unwrap_or(""))
+            })
+    });
+    values
+}
+
 fn process_line(state: &mut ParserState, line: &str) {
     let parts = split_log_line(line);
     if parts.len() < 2 {
@@ -270,6 +516,7 @@ fn process_line(state: &mut ParserState, line: &str) {
             player.name = Some(name.clone());
             player.stones = parse_stones(parts.get(10));
             player.relics = extract_relics_from_parts(&parts);
+            mark_combatant_info_buffs(player, &ts, parts.get(13));
             player.spirit_stat_value = parts.get(8).and_then(|raw| {
                 raw.trim_matches(&['[', ']'][..])
                     .split(',')
@@ -447,7 +694,9 @@ fn process_line(state: &mut ParserState, line: &str) {
                     parts.get(23),
                     parts.get(24),
                 );
-                if source_id.starts_with("Player-") && is_chickenize_ability(ability_id, &ability_name) {
+                if source_id.starts_with("Player-")
+                    && is_chickenize_ability(ability_id, &ability_name)
+                {
                     state
                         .dungeon
                         .mark_npc_chickenized(&ts, &target_id, Some(&target_name));
@@ -555,18 +804,18 @@ fn process_line(state: &mut ParserState, line: &str) {
         }
         "EFFECT_APPLIED" | "EFFECT_REFRESHED" | "EFFECT_REMOVED" => {
             let source_id = parts.get(2).cloned().unwrap_or_default();
+            let source_name = unquote(parts.get(3));
             let target_id = parts.get(4).cloned().unwrap_or_default();
+            let target_name = unquote(parts.get(5));
             let ability_id = to_i64(parts.get(6));
             let ability_name = unquote(parts.get(7));
 
             if is_npc_id(&source_id) && target_id.starts_with("Player-") {
-                let source_name = unquote(parts.get(3));
                 state
                     .dungeon
                     .touch_current_pull(&ts, &source_id, Some(&source_name));
             }
             if is_npc_id(&target_id) && source_id.starts_with("Player-") {
-                let target_name = unquote(parts.get(5));
                 state
                     .dungeon
                     .touch_current_pull(&ts, &target_id, Some(&target_name));
@@ -577,8 +826,18 @@ fn process_line(state: &mut ParserState, line: &str) {
                 }
             }
             if target_id.starts_with("Player-") {
-                let target_name = unquote(parts.get(5));
                 let player = ensure_player(&mut state.players, &target_id, Some(target_name));
+                mark_player_buff_effect(
+                    player,
+                    &event,
+                    &ts,
+                    Some(&source_id),
+                    Some(&source_name),
+                    ability_id,
+                    Some(&ability_name),
+                    parts.get(10).map(String::as_str),
+                    parts.get(9),
+                );
                 update_spirit_from_rising_spirit_effect(
                     player,
                     &event,
@@ -658,6 +917,11 @@ fn finalize_state(state: &ParserState) -> ParsedLog {
         .unwrap_or(latest_log_ms);
     let cooldown_now_ms = corrected_client_now_ms.max(latest_log_ms);
     let encounters = state.encounters.clone();
+    let dungeon_started_at_ms = dungeon["startedAt"].as_str().and_then(parse_ts_ms);
+    let dungeon_ended_at_ms = dungeon["endedAt"].as_str().and_then(parse_ts_ms);
+    let buff_now_ms = dungeon_ended_at_ms.unwrap_or(latest_log_ms.max(cooldown_now_ms));
+    let buff_window_start_ms = dungeon_started_at_ms.unwrap_or(buff_now_ms);
+    let buff_window_duration_ms = (buff_now_ms - buff_window_start_ms).max(0);
 
     let mut player_values: Vec<Value> = state
         .players
@@ -690,7 +954,8 @@ fn finalize_state(state: &ParserState) -> ParsedLog {
                 "stones": player.stones,
                 "spiritStatValue": player.spirit_stat_value,
                 "spiritRegenPerSecond": player.spirit_regen_per_second,
-                "usesPerBoss": build_uses_per_boss(&player, &encounters)
+                "usesPerBoss": build_uses_per_boss(&player, &encounters),
+                "buffUptimes": build_player_buff_uptimes(&player, buff_now_ms, buff_window_duration_ms)
             })
         })
         .collect();

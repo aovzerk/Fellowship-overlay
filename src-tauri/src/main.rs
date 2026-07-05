@@ -50,6 +50,7 @@ struct OverlayStateStore {
     click_through: Mutex<bool>,
     visible: Mutex<bool>,
     settings_modal_open: Mutex<bool>,
+    interactive_region_active: Mutex<bool>,
 }
 
 struct BackendState {
@@ -539,18 +540,37 @@ fn emit_state(window: &WebviewWindow, state: &OverlayStateStore) {
     let _ = window.emit("overlay-state", current_state(state));
 }
 
+fn apply_cursor_input_mode(
+    window: &WebviewWindow,
+    state: &OverlayStateStore,
+) -> Result<(), String> {
+    let click_through = *state
+        .click_through
+        .lock()
+        .map_err(|error| error.to_string())?;
+    let interactive_region_active = *state
+        .interactive_region_active
+        .lock()
+        .map_err(|error| error.to_string())?;
+    window
+        .set_ignore_cursor_events(click_through && !interactive_region_active)
+        .map_err(|error| error.to_string())
+}
+
 fn set_click_through_for_window(
     window: &WebviewWindow,
     state: &OverlayStateStore,
     enabled: bool,
 ) -> Result<OverlayState, String> {
-    window
-        .set_ignore_cursor_events(enabled)
-        .map_err(|error| error.to_string())?;
     *state
         .click_through
         .lock()
         .map_err(|error| error.to_string())? = enabled;
+    *state
+        .interactive_region_active
+        .lock()
+        .map_err(|error| error.to_string())? = false;
+    apply_cursor_input_mode(window, state)?;
     emit_state(window, state);
     Ok(current_state(state))
 }
@@ -563,6 +583,9 @@ fn prepare_native_dialog(app: &AppHandle) {
         if let Ok(mut click_through) = state.click_through.lock() {
             *click_through = true;
         }
+        if let Ok(mut interactive_region_active) = state.interactive_region_active.lock() {
+            *interactive_region_active = false;
+        }
         emit_state(&window, &state);
     });
 }
@@ -574,6 +597,9 @@ fn restore_after_native_dialog(app: &AppHandle) {
         let _ = window.set_ignore_cursor_events(false);
         if let Ok(mut click_through) = state.click_through.lock() {
             *click_through = false;
+        }
+        if let Ok(mut interactive_region_active) = state.interactive_region_active.lock() {
+            *interactive_region_active = false;
         }
         let _ = window.set_focus();
         emit_state(&window, &state);
@@ -899,6 +925,34 @@ fn close_interactive_modal(
 }
 
 #[tauri::command]
+fn open_interactive_modal(
+    window: WebviewWindow,
+    state: State<OverlayStateStore>,
+) -> Result<Value, String> {
+    let overlay_state = set_click_through_for_window(&window, &state, false)?;
+    let _ = window.set_focus();
+    Ok(json!({ "locked": overlay_state.click_through }))
+}
+
+#[tauri::command]
+fn set_interactive_region_active(
+    window: WebviewWindow,
+    state: State<OverlayStateStore>,
+    active: bool,
+) -> Result<Value, String> {
+    let click_through = *state
+        .click_through
+        .lock()
+        .map_err(|error| error.to_string())?;
+    *state
+        .interactive_region_active
+        .lock()
+        .map_err(|error| error.to_string())? = click_through && active;
+    apply_cursor_input_mode(&window, &state)?;
+    Ok(json!({ "ok": true }))
+}
+
+#[tauri::command]
 fn get_overlay_settings(backend: State<BackendState>) -> Value {
     backend
         .settings
@@ -1010,6 +1064,7 @@ fn main() {
             click_through: Mutex::new(true),
             visible: Mutex::new(true),
             settings_modal_open: Mutex::new(false),
+            interactive_region_active: Mutex::new(false),
         })
         .manage(BackendState {
             settings_path: settings_file,
@@ -1044,7 +1099,9 @@ fn main() {
             hide_overlay,
             quit_app,
             set_settings_modal_open,
+            open_interactive_modal,
             close_interactive_modal,
+            set_interactive_region_active,
             get_overlay_settings,
             save_overlay_settings,
             get_current_file,
