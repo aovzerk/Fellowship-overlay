@@ -258,6 +258,7 @@ export interface CurrentPullSummary {
   lastCombatAt: string | null;
   totalPercent: number;
   alivePercent: number;
+  uncountedAlivePercent?: number;
   killedPercent: number;
   mobCount: number;
   aliveCount: number;

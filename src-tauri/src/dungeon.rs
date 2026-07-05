@@ -377,6 +377,7 @@ impl DungeonTracker {
                 "lastCombatAt": null,
                 "totalPercent": 0,
                 "alivePercent": 0,
+                "uncountedAlivePercent": 0,
                 "killedPercent": 0,
                 "mobCount": 0,
                 "aliveCount": 0,
@@ -435,6 +436,13 @@ impl DungeonTracker {
         let alive_percent = sum_field(&mobs, "effectivePercent", |mob| {
             mob["alive"].as_bool().unwrap_or(false)
         });
+        let uncounted_alive_percent = sum_field(&mobs, "effectivePercent", |mob| {
+            mob["alive"].as_bool().unwrap_or(false)
+                && mob["unitId"]
+                    .as_str()
+                    .map(|unit_id| !self.counted_npc_deaths.contains(unit_id))
+                    .unwrap_or(false)
+        });
         let chickenized_count = mobs
             .iter()
             .filter(|mob| mob["chickenized"].as_bool().unwrap_or(false))
@@ -458,6 +466,7 @@ impl DungeonTracker {
             "lastCombatAt": self.current_pull.last_combat_at,
             "totalPercent": total_percent,
             "alivePercent": alive_percent,
+            "uncountedAlivePercent": uncounted_alive_percent,
             "killedPercent": total_percent - alive_percent,
             "mobCount": mobs.len(),
             "aliveCount": mobs.iter().filter(|mob| mob["alive"].as_bool().unwrap_or(false)).count(),

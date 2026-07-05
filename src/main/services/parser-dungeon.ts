@@ -239,6 +239,7 @@ function buildCurrentPullSummary(state: ParserState): CurrentPullSummary {
       lastCombatAt: null,
       totalPercent: 0,
       alivePercent: 0,
+      uncountedAlivePercent: 0,
       killedPercent: 0,
       mobCount: 0,
       aliveCount: 0,
@@ -256,6 +257,10 @@ function buildCurrentPullSummary(state: ParserState): CurrentPullSummary {
 
   const totalPercent = mobs.reduce((sum, mob) => sum + (Number(mob.effectivePercent) || 0), 0);
   const alivePercent = mobs.reduce((sum, mob) => sum + (mob.alive ? (Number(mob.effectivePercent) || 0) : 0), 0);
+  const uncountedAlivePercent = mobs.reduce((sum, mob) => {
+    if (!mob.alive || state.dungeon.countedNpcDeaths.has(mob.unitId)) return sum;
+    return sum + (Number(mob.effectivePercent) || 0);
+  }, 0);
   const chickenizedMobs = mobs.filter((mob) => mob.chickenized);
   const aliveChickenizedMobs = chickenizedMobs.filter((mob) => mob.alive);
   const chickenizedOriginalPercent = chickenizedMobs.reduce((sum, mob) => sum + (Number(mob.percent) || 0), 0);
@@ -266,6 +271,7 @@ function buildCurrentPullSummary(state: ParserState): CurrentPullSummary {
     lastCombatAt: pull.lastCombatAtMs != null ? new Date(pull.lastCombatAtMs).toISOString() : null,
     totalPercent,
     alivePercent,
+    uncountedAlivePercent,
     killedPercent: totalPercent - alivePercent,
     mobCount: mobs.length,
     aliveCount: mobs.filter((mob) => mob.alive).length,
