@@ -34,6 +34,7 @@ pub(crate) struct AbilityAccum {
     pub(crate) activations: i64,
     pub(crate) hits: i64,
     pub(crate) last_activation_ts: Option<String>,
+    pub(crate) activation_timestamps: Vec<String>,
 }
 
 #[derive(Default, Clone)]

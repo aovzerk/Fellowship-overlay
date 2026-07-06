@@ -3,6 +3,8 @@ use crate::parser_line_utils::unquote_str;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
+const MAX_ABILITY_ACTIVATION_TIMESTAMPS: usize = 50;
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) enum AbilityKey {
     Id(i64),
@@ -35,9 +37,7 @@ pub fn add_ability(
     match kind {
         "activation" => {
             ability.activations += 1;
-            if let Some(ts) = ts {
-                ability.last_activation_ts = Some(ts.to_string());
-            }
+            record_ability_activation_timestamp(ability, ts);
         }
         "damage" => {
             ability.damage += amount;
@@ -78,9 +78,7 @@ pub fn add_encounter_ability(
     match kind {
         "activation" => {
             ability.activations += 1;
-            if let Some(ts) = ts {
-                ability.last_activation_ts = Some(ts.to_string());
-            }
+            record_ability_activation_timestamp(ability, ts);
         }
         "damage" => {
             ability.damage += amount;
@@ -91,6 +89,18 @@ pub fn add_encounter_ability(
             ability.hits += 1;
         }
         _ => {}
+    }
+}
+
+fn record_ability_activation_timestamp(ability: &mut AbilityAccum, ts: Option<&str>) {
+    let Some(ts) = ts else {
+        return;
+    };
+    ability.last_activation_ts = Some(ts.to_string());
+    ability.activation_timestamps.push(ts.to_string());
+    if ability.activation_timestamps.len() > MAX_ABILITY_ACTIVATION_TIMESTAMPS {
+        let excess = ability.activation_timestamps.len() - MAX_ABILITY_ACTIVATION_TIMESTAMPS;
+        ability.activation_timestamps.drain(0..excess);
     }
 }
 
@@ -122,6 +132,13 @@ pub fn parse_encounter_name(raw: Option<&str>) -> Option<String> {
 }
 
 pub fn ability_to_json(ability: &AbilityAccum) -> Value {
+    let mut activation_timestamps = ability.activation_timestamps.clone();
+    if let Some(last_activation_ts) = ability.last_activation_ts.as_ref() {
+        if !activation_timestamps.contains(last_activation_ts) {
+            activation_timestamps.push(last_activation_ts.clone());
+        }
+    }
+
     json!({
         "id": ability.id,
         "name": ability.name,
@@ -130,7 +147,7 @@ pub fn ability_to_json(ability: &AbilityAccum) -> Value {
         "activations": ability.activations,
         "hits": ability.hits,
         "lastActivationTs": ability.last_activation_ts,
-        "activationTimestamps": ability.last_activation_ts.as_ref().map(|ts| vec![ts.clone()]).unwrap_or_default()
+        "activationTimestamps": activation_timestamps
     })
 }
 
