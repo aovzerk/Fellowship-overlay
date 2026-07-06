@@ -27,6 +27,31 @@ pub fn default_settings() -> Value {
         "layoutDirection": "vertical",
         "panelOpacity": 0.88,
         "iconsPerRow": 3,
+        "partyFrameFields": {
+            "playerName": true,
+            "championName": true,
+            "spirit": true,
+            "relicsAndCooldowns": true
+        },
+        "partyFrameColors": {
+            "playerName": "#ffffff",
+            "championName": "#ffffff",
+            "championNameUseClassColor": true,
+            "spirit": "#ffffff",
+            "relicTimer": "#ffffff"
+        },
+        "partyFrameAlignment": "left",
+        "partyFrameGrowthDirection": "right",
+        "menuColors": {
+            "text": "#ffffff",
+            "title": "#ffffff",
+            "mutedText": "#cbd5e1",
+            "panelBackground": "#070a19",
+            "sectionBackground": "#ffffff",
+            "controlBackground": "#ffffff",
+            "border": "#ffffff",
+            "accent": "#5cb3ff"
+        },
         "hotkeys": {
             "toggleInteraction": "F8",
             "pickLog": "F9",
