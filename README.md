@@ -1,3 +1,11 @@
+## Support the Project
+
+If you find Fellowship Overlay useful and want to support further development, you can donate here:
+
+[![Support on Boosty](https://img.shields.io/badge/Support%20on-Boosty-orange?style=for-the-badge)](https://boosty.to/aov/donate)
+
+**Boosty:** [https://boosty.to/aov/donate](https://boosty.to/aov/donate)
+
 > [!IMPORTANT]
 > If you are worried about using this overlay, we have confirmation from the developers that it is allowed and players will not be punished for using it before official in-game support.
 >
