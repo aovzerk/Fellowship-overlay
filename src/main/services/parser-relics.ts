@@ -119,8 +119,8 @@ function setPlayerRelics(player: PlayerState, relics: RelicMeta[]): void {
 
 function getRelicCooldownModifier(player: PlayerState): number {
   const white = Number(player?.stones?.white || 0);
-  if (white >= 2640) return 0.76;
-  if (white >= 960) return 0.92;
+  if (white >= 1500) return 0.76;
+  if (white >= 450) return 0.92;
   return 1;
 }
 
