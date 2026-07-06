@@ -8,9 +8,9 @@ If you find Fellowship Overlay useful and want to support further development, y
 
 ## Download Latest Version
 
-[![Download Fellowship Overlay](https://img.shields.io/badge/Download-Latest%20Version-blue?style=for-the-badge)](https://github.com/aovzerk/Fellowship-overlay/releases/download/v1.7.5/Fellowship.Overlay.exe)
+[![Download Fellowship Overlay](https://img.shields.io/badge/Download-Latest%20Version-blue?style=for-the-badge)](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.5/Fellowship.Overlay.exe)
 
-**Latest version:** [Download Fellowship Overlay v1.7.5](https://github.com/aovzerk/Fellowship-overlay/releases/download/v1.7.5/Fellowship.Overlay.exe)
+**Latest version:** [Download Fellowship Overlay v1.7.5](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.5/Fellowship.Overlay.exe)
 
 > [!IMPORTANT]
 > If you are worried about using this overlay, we have confirmation from the developers that it is allowed and players will not be punished for using it before official in-game support.
