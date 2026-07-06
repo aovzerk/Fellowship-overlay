@@ -37,7 +37,7 @@ function updateCargoToml(version) {
 function updateCargoLock(version) {
   const raw = fs.readFileSync(cargoLockPath, "utf8");
   const next = raw.replace(
-    /(\[\[package\]\]\nname = "fellowship-overlay"\nversion = )"[^"]+"/,
+    /(\[\[package\]\]\r?\nname = "fellowship-overlay"\r?\nversion = )"[^"]+"/,
     `$1"${version}"`,
   );
   fs.writeFileSync(cargoLockPath, next, "utf8");
