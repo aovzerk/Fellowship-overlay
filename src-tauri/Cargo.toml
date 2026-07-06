@@ -1,6 +1,6 @@
 [package]
 name = "fellowship-overlay"
-version = "1.6.2"
+version = "1.7.4"
 description = "Fellowship Overlay"
 authors = ["AOV"]
 edition = "2021"
