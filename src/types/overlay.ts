@@ -33,6 +33,32 @@ export interface OverlayHotkeys {
   openSettings: string;
 }
 
+export interface PartyFrameFields {
+  playerName: boolean;
+  championName: boolean;
+  spirit: boolean;
+  relicsAndCooldowns: boolean;
+}
+
+export interface PartyFrameColors {
+  playerName: string;
+  championName: string;
+  championNameUseClassColor: boolean;
+  spirit: string;
+  relicTimer: string;
+}
+
+export interface MenuColors {
+  text: string;
+  title: string;
+  mutedText: string;
+  panelBackground: string;
+  sectionBackground: string;
+  controlBackground: string;
+  border: string;
+  accent: string;
+}
+
 export interface OverlaySettings {
   language?: LanguageCode;
   logDirectoryPath?: string | null;
@@ -48,6 +74,9 @@ export interface OverlaySettings {
   layoutDirection: LayoutDirection;
   panelOpacity: number;
   iconsPerRow: number;
+  partyFrameFields: PartyFrameFields;
+  partyFrameColors: PartyFrameColors;
+  menuColors: MenuColors;
   hotkeys: OverlayHotkeys;
   recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
   recentSkillsGrowthDirection: RecentSkillsGrowthDirection;
@@ -466,6 +495,9 @@ export interface RendererConstantsApi {
   DEFAULT_LAYOUT_DIRECTION: LayoutDirection;
   DEFAULT_PANEL_OPACITY: number;
   DEFAULT_ICONS_PER_ROW: number;
+  DEFAULT_PARTY_FRAME_FIELDS: PartyFrameFields;
+  DEFAULT_PARTY_FRAME_COLORS: PartyFrameColors;
+  DEFAULT_MENU_COLORS: MenuColors;
   DEFAULT_HOTKEYS: OverlayHotkeys;
   DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: RecentSkillsLayoutDirection;
   DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION: RecentSkillsGrowthDirection;
@@ -617,6 +649,9 @@ export interface OverlaySettingsController {
   normalizeIconsPerRow(value: unknown): number;
   normalizeLayoutDirection(value: unknown): LayoutDirection;
   normalizePanelOpacity(value: unknown): number;
+  normalizePartyFrameFields(value: unknown): PartyFrameFields;
+  normalizePartyFrameColors(value: unknown): PartyFrameColors;
+  normalizeMenuColors(value: unknown): MenuColors;
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
   normalizeRecentSkillsGrowthDirection(value: unknown): RecentSkillsGrowthDirection;
@@ -632,6 +667,9 @@ export interface OverlaySettingsController {
   loadIconsPerRow(): number;
   loadLayoutDirection(): LayoutDirection;
   loadPanelOpacity(): number;
+  loadPartyFrameFields(): PartyFrameFields;
+  loadPartyFrameColors(): PartyFrameColors;
+  loadMenuColors(): MenuColors;
   loadHotkeys(): OverlayHotkeys;
   loadPositions(): PlayerPositions;
   loadPullPanelPosition(): Point;
@@ -649,6 +687,9 @@ export interface OverlaySettingsController {
   saveIconsPerRow(iconsPerRow: number): void;
   saveLayoutDirection(layoutDirection: LayoutDirection): void;
   savePanelOpacity(panelOpacity: number): void;
+  savePartyFrameFields(partyFrameFields: PartyFrameFields): void;
+  savePartyFrameColors(partyFrameColors: PartyFrameColors): void;
+  saveMenuColors(menuColors: MenuColors): void;
   saveHotkeys(hotkeys: OverlayHotkeys): void;
   savePositions(positions: PlayerPositions): void;
   savePullPanelPosition(position: Point): void;
@@ -716,6 +757,8 @@ export interface PlayerCardRendererDeps {
   getLayoutDirection(): LayoutDirection;
   getLatestData(): FinalizedState | null;
   getOverlayLocked(): boolean;
+  getPartyFrameFields(): PartyFrameFields;
+  getPartyFrameColors(): PartyFrameColors;
   getPartySlotIndex(player: PlayerState, index?: number): number;
   getPlayerLayoutKey(slotIndex?: number): string;
   getSelectedSkillsByClass(): SkillSelectionMap;

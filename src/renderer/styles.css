@@ -17,6 +17,14 @@ body {
   --card-scale: 1;
   --party-gap: 12px;
   --panel-bg-alpha: 0.88;
+  --menu-text-color: #ffffff;
+  --menu-title-color: #ffffff;
+  --menu-muted-text-color: #cbd5e1;
+  --menu-panel-bg-rgb: 7, 10, 25;
+  --menu-section-bg-rgb: 255, 255, 255;
+  --menu-control-bg-rgb: 255, 255, 255;
+  --menu-border-rgb: 255, 255, 255;
+  --menu-accent-rgb: 92, 179, 255;
 }
 
 #overlay-root {
@@ -57,6 +65,98 @@ button:hover {
 .danger-btn {
   min-width: 34px;
   font-weight: 700;
+}
+
+.modal-overlay {
+  color: var(--menu-text-color);
+}
+
+.modal-overlay .panel {
+  background: rgba(var(--menu-panel-bg-rgb), var(--panel-bg-alpha));
+  border-color: rgba(var(--menu-border-rgb), 0.14);
+}
+
+.modal-overlay button {
+  color: var(--menu-text-color);
+  background: rgba(var(--menu-control-bg-rgb), 0.08);
+  border-color: rgba(var(--menu-border-rgb), 0.16);
+}
+
+.modal-overlay button:hover,
+.modal-overlay button:focus-visible {
+  background: rgba(var(--menu-control-bg-rgb), 0.15);
+  border-color: rgba(var(--menu-accent-rgb), 0.72);
+}
+
+.modal-overlay .modal-title,
+.modal-overlay .settings-group-title,
+.modal-overlay .settings-subgroup-title,
+.modal-overlay .skill-class-title,
+.modal-overlay .skill-order-title {
+  color: var(--menu-title-color);
+}
+
+.modal-overlay .modal-subtitle,
+.modal-overlay .settings-note,
+.modal-overlay .hotkey-label,
+.modal-overlay .skill-option-cooldown,
+.modal-overlay .empty-state,
+.modal-overlay .order-drag-hint {
+  color: var(--menu-muted-text-color);
+}
+
+.modal-overlay .settings-group,
+.modal-overlay .order-item,
+.modal-overlay .skill-option,
+.modal-overlay .buff-player-card {
+  background: rgba(var(--menu-section-bg-rgb), 0.04);
+  border-color: rgba(var(--menu-border-rgb), 0.1);
+}
+
+.modal-overlay .settings-toggle,
+.modal-overlay .settings-field,
+.modal-overlay .language-switcher,
+.modal-overlay .layout-control,
+.modal-overlay .size-controls,
+.modal-overlay .color-control,
+.modal-overlay .hotkey-badge,
+.modal-overlay .buff-player-header,
+.modal-overlay .buff-search-input {
+  color: var(--menu-text-color);
+  background: rgba(var(--menu-control-bg-rgb), 0.06);
+  border-color: rgba(var(--menu-border-rgb), 0.12);
+}
+
+.modal-overlay .settings-field input,
+.modal-overlay .language-switcher select,
+.modal-overlay .layout-control select,
+.modal-overlay .buff-search-input {
+  color: var(--menu-text-color);
+  background: rgba(var(--menu-control-bg-rgb), 0.08);
+  border-color: rgba(var(--menu-border-rgb), 0.16);
+}
+
+.modal-overlay .language-switcher option,
+.modal-overlay .layout-control option {
+  color: #000;
+}
+
+.modal-overlay input:focus-visible,
+.modal-overlay select:focus-visible,
+.modal-overlay .buff-search-input:focus {
+  outline: none;
+  border-color: rgba(var(--menu-accent-rgb), 0.85);
+}
+
+.modal-overlay .order-item.drag-over,
+.modal-overlay .hotkey-badge.listening,
+.modal-overlay .buff-player-header:focus-visible {
+  border-color: rgba(var(--menu-accent-rgb), 0.95);
+  box-shadow: 0 0 0 1px rgba(var(--menu-accent-rgb), 0.45);
+}
+
+.modal-overlay .order-item.drag-over {
+  background: rgba(var(--menu-accent-rgb), 0.12);
 }
 
 
@@ -211,6 +311,7 @@ button:hover {
 .spirit-total {
   font-size: calc(18px * var(--card-scale));
   font-weight: 800;
+  color: var(--party-spirit-color, inherit);
 }
 
 .spirit-glow-blue {
@@ -267,6 +368,7 @@ button:hover {
   justify-content: center;
   font-weight: 800;
   font-size: calc(18px * var(--card-scale));
+  color: var(--party-relic-timer-color, #fff);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
@@ -448,6 +550,17 @@ button:hover {
   font-weight: 800;
 }
 
+.settings-subgroup-title {
+  margin-top: 14px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.78;
+}
+
 .settings-row {
   display: flex;
   flex-wrap: wrap;
@@ -521,6 +634,52 @@ button:hover {
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.08);
   color: #fff;
+}
+
+.party-frame-fields-list {
+  margin-top: 0;
+}
+
+.menu-colors-table {
+  margin-top: 0;
+}
+
+.settings-table-control-stacked {
+  display: grid;
+  gap: 8px;
+}
+
+.color-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  box-sizing: border-box;
+}
+
+.color-control input[type="color"] {
+  width: 100%;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-control input[type="color"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.color-auto-toggle {
+  min-height: 32px;
+  padding: 6px 10px;
 }
 
 #overlay-root.party-hidden #playersContainer,
@@ -761,6 +920,7 @@ button:hover {
 }
 
 .settings-table .layout-control,
+.settings-table .color-control,
 .settings-table .settings-field,
 .settings-table .slider-control,
 .settings-table .size-controls {
@@ -798,6 +958,7 @@ button:hover {
 }
 
 .settings-table-control > .layout-control,
+.settings-table-control > .color-control,
 .settings-table-control > .settings-field,
 .settings-table-control > .size-controls,
 .settings-table-control > .slider-control {
@@ -817,6 +978,7 @@ button:hover {
   .settings-table-control,
   .settings-table-control-inline,
   .settings-table .layout-control,
+  .settings-table .color-control,
   .settings-table .settings-field,
   .settings-table .slider-control,
   .settings-table .size-controls {
