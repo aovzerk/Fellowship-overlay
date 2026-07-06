@@ -246,6 +246,7 @@
       getOverlayLocked,
       getPartyFrameFields,
       getPartyFrameColors,
+      getPartyFrameAlignment,
       getPartySlotIndex,
       getSelectedSkillsByClass,
       getSkillCatalog,
@@ -355,6 +356,7 @@
       const classColor = player.classColor || '#6b7280';
       const partyFrameFields = getPartyFrameFields();
       const partyFrameColors = getPartyFrameColors();
+      const partyFrameAlignment = getPartyFrameAlignment();
       const effectiveNowMs = getEffectiveNowMs(getLatestData());
       const displaySpirit = buildDisplayedSpiritSnapshot(player, last, effectiveNowMs);
       const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), effectiveNowMs);
@@ -386,6 +388,9 @@
       const relicsBlock = card.querySelector<HTMLElement>('.relics-block');
       if (!playerHeader || !playerInfoRow || !playerName || !playerClass || !spiritInline || !spiritEl || !relicsBlock) return;
 
+      card.classList.remove('party-align-left', 'party-align-center', 'party-align-right');
+      card.classList.add(`party-align-${partyFrameAlignment}`);
+
       playerName.textContent = player.name || t('unknown');
       playerName.style.color = partyFrameColors.playerName;
       playerClass.textContent = player.className || t('unknown');
@@ -407,7 +412,11 @@
       relicsBlock.style.setProperty('--tracked-rows', String(rowCount));
       relicsBlock.style.width = `${(columnCount * iconSize) + (Math.max(0, columnCount - 1) * iconGap)}px`;
       relicsBlock.style.maxWidth = '100%';
-      relicsBlock.style.margin = '0 auto';
+      relicsBlock.style.margin = partyFrameAlignment === 'right'
+        ? '0 0 0 auto'
+        : partyFrameAlignment === 'center'
+          ? '0 auto'
+          : '0';
       relicsBlock.classList.toggle('hidden', !partyFrameFields.relicsAndCooldowns);
       playerInfoRow.classList.toggle('hidden', !partyFrameFields.spirit && !partyFrameFields.relicsAndCooldowns);
       updateIconNodes(relicsBlock, partyFrameFields.relicsAndCooldowns ? displayIcons : []);

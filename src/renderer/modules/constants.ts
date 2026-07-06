@@ -40,6 +40,7 @@
     spirit: '#ffffff',
     relicTimer: '#ffffff',
   };
+  const DEFAULT_PARTY_FRAME_ALIGNMENT: PartyFrameAlignment = 'left';
   const DEFAULT_MENU_COLORS: MenuColors = {
     text: '#ffffff',
     title: '#ffffff',
@@ -78,6 +79,7 @@
     iconsPerRow: DEFAULT_ICONS_PER_ROW,
     partyFrameFields: { ...DEFAULT_PARTY_FRAME_FIELDS },
     partyFrameColors: { ...DEFAULT_PARTY_FRAME_COLORS },
+    partyFrameAlignment: DEFAULT_PARTY_FRAME_ALIGNMENT,
     menuColors: { ...DEFAULT_MENU_COLORS },
     hotkeys: { ...DEFAULT_HOTKEYS },
     recentSkillsLayoutDirection: DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
@@ -110,6 +112,7 @@
     DEFAULT_PANEL_OPACITY,
     DEFAULT_PARTY_FRAME_FIELDS,
     DEFAULT_PARTY_FRAME_COLORS,
+    DEFAULT_PARTY_FRAME_ALIGNMENT,
     DEFAULT_MENU_COLORS,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
