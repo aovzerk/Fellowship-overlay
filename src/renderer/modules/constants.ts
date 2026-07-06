@@ -27,6 +27,29 @@
   const DEFAULT_LAYOUT_DIRECTION: 'vertical' | 'horizontal' = 'vertical';
   const DEFAULT_PANEL_OPACITY = 0.88;
   const DEFAULT_ICONS_PER_ROW = 3;
+  const DEFAULT_PARTY_FRAME_FIELDS: PartyFrameFields = {
+    playerName: true,
+    championName: true,
+    spirit: true,
+    relicsAndCooldowns: true,
+  };
+  const DEFAULT_PARTY_FRAME_COLORS: PartyFrameColors = {
+    playerName: '#ffffff',
+    championName: '#ffffff',
+    championNameUseClassColor: true,
+    spirit: '#ffffff',
+    relicTimer: '#ffffff',
+  };
+  const DEFAULT_MENU_COLORS: MenuColors = {
+    text: '#ffffff',
+    title: '#ffffff',
+    mutedText: '#cbd5e1',
+    panelBackground: '#070a19',
+    sectionBackground: '#ffffff',
+    controlBackground: '#ffffff',
+    border: '#ffffff',
+    accent: '#5cb3ff',
+  };
   const DEFAULT_HOTKEYS: OverlayHotkeys = {
     toggleInteraction: 'F8',
     pickLog: 'F9',
@@ -53,6 +76,9 @@
     layoutDirection: DEFAULT_LAYOUT_DIRECTION,
     panelOpacity: DEFAULT_PANEL_OPACITY,
     iconsPerRow: DEFAULT_ICONS_PER_ROW,
+    partyFrameFields: { ...DEFAULT_PARTY_FRAME_FIELDS },
+    partyFrameColors: { ...DEFAULT_PARTY_FRAME_COLORS },
+    menuColors: { ...DEFAULT_MENU_COLORS },
     hotkeys: { ...DEFAULT_HOTKEYS },
     recentSkillsLayoutDirection: DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
     recentSkillsGrowthDirection: DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
@@ -82,6 +108,9 @@
     DEFAULT_OVERLAY_SETTINGS,
     DEFAULT_AUTO_HIDE_WITH_GAME_WINDOW,
     DEFAULT_PANEL_OPACITY,
+    DEFAULT_PARTY_FRAME_FIELDS,
+    DEFAULT_PARTY_FRAME_COLORS,
+    DEFAULT_MENU_COLORS,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
     DEFAULT_RECENT_SKILLS_LIMIT,

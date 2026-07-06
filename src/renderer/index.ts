@@ -80,6 +80,32 @@ const showRecentSkillsToggle = document.getElementById('showRecentSkillsToggle')
 const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsToggleLabel') as HTMLElement | null;
 const showBuffsButtonToggle = document.getElementById('showBuffsButtonToggle') as HTMLInputElement | null;
 const showBuffsButtonToggleLabel = document.getElementById('showBuffsButtonToggleLabel') as HTMLElement | null;
+const partyFrameFieldsTitle = mustElement<HTMLElement>('partyFrameFieldsTitle');
+const partyFieldPlayerNameToggle = mustElement<HTMLInputElement>('partyFieldPlayerNameToggle');
+const partyFieldChampionNameToggle = mustElement<HTMLInputElement>('partyFieldChampionNameToggle');
+const partyFieldSpiritToggle = mustElement<HTMLInputElement>('partyFieldSpiritToggle');
+const partyFieldRelicsToggle = mustElement<HTMLInputElement>('partyFieldRelicsToggle');
+const partyFieldPlayerNameLabel = mustElement<HTMLElement>('partyFieldPlayerNameLabel');
+const partyFieldChampionNameLabel = mustElement<HTMLElement>('partyFieldChampionNameLabel');
+const partyFieldSpiritLabel = mustElement<HTMLElement>('partyFieldSpiritLabel');
+const partyFieldRelicsLabel = mustElement<HTMLElement>('partyFieldRelicsLabel');
+const menuColorsTitle = mustElement<HTMLElement>('menuColorsTitle');
+const menuColorTextInput = mustElement<HTMLInputElement>('menuColorTextInput');
+const menuColorTitleInput = mustElement<HTMLInputElement>('menuColorTitleInput');
+const menuColorMutedTextInput = mustElement<HTMLInputElement>('menuColorMutedTextInput');
+const menuColorPanelBackgroundInput = mustElement<HTMLInputElement>('menuColorPanelBackgroundInput');
+const menuColorSectionBackgroundInput = mustElement<HTMLInputElement>('menuColorSectionBackgroundInput');
+const menuColorControlBackgroundInput = mustElement<HTMLInputElement>('menuColorControlBackgroundInput');
+const menuColorBorderInput = mustElement<HTMLInputElement>('menuColorBorderInput');
+const menuColorAccentInput = mustElement<HTMLInputElement>('menuColorAccentInput');
+const menuColorTextLabel = mustElement<HTMLElement>('menuColorTextLabel');
+const menuColorTitleLabel = mustElement<HTMLElement>('menuColorTitleLabel');
+const menuColorMutedTextLabel = mustElement<HTMLElement>('menuColorMutedTextLabel');
+const menuColorPanelBackgroundLabel = mustElement<HTMLElement>('menuColorPanelBackgroundLabel');
+const menuColorSectionBackgroundLabel = mustElement<HTMLElement>('menuColorSectionBackgroundLabel');
+const menuColorControlBackgroundLabel = mustElement<HTMLElement>('menuColorControlBackgroundLabel');
+const menuColorBorderLabel = mustElement<HTMLElement>('menuColorBorderLabel');
+const menuColorAccentLabel = mustElement<HTMLElement>('menuColorAccentLabel');
 const recentSkillsLimitInput = mustElement<HTMLInputElement>('recentSkillsLimitInput');
 const recentSkillsLimitLabel = mustElement<HTMLElement>('recentSkillsLimitLabel');
 const recentSkillsLayoutDirectionSelect = mustElement<HTMLSelectElement>('recentSkillsLayoutDirectionSelect');
@@ -152,6 +178,9 @@ let frameGap = settingsController.loadFrameGap();
 let iconsPerRow = settingsController.loadIconsPerRow();
 let panelOpacity = settingsController.loadPanelOpacity();
 let layoutDirection = settingsController.loadLayoutDirection();
+let partyFrameFields: PartyFrameFields = settingsController.loadPartyFrameFields();
+const partyFrameColors: PartyFrameColors = window.OverlayRendererConstants.DEFAULT_PARTY_FRAME_COLORS;
+let menuColors: MenuColors = settingsController.loadMenuColors();
 let hotkeys = settingsController.loadHotkeys();
 let currentLanguage: LanguageCode = 'en';
 let lastWatchStatusMessage = '';
@@ -170,6 +199,25 @@ const expandedBuffPlayerKeys = new Set<string>();
 
 function t(key: string): string {
   return translateText(currentLanguage, key);
+}
+
+function hexToRgbString(value: string): string {
+  const normalized = /^#[0-9a-fA-F]{6}$/.test(String(value || '')) ? String(value) : '#ffffff';
+  const red = parseInt(normalized.slice(1, 3), 16);
+  const green = parseInt(normalized.slice(3, 5), 16);
+  const blue = parseInt(normalized.slice(5, 7), 16);
+  return `${red}, ${green}, ${blue}`;
+}
+
+function applyMenuColorVariables(): void {
+  overlayRoot.style.setProperty('--menu-text-color', menuColors.text);
+  overlayRoot.style.setProperty('--menu-title-color', menuColors.title);
+  overlayRoot.style.setProperty('--menu-muted-text-color', menuColors.mutedText);
+  overlayRoot.style.setProperty('--menu-panel-bg-rgb', hexToRgbString(menuColors.panelBackground));
+  overlayRoot.style.setProperty('--menu-section-bg-rgb', hexToRgbString(menuColors.sectionBackground));
+  overlayRoot.style.setProperty('--menu-control-bg-rgb', hexToRgbString(menuColors.controlBackground));
+  overlayRoot.style.setProperty('--menu-border-rgb', hexToRgbString(menuColors.border));
+  overlayRoot.style.setProperty('--menu-accent-rgb', hexToRgbString(menuColors.accent));
 }
 
 function formatHotkeyLabel(accelerator: string): string {
@@ -500,6 +548,7 @@ function updateCardScaleUi(): void {
 function applyAppearanceVariables(): void {
   overlayRoot.style.setProperty('--party-gap', `${frameGap}px`);
   overlayRoot.style.setProperty('--panel-bg-alpha', String(panelOpacity));
+  applyMenuColorVariables();
   overlayRoot.dataset.layoutDirection = layoutDirection;
   overlayRoot.dataset.iconsPerRow = String(iconsPerRow);
 }
@@ -516,6 +565,24 @@ function updatePanelOpacityUi(): void {
   const percent = Math.round(panelOpacity * 100);
   panelOpacitySlider.value = String(percent);
   panelOpacityValueEl.textContent = `${percent}%`;
+}
+
+function updatePartyFrameFieldsUi(): void {
+  partyFieldPlayerNameToggle.checked = !!partyFrameFields.playerName;
+  partyFieldChampionNameToggle.checked = !!partyFrameFields.championName;
+  partyFieldSpiritToggle.checked = !!partyFrameFields.spirit;
+  partyFieldRelicsToggle.checked = !!partyFrameFields.relicsAndCooldowns;
+}
+
+function updateMenuColorsUi(): void {
+  menuColorTextInput.value = menuColors.text;
+  menuColorTitleInput.value = menuColors.title;
+  menuColorMutedTextInput.value = menuColors.mutedText;
+  menuColorPanelBackgroundInput.value = menuColors.panelBackground;
+  menuColorSectionBackgroundInput.value = menuColors.sectionBackground;
+  menuColorControlBackgroundInput.value = menuColors.controlBackground;
+  menuColorBorderInput.value = menuColors.border;
+  menuColorAccentInput.value = menuColors.accent;
 }
 
 function updateLayoutDirectionUi(): void {
@@ -585,6 +652,26 @@ function setPanelOpacity(nextValue: unknown): void {
   settingsController.savePanelOpacity(panelOpacity);
   applyAppearanceVariables();
   updatePanelOpacityUi();
+}
+
+function setPartyFrameField(field: keyof PartyFrameFields, enabled: boolean): void {
+  partyFrameFields = settingsController.normalizePartyFrameFields({
+    ...partyFrameFields,
+    [field]: !!enabled,
+  });
+  settingsController.savePartyFrameFields(partyFrameFields);
+  updatePartyFrameFieldsUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setMenuColor(field: keyof MenuColors, value: unknown): void {
+  menuColors = settingsController.normalizeMenuColors({
+    ...menuColors,
+    [field]: value,
+  });
+  settingsController.saveMenuColors(menuColors);
+  applyMenuColorVariables();
+  updateMenuColorsUi();
 }
 
 function setLayoutDirection(nextValue: unknown): void {
@@ -952,6 +1039,22 @@ function applyTranslations(): void {
     visibilitySettings,
     watchStatusEl,
   });
+  partyFrameFieldsTitle.textContent = t('partyFrameFieldsTitle');
+  partyFieldPlayerNameLabel.textContent = t('partyFieldPlayerName');
+  partyFieldChampionNameLabel.textContent = t('partyFieldChampionName');
+  partyFieldSpiritLabel.textContent = t('partyFieldSpirit');
+  partyFieldRelicsLabel.textContent = t('partyFieldRelics');
+  menuColorsTitle.textContent = t('menuColorsTitle');
+  menuColorTextLabel.textContent = t('menuColorText');
+  menuColorTitleLabel.textContent = t('menuColorTitle');
+  menuColorMutedTextLabel.textContent = t('menuColorMutedText');
+  menuColorPanelBackgroundLabel.textContent = t('menuColorPanelBackground');
+  menuColorSectionBackgroundLabel.textContent = t('menuColorSectionBackground');
+  menuColorControlBackgroundLabel.textContent = t('menuColorControlBackground');
+  menuColorBorderLabel.textContent = t('menuColorBorder');
+  menuColorAccentLabel.textContent = t('menuColorAccent');
+  updatePartyFrameFieldsUi();
+  updateMenuColorsUi();
   buffsBtn.textContent = t('buffs');
   buffsBtn.title = t('buffUptimeTitle');
   syncBuffsButtonInteractiveBounds();
@@ -976,6 +1079,8 @@ async function openSettingsModal(): Promise<void> {
   updateFrameGapUi();
   updateIconsPerRowUi();
   updatePanelOpacityUi();
+  updatePartyFrameFieldsUi();
+  updateMenuColorsUi();
   updateLayoutDirectionUi();
   updateRecentSkillsLayoutUi();
   settingsModal.classList.remove('hidden');
@@ -1015,6 +1120,8 @@ playerCardRenderer = createPlayerCardRenderer({
   getLayoutDirection: () => layoutDirection,
   getLatestData: () => latestData,
   getOverlayLocked: () => overlayLocked,
+  getPartyFrameFields: () => partyFrameFields,
+  getPartyFrameColors: () => partyFrameColors,
   getPartySlotIndex,
   getPlayerLayoutKey,
   getSelectedSkillsByClass: () => selectedSkillsByClass,
@@ -1093,6 +1200,42 @@ showRecentSkillsToggle?.addEventListener('change', (event: Event) => {
 });
 showBuffsButtonToggle?.addEventListener('change', (event: Event) => {
   setBuffsButtonVisibility((event.currentTarget as HTMLInputElement).checked);
+});
+partyFieldPlayerNameToggle.addEventListener('change', (event: Event) => {
+  setPartyFrameField('playerName', (event.currentTarget as HTMLInputElement).checked);
+});
+partyFieldChampionNameToggle.addEventListener('change', (event: Event) => {
+  setPartyFrameField('championName', (event.currentTarget as HTMLInputElement).checked);
+});
+partyFieldSpiritToggle.addEventListener('change', (event: Event) => {
+  setPartyFrameField('spirit', (event.currentTarget as HTMLInputElement).checked);
+});
+partyFieldRelicsToggle.addEventListener('change', (event: Event) => {
+  setPartyFrameField('relicsAndCooldowns', (event.currentTarget as HTMLInputElement).checked);
+});
+menuColorTextInput.addEventListener('input', (event: Event) => {
+  setMenuColor('text', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorTitleInput.addEventListener('input', (event: Event) => {
+  setMenuColor('title', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorMutedTextInput.addEventListener('input', (event: Event) => {
+  setMenuColor('mutedText', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorPanelBackgroundInput.addEventListener('input', (event: Event) => {
+  setMenuColor('panelBackground', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorSectionBackgroundInput.addEventListener('input', (event: Event) => {
+  setMenuColor('sectionBackground', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorControlBackgroundInput.addEventListener('input', (event: Event) => {
+  setMenuColor('controlBackground', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorBorderInput.addEventListener('input', (event: Event) => {
+  setMenuColor('border', (event.currentTarget as HTMLInputElement).value);
+});
+menuColorAccentInput.addEventListener('input', (event: Event) => {
+  setMenuColor('accent', (event.currentTarget as HTMLInputElement).value);
 });
 recentSkillsLimitInput.addEventListener('change', (event: Event) => {
   setRecentSkillsLimit((event.currentTarget as HTMLInputElement).value);
@@ -1233,6 +1376,8 @@ updateAutoHideUi();
 updateFrameGapUi();
 updateIconsPerRowUi();
 updatePanelOpacityUi();
+updatePartyFrameFieldsUi();
+updateMenuColorsUi();
 updateLayoutDirectionUi();
 updateRecentSkillsLayoutUi();
 updateOverlayVisibility();

@@ -13,6 +13,9 @@
     DEFAULT_LAYOUT_DIRECTION,
     DEFAULT_OVERLAY_SETTINGS,
     DEFAULT_PANEL_OPACITY,
+    DEFAULT_PARTY_FRAME_COLORS,
+    DEFAULT_PARTY_FRAME_FIELDS,
+    DEFAULT_MENU_COLORS,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
     DEFAULT_PULL_PANEL_POSITION,
     DEFAULT_RECENT_SKILLS_LIMIT,
@@ -131,6 +134,48 @@
     return Math.round(clamp(normalized, ICONS_PER_ROW_MIN, ICONS_PER_ROW_MAX));
   }
 
+  function normalizePartyFrameFields(value: unknown): PartyFrameFields {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<PartyFrameFields> : {};
+    return {
+      playerName: typeof source.playerName === 'boolean' ? source.playerName : DEFAULT_PARTY_FRAME_FIELDS.playerName,
+      championName: typeof source.championName === 'boolean' ? source.championName : DEFAULT_PARTY_FRAME_FIELDS.championName,
+      spirit: typeof source.spirit === 'boolean' ? source.spirit : DEFAULT_PARTY_FRAME_FIELDS.spirit,
+      relicsAndCooldowns: typeof source.relicsAndCooldowns === 'boolean' ? source.relicsAndCooldowns : DEFAULT_PARTY_FRAME_FIELDS.relicsAndCooldowns,
+    };
+  }
+
+  function normalizeHexColor(value: unknown, fallback: string): string {
+    const normalized = String(value || '').trim();
+    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toLowerCase() : fallback;
+  }
+
+  function normalizePartyFrameColors(value: unknown): PartyFrameColors {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<PartyFrameColors> : {};
+    return {
+      playerName: normalizeHexColor(source.playerName, DEFAULT_PARTY_FRAME_COLORS.playerName),
+      championName: normalizeHexColor(source.championName, DEFAULT_PARTY_FRAME_COLORS.championName),
+      championNameUseClassColor: typeof source.championNameUseClassColor === 'boolean'
+        ? source.championNameUseClassColor
+        : DEFAULT_PARTY_FRAME_COLORS.championNameUseClassColor,
+      spirit: normalizeHexColor(source.spirit, DEFAULT_PARTY_FRAME_COLORS.spirit),
+      relicTimer: normalizeHexColor(source.relicTimer, DEFAULT_PARTY_FRAME_COLORS.relicTimer),
+    };
+  }
+
+  function normalizeMenuColors(value: unknown): MenuColors {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<MenuColors> : {};
+    return {
+      text: normalizeHexColor(source.text, DEFAULT_MENU_COLORS.text),
+      title: normalizeHexColor(source.title, DEFAULT_MENU_COLORS.title),
+      mutedText: normalizeHexColor(source.mutedText, DEFAULT_MENU_COLORS.mutedText),
+      panelBackground: normalizeHexColor(source.panelBackground, DEFAULT_MENU_COLORS.panelBackground),
+      sectionBackground: normalizeHexColor(source.sectionBackground, DEFAULT_MENU_COLORS.sectionBackground),
+      controlBackground: normalizeHexColor(source.controlBackground, DEFAULT_MENU_COLORS.controlBackground),
+      border: normalizeHexColor(source.border, DEFAULT_MENU_COLORS.border),
+      accent: normalizeHexColor(source.accent, DEFAULT_MENU_COLORS.accent),
+    };
+  }
+
   function normalizeLayoutDirection(value: unknown): 'vertical' | 'horizontal' {
     return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
   }
@@ -186,6 +231,9 @@
       layoutDirection: normalizeLayoutDirection(source.layoutDirection),
       panelOpacity: normalizePanelOpacity(source.panelOpacity),
       iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+      partyFrameFields: normalizePartyFrameFields(source.partyFrameFields),
+      partyFrameColors: normalizePartyFrameColors(source.partyFrameColors),
+      menuColors: normalizeMenuColors(source.menuColors),
       recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
       recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
       recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
@@ -209,6 +257,9 @@
       },
       playerPositions: partial.playerPositions === undefined ? base.playerPositions : partial.playerPositions,
       selectedSkillsByClass: partial.selectedSkillsByClass === undefined ? base.selectedSkillsByClass : partial.selectedSkillsByClass,
+      partyFrameFields: partial.partyFrameFields === undefined ? base.partyFrameFields : partial.partyFrameFields,
+      partyFrameColors: partial.partyFrameColors === undefined ? base.partyFrameColors : partial.partyFrameColors,
+      menuColors: partial.menuColors === undefined ? base.menuColors : partial.menuColors,
     });
   }
 
@@ -249,6 +300,9 @@
       normalizeLayoutDirection,
       normalizeHotkeys,
       normalizePanelOpacity,
+      normalizePartyFrameFields,
+      normalizePartyFrameColors,
+      normalizeMenuColors,
       normalizePosition,
       normalizeRecentSkillsLimit,
       normalizeRecentSkillsGrowthDirection,
@@ -279,6 +333,15 @@
       },
       loadPanelOpacity() {
         return normalizePanelOpacity(getOverlaySettings().panelOpacity);
+      },
+      loadPartyFrameFields() {
+        return normalizePartyFrameFields(getOverlaySettings().partyFrameFields);
+      },
+      loadPartyFrameColors() {
+        return normalizePartyFrameColors(getOverlaySettings().partyFrameColors);
+      },
+      loadMenuColors() {
+        return normalizeMenuColors(getOverlaySettings().menuColors);
       },
       loadRecentSkillsGrowthDirection() {
         return normalizeRecentSkillsGrowthDirection(getOverlaySettings().recentSkillsGrowthDirection);
@@ -338,6 +401,15 @@
       },
       savePanelOpacity(panelOpacity: number) {
         saveOverlaySettingsPatch({ panelOpacity: normalizePanelOpacity(panelOpacity) });
+      },
+      savePartyFrameFields(partyFrameFields: PartyFrameFields) {
+        saveOverlaySettingsPatch({ partyFrameFields: normalizePartyFrameFields(partyFrameFields) });
+      },
+      savePartyFrameColors(partyFrameColors: PartyFrameColors) {
+        saveOverlaySettingsPatch({ partyFrameColors: normalizePartyFrameColors(partyFrameColors) });
+      },
+      saveMenuColors(menuColors: MenuColors) {
+        saveOverlaySettingsPatch({ menuColors: normalizeMenuColors(menuColors) });
       },
       savePositions(positions: PlayerPositions) {
         const normalized = normalizePlayerPositions(positions);

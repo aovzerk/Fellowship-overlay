@@ -244,6 +244,8 @@
       getLayoutDirection,
       getLatestData,
       getOverlayLocked,
+      getPartyFrameFields,
+      getPartyFrameColors,
       getPartySlotIndex,
       getSelectedSkillsByClass,
       getSkillCatalog,
@@ -351,6 +353,8 @@
       const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
       const last = player.spirit || history[history.length - 1] || null;
       const classColor = player.classColor || '#6b7280';
+      const partyFrameFields = getPartyFrameFields();
+      const partyFrameColors = getPartyFrameColors();
       const effectiveNowMs = getEffectiveNowMs(getLatestData());
       const displaySpirit = buildDisplayedSpiritSnapshot(player, last, effectiveNowMs);
       const trackedSkills = buildTrackedSkillCooldowns(player, getSkillCatalog(), getSelectedSkillsByClass(), effectiveNowMs);
@@ -370,30 +374,43 @@
       });
 
       if (!relicsInserted) displayIcons.push(...relicIcons);
-      applyCardLayout(card, getCardScale(), displayIcons.length, getIconsPerRow());
+      const visibleIconCount = partyFrameFields.relicsAndCooldowns ? displayIcons.length : 0;
+      applyCardLayout(card, getCardScale(), visibleIconCount, getIconsPerRow());
 
+      const playerHeader = card.querySelector<HTMLElement>('.player-header');
+      const playerInfoRow = card.querySelector<HTMLElement>('.player-info-row');
       const playerName = card.querySelector<HTMLElement>('.player-name');
       const playerClass = card.querySelector<HTMLElement>('.player-class');
+      const spiritInline = card.querySelector<HTMLElement>('.spirit-inline');
       const spiritEl = card.querySelector<HTMLElement>('.spirit-total');
       const relicsBlock = card.querySelector<HTMLElement>('.relics-block');
-      if (!playerName || !playerClass || !spiritEl || !relicsBlock) return;
+      if (!playerHeader || !playerInfoRow || !playerName || !playerClass || !spiritInline || !spiritEl || !relicsBlock) return;
 
       playerName.textContent = player.name || t('unknown');
+      playerName.style.color = partyFrameColors.playerName;
       playerClass.textContent = player.className || t('unknown');
-      playerClass.style.color = classColor;
+      playerClass.style.color = partyFrameColors.championNameUseClassColor ? classColor : partyFrameColors.championName;
+      playerName.classList.toggle('hidden', !partyFrameFields.playerName);
+      playerClass.classList.toggle('hidden', !partyFrameFields.championName);
+      playerHeader.classList.toggle('hidden', !partyFrameFields.playerName && !partyFrameFields.championName);
+      card.style.setProperty('--party-spirit-color', partyFrameColors.spirit);
+      card.style.setProperty('--party-relic-timer-color', partyFrameColors.relicTimer);
       spiritEl.textContent = formatSpiritTotal(player, displaySpirit, formatNumber);
       spiritEl.classList.remove('spirit-glow-blue');
       const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
+      spiritInline.classList.toggle('hidden', !partyFrameFields.spirit);
       const { iconSize, iconGap } = getScaledMetrics(getCardScale());
-      const columnCount = Math.max(1, Math.min(getIconsPerRow(), displayIcons.length || 0));
-      const rowCount = Math.max(1, Math.ceil((displayIcons.length || 0) / columnCount));
+      const columnCount = Math.max(1, Math.min(getIconsPerRow(), visibleIconCount || 0));
+      const rowCount = Math.max(1, Math.ceil((visibleIconCount || 0) / columnCount));
       relicsBlock.style.setProperty('--tracked-columns', String(columnCount));
       relicsBlock.style.setProperty('--tracked-rows', String(rowCount));
       relicsBlock.style.width = `${(columnCount * iconSize) + (Math.max(0, columnCount - 1) * iconGap)}px`;
       relicsBlock.style.maxWidth = '100%';
       relicsBlock.style.margin = '0 auto';
-      updateIconNodes(relicsBlock, displayIcons);
+      relicsBlock.classList.toggle('hidden', !partyFrameFields.relicsAndCooldowns);
+      playerInfoRow.classList.toggle('hidden', !partyFrameFields.spirit && !partyFrameFields.relicsAndCooldowns);
+      updateIconNodes(relicsBlock, partyFrameFields.relicsAndCooldowns ? displayIcons : []);
     }
 
     function renderPlayers(players: PlayerState[] = []): void {

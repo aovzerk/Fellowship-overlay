@@ -6,8 +6,11 @@ import type {
   OverlayHotkeys,
   LayoutDirection,
   LanguageCode,
+  MenuColors,
   OverlayPanelPositions,
   OverlaySettings,
+  PartyFrameColors,
+  PartyFrameFields,
   RecentSkillsGrowthDirection,
   RecentSkillsLayoutDirection,
   OverlayVisibilitySettings,
@@ -37,6 +40,29 @@ const DEFAULT_PANEL_OPACITY = 0.88;
 const ICONS_PER_ROW_MIN = 1;
 const ICONS_PER_ROW_MAX = 6;
 const DEFAULT_ICONS_PER_ROW = 3;
+const DEFAULT_PARTY_FRAME_FIELDS: PartyFrameFields = {
+  playerName: true,
+  championName: true,
+  spirit: true,
+  relicsAndCooldowns: true,
+};
+const DEFAULT_PARTY_FRAME_COLORS: PartyFrameColors = {
+  playerName: '#ffffff',
+  championName: '#ffffff',
+  championNameUseClassColor: true,
+  spirit: '#ffffff',
+  relicTimer: '#ffffff',
+};
+const DEFAULT_MENU_COLORS: MenuColors = {
+  text: '#ffffff',
+  title: '#ffffff',
+  mutedText: '#cbd5e1',
+  panelBackground: '#070a19',
+  sectionBackground: '#ffffff',
+  controlBackground: '#ffffff',
+  border: '#ffffff',
+  accent: '#5cb3ff',
+};
 const RECENT_SKILLS_TRACK_COUNT_MIN = 1;
 const RECENT_SKILLS_TRACK_COUNT_MAX = 6;
 const DEFAULT_RECENT_SKILLS_TRACK_COUNT = 3;
@@ -188,6 +214,48 @@ function normalizeIconsPerRow(value: unknown): number {
   return Math.round(clamp(normalized, ICONS_PER_ROW_MIN, ICONS_PER_ROW_MAX));
 }
 
+function normalizePartyFrameFields(value: unknown): PartyFrameFields {
+  const source = asRecord(value);
+  return {
+    playerName: typeof source.playerName === 'boolean' ? source.playerName : DEFAULT_PARTY_FRAME_FIELDS.playerName,
+    championName: typeof source.championName === 'boolean' ? source.championName : DEFAULT_PARTY_FRAME_FIELDS.championName,
+    spirit: typeof source.spirit === 'boolean' ? source.spirit : DEFAULT_PARTY_FRAME_FIELDS.spirit,
+    relicsAndCooldowns: typeof source.relicsAndCooldowns === 'boolean' ? source.relicsAndCooldowns : DEFAULT_PARTY_FRAME_FIELDS.relicsAndCooldowns,
+  };
+}
+
+function normalizeHexColor(value: unknown, fallback: string): string {
+  const normalized = String(value || '').trim();
+  return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toLowerCase() : fallback;
+}
+
+function normalizePartyFrameColors(value: unknown): PartyFrameColors {
+  const source = asRecord(value);
+  return {
+    playerName: normalizeHexColor(source.playerName, DEFAULT_PARTY_FRAME_COLORS.playerName),
+    championName: normalizeHexColor(source.championName, DEFAULT_PARTY_FRAME_COLORS.championName),
+    championNameUseClassColor: typeof source.championNameUseClassColor === 'boolean'
+      ? source.championNameUseClassColor
+      : DEFAULT_PARTY_FRAME_COLORS.championNameUseClassColor,
+    spirit: normalizeHexColor(source.spirit, DEFAULT_PARTY_FRAME_COLORS.spirit),
+    relicTimer: normalizeHexColor(source.relicTimer, DEFAULT_PARTY_FRAME_COLORS.relicTimer),
+  };
+}
+
+function normalizeMenuColors(value: unknown): MenuColors {
+  const source = asRecord(value);
+  return {
+    text: normalizeHexColor(source.text, DEFAULT_MENU_COLORS.text),
+    title: normalizeHexColor(source.title, DEFAULT_MENU_COLORS.title),
+    mutedText: normalizeHexColor(source.mutedText, DEFAULT_MENU_COLORS.mutedText),
+    panelBackground: normalizeHexColor(source.panelBackground, DEFAULT_MENU_COLORS.panelBackground),
+    sectionBackground: normalizeHexColor(source.sectionBackground, DEFAULT_MENU_COLORS.sectionBackground),
+    controlBackground: normalizeHexColor(source.controlBackground, DEFAULT_MENU_COLORS.controlBackground),
+    border: normalizeHexColor(source.border, DEFAULT_MENU_COLORS.border),
+    accent: normalizeHexColor(source.accent, DEFAULT_MENU_COLORS.accent),
+  };
+}
+
 function normalizeLayoutDirection(value: unknown): LayoutDirection {
   return String(value || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical';
 }
@@ -260,6 +328,9 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     layoutDirection: normalizeLayoutDirection(source.layoutDirection),
     panelOpacity: normalizePanelOpacity(source.panelOpacity),
     iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
+    partyFrameFields: normalizePartyFrameFields(source.partyFrameFields),
+    partyFrameColors: normalizePartyFrameColors(source.partyFrameColors),
+    menuColors: normalizeMenuColors(source.menuColors),
     recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
     recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
     recentSkillsTrackCount: normalizeRecentSkillsTrackCount(source.recentSkillsTrackCount),
@@ -287,6 +358,9 @@ function mergeSettings(baseSettings: unknown, partialSettings: unknown): Normali
     },
     playerPositions: partial.playerPositions === undefined ? base.playerPositions : partial.playerPositions,
     selectedSkillsByClass: partial.selectedSkillsByClass === undefined ? base.selectedSkillsByClass : partial.selectedSkillsByClass,
+    partyFrameFields: partial.partyFrameFields === undefined ? base.partyFrameFields : partial.partyFrameFields,
+    partyFrameColors: partial.partyFrameColors === undefined ? base.partyFrameColors : partial.partyFrameColors,
+    menuColors: partial.menuColors === undefined ? base.menuColors : partial.menuColors,
   });
 }
 
@@ -376,6 +450,8 @@ export {
   DEFAULT_LAYOUT_DIRECTION,
   DEFAULT_LANGUAGE,
   DEFAULT_PANEL_OPACITY,
+  DEFAULT_PARTY_FRAME_FIELDS,
+  DEFAULT_PARTY_FRAME_COLORS,
   DEFAULT_PULL_PANEL_POSITION,
   DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
   DEFAULT_RECENT_SKILLS_LIMIT,

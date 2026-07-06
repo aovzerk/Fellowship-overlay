@@ -66,6 +66,27 @@
                 <span id="showBuffsButtonToggleLabel">Show buffs button</span>
               </label>
             </div>
+
+            <div class="settings-subgroup-title" id="partyFrameFieldsTitle">PARTY FRAME FIELDS</div>
+            <div class="settings-row settings-row-inline settings-toggle-list party-frame-fields-list">
+              <label class="settings-toggle interactive" for="partyFieldPlayerNameToggle">
+                <input id="partyFieldPlayerNameToggle" type="checkbox" checked />
+                <span id="partyFieldPlayerNameLabel">Player name</span>
+              </label>
+              <label class="settings-toggle interactive" for="partyFieldChampionNameToggle">
+                <input id="partyFieldChampionNameToggle" type="checkbox" checked />
+                <span id="partyFieldChampionNameLabel">Champion name</span>
+              </label>
+              <label class="settings-toggle interactive" for="partyFieldSpiritToggle">
+                <input id="partyFieldSpiritToggle" type="checkbox" checked />
+                <span id="partyFieldSpiritLabel">Spirit</span>
+              </label>
+              <label class="settings-toggle interactive" for="partyFieldRelicsToggle">
+                <input id="partyFieldRelicsToggle" type="checkbox" checked />
+                <span id="partyFieldRelicsLabel">Relics and cooldowns</span>
+              </label>
+            </div>
+
           </section>
 
           <section class="settings-group" id="recentSkillsSettingsGroup">
@@ -168,6 +189,65 @@
                 <label class="slider-control interactive" id="panelOpacityControls" for="panelOpacitySlider">
                   <input id="panelOpacitySlider" type="range" min="20" max="100" step="1" value="88" />
                   <span id="panelOpacityValue">88%</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-subgroup-title" id="menuColorsTitle">MENU COLORS</div>
+            <div class="settings-table menu-colors-table">
+              <div id="menuColorTextLabel" class="settings-table-label">Text color</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorTextInput">
+                  <input id="menuColorTextInput" type="color" value="#ffffff" />
+                </label>
+              </div>
+
+              <div id="menuColorTitleLabel" class="settings-table-label">Title color</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorTitleInput">
+                  <input id="menuColorTitleInput" type="color" value="#ffffff" />
+                </label>
+              </div>
+
+              <div id="menuColorMutedTextLabel" class="settings-table-label">Muted text color</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorMutedTextInput">
+                  <input id="menuColorMutedTextInput" type="color" value="#cbd5e1" />
+                </label>
+              </div>
+
+              <div id="menuColorPanelBackgroundLabel" class="settings-table-label">Window background</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorPanelBackgroundInput">
+                  <input id="menuColorPanelBackgroundInput" type="color" value="#070a19" />
+                </label>
+              </div>
+
+              <div id="menuColorSectionBackgroundLabel" class="settings-table-label">Section background</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorSectionBackgroundInput">
+                  <input id="menuColorSectionBackgroundInput" type="color" value="#ffffff" />
+                </label>
+              </div>
+
+              <div id="menuColorControlBackgroundLabel" class="settings-table-label">Button and field background</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorControlBackgroundInput">
+                  <input id="menuColorControlBackgroundInput" type="color" value="#ffffff" />
+                </label>
+              </div>
+
+              <div id="menuColorBorderLabel" class="settings-table-label">Border color</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorBorderInput">
+                  <input id="menuColorBorderInput" type="color" value="#ffffff" />
+                </label>
+              </div>
+
+              <div id="menuColorAccentLabel" class="settings-table-label">Accent color</div>
+              <div class="settings-table-control">
+                <label class="color-control interactive" for="menuColorAccentInput">
+                  <input id="menuColorAccentInput" type="color" value="#5cb3ff" />
                 </label>
               </div>
             </div>
