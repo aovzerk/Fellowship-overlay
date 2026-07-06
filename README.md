@@ -8,9 +8,9 @@ If you find Fellowship Overlay useful and want to support further development, y
 
 ## Download Latest Version
 
-[![Download Fellowship Overlay](https://img.shields.io/badge/Download-Latest%20Version-blue?style=for-the-badge)](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.4/Fellowship.Overlay.exe)
+[![Download Fellowship Overlay](https://img.shields.io/badge/Download-Latest%20Version-blue?style=for-the-badge)](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.4p1/Fellowship.Overlay.exe)
 
-**Latest version:** [Download Fellowship Overlay v1.7.4](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.4/Fellowship.Overlay.exe)
+**Latest version:** [Download Fellowship Overlay v1.7.4](https://github.com/aovzerk/Fellowship-overlay/releases/download/tauri-v1.7.4p1/Fellowship.Overlay.exe)
 
 > [!IMPORTANT]
 > If you are worried about using this overlay, we have confirmation from the developers that it is allowed and players will not be punished for using it before official in-game support.
@@ -94,4 +94,22 @@ From the tray you can open the app and access **settings**.
 npm i          # install dependencies
 npm start      # run in development mode
 npm run dist   # build application
+```
+
+### Build Tauri portable
+
+Requirements:
+- Node.js 20+
+- Rust toolchain with Cargo available in `PATH`
+
+PowerShell:
+```powershell
+$env:PATH="$env:USERPROFILE\.cargo\bin;$env:PATH"
+npm run tauri:app:build
+npm run tauri:app:package
+```
+
+The portable executable will be created at:
+```text
+release\Fellowship Overlay Portable\Fellowship Overlay.exe
 ```
