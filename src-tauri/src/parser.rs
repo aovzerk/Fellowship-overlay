@@ -1,12 +1,12 @@
 use crate::dungeon::{is_chickenize_ability, DungeonTracker};
 use crate::game_database::extract_relics_from_parts;
 use crate::parser_abilities::{
-    ability_to_json, actor_key, add_ability, add_encounter_ability, build_uses_per_boss,
+    ability_to_json, actor_key, add_ability, add_encounter_ability, build_uses_per_boss, AbilityKey,
     combat_ability_values, encounter_to_json, parse_encounter_name, sort_abilities_by_score,
 };
 use crate::parser_file::find_recent_dungeon_parse_offset;
 use crate::parser_line_utils::{
-    is_npc_id, is_player_id, parse_ts_ms, split_log_line, to_f64, to_i64, unquote,
+    is_npc_id, is_player_id, parse_ts_ms, split_log_line, to_f64, to_i64, unquote_str,
 };
 use crate::parser_relics::{
     compute_relic_cooldown_state, is_equipped_relic_ability, mark_relic_use,
@@ -46,7 +46,7 @@ pub(crate) struct EncounterAccum {
     pub(crate) damage_by_player: HashMap<String, f64>,
     pub(crate) healing_by_player: HashMap<String, f64>,
     pub(crate) npc_deaths: Vec<Value>,
-    pub(crate) abilities_by_player: HashMap<String, HashMap<String, AbilityAccum>>,
+    pub(crate) abilities_by_player: HashMap<String, HashMap<AbilityKey, AbilityAccum>>,
     pub(crate) abilities_player_order: Vec<String>,
 }
 
@@ -59,7 +59,7 @@ pub(crate) struct PlayerAccum {
     healing_done: f64,
     damage_taken: f64,
     deaths: i64,
-    pub(crate) abilities: HashMap<String, AbilityAccum>,
+    pub(crate) abilities: HashMap<AbilityKey, AbilityAccum>,
     pub(crate) spirit: Option<Value>,
     pub(crate) spirit_history: Vec<Value>,
     pub(crate) relics: Vec<Value>,
@@ -87,6 +87,7 @@ struct BuffUptimeAccum {
     last_removed_at: Option<String>,
 }
 
+#[derive(Clone)]
 struct ParsedLog {
     data: Value,
 }
@@ -100,7 +101,7 @@ struct ParserState {
     party_player_ids: Vec<String>,
     collecting_dungeon_party: bool,
     encounters: Vec<EncounterAccum>,
-    current_encounter: Option<EncounterAccum>,
+    current_encounter_index: Option<usize>,
     recent_skills: Vec<Value>,
     recent_skills_player_id: Option<String>,
     recent_skills_player_name: Option<String>,
@@ -116,7 +117,7 @@ impl ParserState {
             party_player_ids: Vec::new(),
             collecting_dungeon_party: false,
             encounters: Vec::new(),
-            current_encounter: None,
+            current_encounter_index: None,
             recent_skills: Vec::new(),
             recent_skills_player_id: None,
             recent_skills_player_name: None,
@@ -132,13 +133,14 @@ impl ParserState {
         self.party_player_ids.clear();
         self.collecting_dungeon_party = false;
         self.encounters.clear();
-        self.current_encounter = None;
+        self.current_encounter_index = None;
     }
 
     fn reset_dungeon_scope(&mut self) {
         self.reset_parser_scope();
         self.dungeon.reset_scope();
     }
+
 }
 
 struct ParserCache {
@@ -147,6 +149,7 @@ struct ParserCache {
     offset: u64,
     leftover: String,
     state: ParserState,
+    parsed: Option<ParsedLog>,
     size: u64,
     modified: Option<SystemTime>,
 }
@@ -205,29 +208,35 @@ fn class_info(class_id: Option<i64>) -> (Option<i64>, String, String) {
 fn ensure_player<'a>(
     players: &'a mut HashMap<String, PlayerAccum>,
     id: &str,
-    name: Option<String>,
+    name: Option<&str>,
 ) -> &'a mut PlayerAccum {
     let key = player_map_key(id);
     players.entry(key).or_insert_with(|| PlayerAccum {
         id: id.to_string(),
-        name: name.clone(),
+        name: name.map(str::to_string),
         stones: json!({ "raw": [], "blue": 0, "green": 0, "white": 0 }),
         ..PlayerAccum::default()
     });
     let player = players.get_mut(id).expect("player entry exists");
     if name
-        .as_deref()
         .map(str::trim)
         .filter(|name| !name.is_empty())
         .is_some()
     {
-        player.name = name;
+        player.name = name.map(str::to_string);
     }
     player
 }
 
 fn add_to_map_number(map: &mut HashMap<String, f64>, key: String, amount: f64) {
     *map.entry(key).or_insert(0.0) += amount;
+}
+
+fn current_encounter_mut(
+    encounters: &mut [EncounterAccum],
+    index: Option<usize>,
+) -> Option<&mut EncounterAccum> {
+    index.and_then(|index| encounters.get_mut(index))
 }
 
 fn buff_key(ability_id: Option<i64>, ability_name: Option<&str>) -> String {
@@ -270,7 +279,7 @@ fn mark_player_buff_effect(
     ability_id: Option<i64>,
     ability_name: Option<&str>,
     aura_type: Option<&str>,
-    stack_raw: Option<&String>,
+    stack_raw: Option<&str>,
 ) {
     if !aura_type.unwrap_or("").trim().eq_ignore_ascii_case("BUFF") {
         return;
@@ -339,30 +348,28 @@ fn mark_player_buff_effect(
     stat.active_sources.insert(source_key);
 }
 
-fn split_comma_outside_quotes(raw: &str) -> Vec<String> {
+fn split_comma_outside_quotes(raw: &str) -> Vec<&str> {
     let mut result = Vec::new();
-    let mut current = String::new();
     let mut in_quotes = false;
+    let mut start = 0;
 
-    for ch in raw.chars() {
+    for (index, ch) in raw.char_indices() {
         if ch == '"' {
             in_quotes = !in_quotes;
-            current.push(ch);
             continue;
         }
         if ch == ',' && !in_quotes {
-            result.push(current.trim().to_string());
-            current.clear();
+            result.push(raw[start..index].trim());
+            start = index + ch.len_utf8();
             continue;
         }
-        current.push(ch);
     }
 
-    result.push(current.trim().to_string());
+    result.push(raw[start..].trim());
     result
 }
 
-fn mark_combatant_info_buffs(player: &mut PlayerAccum, ts: &str, raw: Option<&String>) {
+fn mark_combatant_info_buffs(player: &mut PlayerAccum, ts: &str, raw: Option<&str>) {
     let Some(raw) = raw else {
         return;
     };
@@ -380,21 +387,21 @@ fn mark_combatant_info_buffs(player: &mut PlayerAccum, ts: &str, raw: Option<&St
                 if fields.len() < 7 {
                     continue;
                 }
-                let source_id = fields.first().map(String::as_str);
-                let source_name = Some(unquote(fields.get(1)));
-                let ability_id = to_i64(fields.get(2));
-                let ability_name = Some(unquote(fields.get(3)));
-                let aura_type = fields.get(6).map(String::as_str);
+                let source_id = fields.first().copied();
+                let source_name = Some(unquote_str(fields.get(1).copied()));
+                let ability_id = to_i64(fields.get(2).copied());
+                let ability_name = Some(unquote_str(fields.get(3).copied()));
+                let aura_type = fields.get(6).copied();
                 mark_player_buff_effect(
                     player,
                     "EFFECT_APPLIED",
                     ts,
                     source_id,
-                    source_name.as_deref(),
+                    source_name,
                     ability_id,
-                    ability_name.as_deref(),
+                    ability_name,
                     aura_type,
-                    fields.get(5),
+                    fields.get(5).copied(),
                 );
             }
         }
@@ -464,32 +471,32 @@ fn process_line(state: &mut ParserState, line: &str) {
         return;
     }
 
-    let ts = parts[0].clone();
-    let event = parts[1].clone();
+    let ts = parts[0];
+    let event = parts[1];
     if !ts.is_empty() {
-        state.latest_log_ts = Some(ts.clone());
+        state.latest_log_ts = Some(ts.to_string());
         state
             .dungeon
-            .resolve_pending_npc_underflow_deaths(&ts, false);
+            .resolve_pending_npc_underflow_deaths(ts, false);
     }
-    *state.counters.entry(event.clone()).or_insert(0) += 1;
+    *state.counters.entry(event.to_string()).or_insert(0) += 1;
     state.dungeon.note_boss_npc_in_line(&parts);
     if event != "COMBATANT_INFO" && event != "DUNGEON_START" {
         state.collecting_dungeon_party = false;
     }
 
-    match event.as_str() {
+    match event {
         "DUNGEON_START" => {
             state.reset_dungeon_scope();
             state.collecting_dungeon_party = true;
-            state.dungeon.start(&ts, &parts);
+            state.dungeon.start(ts, &parts);
         }
         "DUNGEON_END" => {
             state.collecting_dungeon_party = false;
             state
                 .dungeon
-                .resolve_pending_npc_underflow_deaths(&ts, true);
-            state.dungeon.end(&ts, &parts);
+                .resolve_pending_npc_underflow_deaths(ts, true);
+            state.dungeon.end(ts, &parts);
             for player in state.players.values_mut() {
                 player.spirit_regen_per_second = 0.0;
                 reset_player_relic_cooldowns(player);
@@ -498,25 +505,25 @@ fn process_line(state: &mut ParserState, line: &str) {
         "ZONE_CHANGE" => {
             state
                 .dungeon
-                .resolve_pending_npc_underflow_deaths(&ts, true);
+                .resolve_pending_npc_underflow_deaths(ts, true);
             if state.dungeon.zone_change(&parts) {
                 state.reset_parser_scope();
             }
         }
         "COMBATANT_INFO" => {
-            if !is_player_id(parts.get(3)) {
+            if !is_player_id(parts.get(3).copied()) {
                 return;
             }
-            let id = parts[3].clone();
-            let name = unquote(parts.get(4));
-            let class_id = to_i64(parts.get(6));
-            let player = ensure_player(&mut state.players, &id, Some(name.clone()));
+            let id = parts[3];
+            let name = unquote_str(parts.get(4).copied());
+            let class_id = to_i64(parts.get(6).copied());
+            let player = ensure_player(&mut state.players, id, Some(name));
             let (class_id, class_name, class_color) = class_info(class_id);
             player.class_id = class_id;
-            player.name = Some(name.clone());
-            player.stones = parse_stones(parts.get(10));
+            player.name = Some(name.to_string());
+            player.stones = parse_stones(parts.get(10).copied());
             player.relics = extract_relics_from_parts(&parts);
-            mark_combatant_info_buffs(player, &ts, parts.get(13));
+            mark_combatant_info_buffs(player, ts, parts.get(13).copied());
             player.spirit_stat_value = parts.get(8).and_then(|raw| {
                 raw.trim_matches(&['[', ']'][..])
                     .split(',')
@@ -530,56 +537,55 @@ fn process_line(state: &mut ParserState, line: &str) {
             let _ = (class_name, class_color);
 
             if state.collecting_dungeon_party {
-                if !state.party_player_ids.contains(&id) {
-                    state.party_player_ids.push(id.clone());
+                if !state.party_player_ids.iter().any(|player_id| player_id == id) {
+                    state.party_player_ids.push(id.to_string());
                 }
                 if state.recent_skills_player_id.is_none() {
-                    state.recent_skills_player_id = Some(id);
-                    state.recent_skills_player_name = Some(name);
+                    state.recent_skills_player_id = Some(id.to_string());
+                    state.recent_skills_player_name = Some(name.to_string());
                 }
             }
         }
         "ENCOUNTER_START" => {
-            let encounter_id = to_i64(parts.get(2));
-            let encounter_name = unquote(parts.get(3));
-            state.dungeon.encounter_start(&ts, &encounter_name);
+            let encounter_id = to_i64(parts.get(2).copied());
+            let encounter_name = unquote_str(parts.get(3).copied());
+            state.dungeon.encounter_start(ts, encounter_name);
             let encounter = EncounterAccum {
                 id: encounter_id,
-                name: parse_encounter_name(parts.get(3)),
-                started_at: Some(ts),
+                name: parse_encounter_name(parts.get(3).copied()),
+                started_at: Some(ts.to_string()),
                 ..EncounterAccum::default()
             };
-            state.current_encounter = Some(encounter.clone());
             state.encounters.push(encounter);
             if state.encounters.len() > 2 {
                 let excess = state.encounters.len() - 2;
                 state.encounters.drain(0..excess);
             }
+            state.current_encounter_index = state.encounters.len().checked_sub(1);
         }
         "ENCOUNTER_END" => {
-            let encounter_id = to_i64(parts.get(2));
-            let success = parts.get(4).map(|value| value == "1").unwrap_or(false);
+            let encounter_id = to_i64(parts.get(2).copied());
+            let success = parts.get(4).map(|value| *value == "1").unwrap_or(false);
             state
                 .dungeon
-                .resolve_pending_npc_underflow_deaths(&ts, true);
-            state.dungeon.encounter_end(&ts);
-            if let Some(current) = state.current_encounter.as_mut() {
+                .resolve_pending_npc_underflow_deaths(ts, true);
+            state.dungeon.encounter_end(ts);
+            if let Some(current) =
+                current_encounter_mut(&mut state.encounters, state.current_encounter_index)
+            {
                 if current.id.is_none() {
                     current.id = encounter_id;
                 }
-                current.ended_at = Some(ts.clone());
+                current.ended_at = Some(ts.to_string());
                 current.success = Some(success);
-                if let Some(last) = state.encounters.last_mut() {
-                    *last = current.clone();
-                }
             } else if let Some(last) = state.encounters.last_mut() {
                 if last.id.is_none() {
                     last.id = encounter_id;
                 }
-                last.ended_at = Some(ts.clone());
+                last.ended_at = Some(ts.to_string());
                 last.success = Some(success);
             }
-            state.current_encounter = None;
+            state.current_encounter_index = None;
         }
         "ABILITY_ACTIVATED"
         | "ABILITY_CAST_START"
@@ -588,45 +594,44 @@ fn process_line(state: &mut ParserState, line: &str) {
         | "ABILITY_CHANNEL_START"
         | "ABILITY_CHANNEL_SUCCESS"
         | "ABILITY_CHANNEL_FAIL" => {
-            let source_id = parts.get(2).cloned().unwrap_or_default();
+            let source_id = parts.get(2).copied().unwrap_or_default();
             if !source_id.starts_with("Player-") {
                 return;
             }
-            let source_name = unquote(parts.get(3));
-            let ability_id = to_i64(parts.get(4));
-            let ability_name = unquote(parts.get(5));
-            let target_id = parts.get(7).cloned().unwrap_or_default();
-            let target_name = unquote(parts.get(8));
-            let player = ensure_player(&mut state.players, &source_id, Some(source_name.clone()));
+            let source_name = unquote_str(parts.get(3).copied());
+            let ability_id = to_i64(parts.get(4).copied());
+            let ability_name = unquote_str(parts.get(5).copied());
+            let target_id = parts.get(7).copied().unwrap_or_default();
+            let target_name = unquote_str(parts.get(8).copied());
+            let player = ensure_player(&mut state.players, source_id, Some(source_name));
             if event == "ABILITY_ACTIVATED" {
                 let is_equipped_relic = is_equipped_relic_ability(player, ability_id);
                 add_ability(
                     player,
                     ability_id,
-                    Some(ability_name.clone()),
+                    Some(ability_name),
                     "activation",
                     0.0,
-                    Some(&ts),
+                    Some(ts),
                 );
                 add_encounter_ability(
-                    state.current_encounter.as_mut(),
-                    &source_id,
-                    &source_name,
+                    current_encounter_mut(&mut state.encounters, state.current_encounter_index),
+                    source_id,
+                    source_name,
                     ability_id,
-                    Some(ability_name.clone()),
+                    Some(ability_name),
                     "activation",
                     0.0,
-                    Some(&ts),
+                    Some(ts),
                 );
-                mark_relic_use(player, ability_id, &ts);
-                update_spirit_from_bloodbound_ability(player, &ts, ability_id, &ability_name);
-                if is_chickenize_ability(ability_id, &ability_name) && is_npc_id(&target_id) {
+                mark_relic_use(player, ability_id, ts);
+                update_spirit_from_bloodbound_ability(player, ts, ability_id, ability_name);
+                if is_chickenize_ability(ability_id, ability_name) && is_npc_id(&target_id) {
                     state
                         .dungeon
-                        .mark_npc_chickenized(&ts, &target_id, Some(&target_name));
+                        .mark_npc_chickenized(ts, target_id, Some(target_name));
                 }
-                if !is_equipped_relic
-                    && state.recent_skills_player_id.as_deref() == Some(source_id.as_str())
+                if !is_equipped_relic && state.recent_skills_player_id.as_deref() == Some(source_id)
                 {
                     state.recent_skills.push(json!({
                         "ts": ts,
@@ -643,240 +648,237 @@ fn process_line(state: &mut ParserState, line: &str) {
                     }
                 }
             }
-            if let Some((current, max)) = extract_spirit(parts.get(15)) {
-                add_spirit(player, &ts, current, max, ability_id, Some(ability_name));
+            if let Some((current, max)) = extract_spirit(parts.get(15).copied()) {
+                add_spirit(player, ts, current, max, ability_id, Some(ability_name));
             }
         }
         "EVENT_INVALID" => {
-            let source_id = parts.get(2).cloned().unwrap_or_default();
-            let source_name = unquote(parts.get(3));
-            let target_id = parts.get(4).cloned().unwrap_or_default();
-            let target_name = unquote(parts.get(5));
-            let ability_id = to_i64(parts.get(6));
-            let ability_name = unquote(parts.get(7));
+            let source_id = parts.get(2).copied().unwrap_or_default();
+            let source_name = unquote_str(parts.get(3).copied());
+            let target_id = parts.get(4).copied().unwrap_or_default();
+            let target_name = unquote_str(parts.get(5).copied());
+            let ability_id = to_i64(parts.get(6).copied());
+            let ability_name = unquote_str(parts.get(7).copied());
 
             if source_id.starts_with("Player-") {
-                let player = ensure_player(&mut state.players, &source_id, Some(source_name));
-                if let Some((current, max)) = extract_spirit(parts.get(22)) {
+                let player = ensure_player(&mut state.players, source_id, Some(source_name));
+                if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
                     add_spirit(
                         player,
-                        &ts,
+                        ts,
                         current,
                         max,
                         ability_id,
-                        Some(ability_name.clone()),
+                        Some(ability_name),
                     );
                 }
             }
             if target_id.starts_with("Player-") {
-                let player = ensure_player(&mut state.players, &target_id, Some(target_name));
-                if let Some((current, max)) = extract_spirit(parts.get(29)) {
-                    add_spirit(player, &ts, current, max, ability_id, Some(ability_name));
+                let player = ensure_player(&mut state.players, target_id, Some(target_name));
+                if let Some((current, max)) = extract_spirit(parts.get(29).copied()) {
+                    add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
         }
         "ABILITY_DAMAGE" | "SWING_DAMAGE" | "ABILITY_PERIODIC_DAMAGE" => {
-            let source_id = parts.get(2).cloned().unwrap_or_default();
-            let target_id = parts.get(4).cloned().unwrap_or_default();
-            let target_name = unquote(parts.get(5));
-            let amount = to_f64(parts.get(9));
-            let ability_id = to_i64(parts.get(6));
-            let ability_name = unquote(parts.get(7));
+            let source_id = parts.get(2).copied().unwrap_or_default();
+            let target_id = parts.get(4).copied().unwrap_or_default();
+            let target_name = unquote_str(parts.get(5).copied());
+            let amount = to_f64(parts.get(9).copied());
+            let ability_id = to_i64(parts.get(6).copied());
+            let ability_name = unquote_str(parts.get(7).copied());
 
             if is_npc_id(&target_id) {
                 state
                     .dungeon
-                    .touch_current_pull(&ts, &target_id, Some(&target_name));
+                    .touch_current_pull(ts, target_id, Some(target_name));
                 state.dungeon.mark_npc_underflow_if_needed(
-                    &ts,
-                    &target_id,
-                    Some(&target_name),
-                    parts.get(23),
-                    parts.get(24),
+                    ts,
+                    target_id,
+                    Some(target_name),
+                    parts.get(23).copied(),
+                    parts.get(24).copied(),
                 );
                 if source_id.starts_with("Player-")
-                    && is_chickenize_ability(ability_id, &ability_name)
+                    && is_chickenize_ability(ability_id, ability_name)
                 {
                     state
                         .dungeon
-                        .mark_npc_chickenized(&ts, &target_id, Some(&target_name));
+                        .mark_npc_chickenized(ts, target_id, Some(target_name));
                 }
             }
             if is_npc_id(&source_id) {
-                let source_name = unquote(parts.get(3));
+                let source_name = unquote_str(parts.get(3).copied());
                 state
                     .dungeon
-                    .touch_current_pull(&ts, &source_id, Some(&source_name));
+                    .touch_current_pull(ts, source_id, Some(source_name));
             }
 
             if source_id.starts_with("Player-") {
-                let source_name = unquote(parts.get(3));
-                let player = ensure_player(&mut state.players, &source_id, Some(source_name));
+                let source_name = unquote_str(parts.get(3).copied());
+                let player = ensure_player(&mut state.players, source_id, Some(source_name));
                 player.damage_done += amount;
                 add_ability(
                     player,
                     ability_id,
-                    Some(ability_name.clone()),
+                    Some(ability_name),
                     "damage",
                     amount,
                     None,
                 );
-                if let Some(encounter) = state.current_encounter.as_mut() {
+                if let Some(encounter) =
+                    current_encounter_mut(&mut state.encounters, state.current_encounter_index)
+                {
                     add_encounter_ability(
                         Some(encounter),
-                        &source_id,
+                        source_id,
                         player.name.as_deref().unwrap_or(""),
                         ability_id,
-                        Some(ability_name.clone()),
+                        Some(ability_name),
                         "damage",
                         amount,
                         None,
                     );
                     add_to_map_number(
                         &mut encounter.damage_by_player,
-                        actor_key(&source_id, player.name.as_deref()),
+                        actor_key(source_id, player.name.as_deref()),
                         amount,
                     );
-                    if let Some(last) = state.encounters.last_mut() {
-                        *last = encounter.clone();
-                    }
                 }
-                if let Some((current, max)) = extract_spirit(parts.get(22)) {
+                if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
                     add_spirit(
                         player,
-                        &ts,
+                        ts,
                         current,
                         max,
                         ability_id,
-                        Some(ability_name.clone()),
+                        Some(ability_name),
                     );
                 }
             }
             if target_id.starts_with("Player-") {
-                let player = ensure_player(&mut state.players, &target_id, Some(target_name));
+                let player = ensure_player(&mut state.players, target_id, Some(target_name));
                 player.damage_taken += amount;
-                if let Some((current, max)) = extract_spirit(parts.get(29)) {
-                    add_spirit(player, &ts, current, max, ability_id, Some(ability_name));
+                if let Some((current, max)) = extract_spirit(parts.get(29).copied()) {
+                    add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
         }
         "ABILITY_HEAL" | "ABILITY_PERIODIC_HEAL" => {
-            let source_id = parts.get(2).cloned().unwrap_or_default();
+            let source_id = parts.get(2).copied().unwrap_or_default();
             if source_id.starts_with("Player-") {
-                let source_name = unquote(parts.get(3));
-                let ability_id = to_i64(parts.get(6));
-                let ability_name = unquote(parts.get(7));
-                let amount = to_f64(parts.get(11));
-                let player = ensure_player(&mut state.players, &source_id, Some(source_name));
+                let source_name = unquote_str(parts.get(3).copied());
+                let ability_id = to_i64(parts.get(6).copied());
+                let ability_name = unquote_str(parts.get(7).copied());
+                let amount = to_f64(parts.get(11).copied());
+                let player = ensure_player(&mut state.players, source_id, Some(source_name));
                 player.healing_done += amount;
                 add_ability(
                     player,
                     ability_id,
-                    Some(ability_name.clone()),
+                    Some(ability_name),
                     "healing",
                     amount,
                     None,
                 );
-                if let Some(encounter) = state.current_encounter.as_mut() {
+                if let Some(encounter) =
+                    current_encounter_mut(&mut state.encounters, state.current_encounter_index)
+                {
                     add_encounter_ability(
                         Some(encounter),
-                        &source_id,
+                        source_id,
                         player.name.as_deref().unwrap_or(""),
                         ability_id,
-                        Some(ability_name.clone()),
+                        Some(ability_name),
                         "healing",
                         amount,
                         None,
                     );
                     add_to_map_number(
                         &mut encounter.healing_by_player,
-                        actor_key(&source_id, player.name.as_deref()),
+                        actor_key(source_id, player.name.as_deref()),
                         amount,
                     );
-                    if let Some(last) = state.encounters.last_mut() {
-                        *last = encounter.clone();
-                    }
                 }
-                if let Some((current, max)) = extract_spirit(parts.get(22)) {
-                    add_spirit(player, &ts, current, max, ability_id, Some(ability_name));
+                if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
+                    add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
         }
         "EFFECT_APPLIED" | "EFFECT_REFRESHED" | "EFFECT_REMOVED" => {
-            let source_id = parts.get(2).cloned().unwrap_or_default();
-            let source_name = unquote(parts.get(3));
-            let target_id = parts.get(4).cloned().unwrap_or_default();
-            let target_name = unquote(parts.get(5));
-            let ability_id = to_i64(parts.get(6));
-            let ability_name = unquote(parts.get(7));
+            let source_id = parts.get(2).copied().unwrap_or_default();
+            let source_name = unquote_str(parts.get(3).copied());
+            let target_id = parts.get(4).copied().unwrap_or_default();
+            let target_name = unquote_str(parts.get(5).copied());
+            let ability_id = to_i64(parts.get(6).copied());
+            let ability_name = unquote_str(parts.get(7).copied());
 
             if is_npc_id(&source_id) && target_id.starts_with("Player-") {
                 state
                     .dungeon
-                    .touch_current_pull(&ts, &source_id, Some(&source_name));
+                    .touch_current_pull(ts, source_id, Some(source_name));
             }
             if is_npc_id(&target_id) && source_id.starts_with("Player-") {
                 state
                     .dungeon
-                    .touch_current_pull(&ts, &target_id, Some(&target_name));
-                if is_chickenize_ability(ability_id, &ability_name) {
+                    .touch_current_pull(ts, target_id, Some(target_name));
+                if is_chickenize_ability(ability_id, ability_name) {
                     state
                         .dungeon
-                        .mark_npc_chickenized(&ts, &target_id, Some(&target_name));
+                        .mark_npc_chickenized(ts, target_id, Some(target_name));
                 }
             }
             if target_id.starts_with("Player-") {
-                let player = ensure_player(&mut state.players, &target_id, Some(target_name));
+                let player = ensure_player(&mut state.players, target_id, Some(target_name));
                 mark_player_buff_effect(
                     player,
-                    &event,
-                    &ts,
-                    Some(&source_id),
-                    Some(&source_name),
+                    event,
+                    ts,
+                    Some(source_id),
+                    Some(source_name),
                     ability_id,
-                    Some(&ability_name),
-                    parts.get(10).map(String::as_str),
-                    parts.get(9),
+                    Some(ability_name),
+                    parts.get(10).copied(),
+                    parts.get(9).copied(),
                 );
                 update_spirit_from_rising_spirit_effect(
                     player,
-                    &event,
-                    &ts,
+                    event,
+                    ts,
                     ability_id,
-                    &ability_name,
-                    parts.get(9),
+                    ability_name,
+                    parts.get(9).copied(),
                 );
-                if let Some((current, max)) = extract_spirit(parts.get(17)) {
-                    add_spirit(player, &ts, current, max, ability_id, Some(ability_name));
+                if let Some((current, max)) = extract_spirit(parts.get(17).copied()) {
+                    add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
         }
         "UNIT_DEATH" | "UNIT_DESTROYED" => {
-            let dead_id = parts.get(2).cloned().unwrap_or_default();
+            let dead_id = parts.get(2).copied().unwrap_or_default();
             if event == "UNIT_DEATH" && dead_id.starts_with("Player-") {
-                let dead_name = unquote(parts.get(3));
-                ensure_player(&mut state.players, &dead_id, Some(dead_name)).deaths += 1;
+                let dead_name = unquote_str(parts.get(3).copied());
+                ensure_player(&mut state.players, dead_id, Some(dead_name)).deaths += 1;
             } else if is_npc_id(&dead_id) {
-                let dead_name = unquote(parts.get(3));
+                let dead_name = unquote_str(parts.get(3).copied());
                 state
                     .dungeon
-                    .mark_current_pull_death(&ts, &dead_id, Some(&dead_name));
-                if let Some(encounter) = state.current_encounter.as_mut() {
+                    .mark_current_pull_death(ts, dead_id, Some(dead_name));
+                if let Some(encounter) =
+                    current_encounter_mut(&mut state.encounters, state.current_encounter_index)
+                {
                     encounter.npc_deaths.push(json!({
                         "ts": ts,
                         "npcId": dead_id,
                         "npcName": dead_name,
-                        "killerId": if event == "UNIT_DEATH" { parts.get(4).cloned() } else { None },
-                        "killerName": if event == "UNIT_DEATH" { Some(unquote(parts.get(5))) } else { None },
-                        "killingAbilityId": if event == "UNIT_DEATH" { to_i64(parts.get(6)) } else { None },
-                        "killingAbility": if event == "UNIT_DEATH" { Some(unquote(parts.get(7))) } else { None }
+                        "killerId": if event == "UNIT_DEATH" { parts.get(4).copied() } else { None },
+                        "killerName": if event == "UNIT_DEATH" { Some(unquote_str(parts.get(5).copied())) } else { None },
+                        "killingAbilityId": if event == "UNIT_DEATH" { to_i64(parts.get(6).copied()) } else { None },
+                        "killingAbility": if event == "UNIT_DEATH" { Some(unquote_str(parts.get(7).copied())) } else { None }
                     }));
                     if encounter.npc_deaths.len() > 200 {
                         let excess = encounter.npc_deaths.len() - 200;
                         encounter.npc_deaths.drain(0..excess);
-                    }
-                    if let Some(last) = state.encounters.last_mut() {
-                        *last = encounter.clone();
                     }
                 }
             }
@@ -1063,29 +1065,38 @@ fn parse_log_file(file_path: &Path) -> Result<ParsedLog, String> {
             offset: size,
             leftover,
             state,
+            parsed: None,
             size,
             modified,
         });
     } else if let Some(cache) = cache_slot.as_mut() {
-        if let Err(error) = process_file_range(
-            file_path,
-            cache.offset,
-            size,
-            &mut cache.leftover,
-            &mut cache.state,
-        ) {
-            *cache_slot = None;
-            return Err(error);
+        if size > cache.offset {
+            if let Err(error) = process_file_range(
+                file_path,
+                cache.offset,
+                size,
+                &mut cache.leftover,
+                &mut cache.state,
+            ) {
+                *cache_slot = None;
+                return Err(error);
+            }
+            cache.parsed = None;
         }
         cache.offset = size;
         cache.size = size;
         cache.modified = modified;
     }
 
-    cache_slot
-        .as_ref()
-        .map(|cache| finalize_state(&cache.state))
-        .ok_or_else(|| "Parser cache was not initialized".to_string())
+    let cache = cache_slot
+        .as_mut()
+        .ok_or_else(|| "Parser cache was not initialized".to_string())?;
+    if let Some(parsed) = cache.parsed.as_ref() {
+        return Ok(parsed.clone());
+    }
+    let parsed = finalize_state(&cache.state);
+    cache.parsed = Some(parsed.clone());
+    Ok(parsed)
 }
 
 pub fn build_log_data_payload(file_path: &Path) -> Value {

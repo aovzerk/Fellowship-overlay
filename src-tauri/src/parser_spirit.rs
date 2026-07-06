@@ -5,9 +5,8 @@ const RISING_SPIRIT_ID: i64 = 3115;
 const BLOODBOUND_SPIRIT_ID: i64 = 2296;
 const BLOODBOUND_SPIRIT_BUFF_ID: i64 = 3242;
 
-pub fn parse_stones(raw: Option<&String>) -> Value {
+pub fn parse_stones(raw: Option<&str>) -> Value {
     let values: Vec<f64> = raw
-        .map(String::as_str)
         .filter(|raw| raw.starts_with('[') && raw.ends_with(']'))
         .map(|raw| {
             raw[1..raw.len() - 1]
@@ -25,7 +24,7 @@ pub fn parse_stones(raw: Option<&String>) -> Value {
     })
 }
 
-pub fn extract_spirit(raw: Option<&String>) -> Option<(f64, f64)> {
+pub fn extract_spirit(raw: Option<&str>) -> Option<(f64, f64)> {
     let raw = raw?;
     if !raw.starts_with('[') || !raw.ends_with(']') {
         return None;
@@ -53,7 +52,7 @@ pub fn add_spirit(
     current: f64,
     max: f64,
     ability_id: Option<i64>,
-    ability_name: Option<String>,
+    ability_name: Option<&str>,
 ) {
     let normalized_max = player_spirit_max(player).max(0.0);
     let fallback_max = max.max(0.0);
@@ -118,7 +117,7 @@ pub fn update_spirit_from_bloodbound_ability(
         0.0,
         0.0,
         ability_id,
-        Some(ability_name.to_string()),
+        Some(ability_name),
     );
 }
 
@@ -128,7 +127,7 @@ pub fn update_spirit_from_rising_spirit_effect(
     ts: &str,
     ability_id: Option<i64>,
     ability_name: &str,
-    stack_raw: Option<&String>,
+    stack_raw: Option<&str>,
 ) {
     if is_bloodbound_spirit_spend(ability_id, ability_name) {
         player.rising_spirit_stack = 0;
@@ -138,7 +137,7 @@ pub fn update_spirit_from_rising_spirit_effect(
             0.0,
             0.0,
             ability_id,
-            Some(ability_name.to_string()),
+            Some(ability_name),
         );
         return;
     }
@@ -181,7 +180,7 @@ pub fn update_spirit_from_rising_spirit_effect(
         current_spirit,
         0.0,
         ability_id,
-        Some(ability_name.to_string()),
+        Some(ability_name),
     );
 }
 

@@ -1,14 +1,13 @@
-pub fn split_log_line(line: &str) -> Vec<String> {
+pub fn split_log_line(line: &str) -> Vec<&str> {
     let mut result = Vec::new();
-    let mut current = String::new();
     let mut in_quotes = false;
     let mut square_depth = 0_i32;
     let mut round_depth = 0_i32;
+    let mut start = 0;
 
-    for ch in line.chars() {
+    for (index, ch) in line.char_indices() {
         if ch == '"' {
             in_quotes = !in_quotes;
-            current.push(ch);
             continue;
         }
 
@@ -19,31 +18,29 @@ pub fn split_log_line(line: &str) -> Vec<String> {
                 '(' => round_depth += 1,
                 ')' => round_depth -= 1,
                 '|' if square_depth == 0 && round_depth == 0 => {
-                    result.push(current);
-                    current = String::new();
+                    result.push(&line[start..index]);
+                    start = index + ch.len_utf8();
                     continue;
                 }
                 _ => {}
             }
         }
-
-        current.push(ch);
     }
 
-    result.push(current);
+    result.push(&line[start..]);
     result
 }
 
-pub fn unquote(value: Option<&String>) -> String {
-    let value = value.map(String::as_str).unwrap_or("").trim();
+pub fn unquote_str(value: Option<&str>) -> &str {
+    let value = value.unwrap_or("").trim();
     if value.len() >= 2 && value.starts_with('"') && value.ends_with('"') {
-        value[1..value.len() - 1].to_string()
+        &value[1..value.len() - 1]
     } else {
-        value.to_string()
+        value
     }
 }
 
-pub fn to_i64(value: Option<&String>) -> Option<i64> {
+pub fn to_i64(value: Option<&str>) -> Option<i64> {
     value?
         .parse::<f64>()
         .ok()
@@ -51,14 +48,14 @@ pub fn to_i64(value: Option<&String>) -> Option<i64> {
         .map(|value| value as i64)
 }
 
-pub fn to_f64(value: Option<&String>) -> f64 {
+pub fn to_f64(value: Option<&str>) -> f64 {
     value
         .and_then(|value| value.parse::<f64>().ok())
         .filter(|value| value.is_finite())
         .unwrap_or(0.0)
 }
 
-pub fn is_player_id(value: Option<&String>) -> bool {
+pub fn is_player_id(value: Option<&str>) -> bool {
     value
         .map(|value| value.starts_with("Player-"))
         .unwrap_or(false)
@@ -71,42 +68,70 @@ pub fn is_npc_id(value: &str) -> bool {
 pub fn parse_ts_ms(ts: &str) -> Option<i64> {
     let trimmed = ts.trim();
     let (clean, offset_minutes) = split_timezone_offset(trimmed);
-    let date_time: Vec<&str> = clean.split('T').collect();
-    if date_time.len() != 2 {
+    let bytes = clean.as_bytes();
+    if bytes.len() < 19
+        || bytes.get(4) != Some(&b'-')
+        || bytes.get(7) != Some(&b'-')
+        || bytes.get(10) != Some(&b'T')
+        || bytes.get(13) != Some(&b':')
+        || bytes.get(16) != Some(&b':')
+    {
         return None;
     }
-    let date: Vec<i64> = date_time[0]
-        .split('-')
-        .filter_map(|value| value.parse::<i64>().ok())
-        .collect();
-    let time_parts: Vec<&str> = date_time[1].split(':').collect();
-    if date.len() != 3 || time_parts.len() < 3 {
-        return None;
-    }
-    let hour = time_parts[0].parse::<i64>().ok()?;
-    let minute = time_parts[1].parse::<i64>().ok()?;
-    let second_parts: Vec<&str> = time_parts[2].split('.').collect();
-    let second = second_parts[0].parse::<i64>().ok()?;
-    let millis = second_parts
-        .get(1)
-        .map(|value| {
-            value
-                .chars()
-                .take_while(|ch| ch.is_ascii_digit())
-                .take(3)
-                .collect::<String>()
-        })
-        .and_then(|value| format!("{value:0<3}").parse::<i64>().ok())
-        .unwrap_or(0);
+
+    let year = parse_digits_i64(bytes, 0, 4)?;
+    let month = parse_digits_i64(bytes, 5, 2)?;
+    let day = parse_digits_i64(bytes, 8, 2)?;
+    let hour = parse_digits_i64(bytes, 11, 2)?;
+    let minute = parse_digits_i64(bytes, 14, 2)?;
+    let second = parse_digits_i64(bytes, 17, 2)?;
+    let millis = parse_millis(bytes, 19)?;
 
     Some(
-        days_from_civil(date[0], date[1], date[2]) * 86_400_000
+        days_from_civil(year, month, day) * 86_400_000
             + hour * 3_600_000
             + minute * 60_000
             + second * 1000
             + millis
             - offset_minutes * 60_000,
     )
+}
+
+fn parse_digits_i64(bytes: &[u8], start: usize, len: usize) -> Option<i64> {
+    let mut value = 0_i64;
+    for index in start..start + len {
+        let digit = bytes.get(index)?.checked_sub(b'0')?;
+        if digit > 9 {
+            return None;
+        }
+        value = value * 10 + i64::from(digit);
+    }
+    Some(value)
+}
+
+fn parse_millis(bytes: &[u8], start: usize) -> Option<i64> {
+    if bytes.get(start) != Some(&b'.') {
+        return Some(0);
+    }
+
+    let mut value = 0_i64;
+    let mut digits = 0;
+    for byte in bytes.iter().skip(start + 1) {
+        if !byte.is_ascii_digit() {
+            break;
+        }
+        if digits < 3 {
+            value = value * 10 + i64::from(byte - b'0');
+        }
+        digits += 1;
+    }
+    if digits == 0 {
+        return None;
+    }
+    for _ in digits..3 {
+        value *= 10;
+    }
+    Some(value)
 }
 
 pub fn ms_to_iso_utc(ms: i64) -> String {

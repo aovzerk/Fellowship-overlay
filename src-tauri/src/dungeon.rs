@@ -1,5 +1,5 @@
 use crate::game_database::load_dungeon_data;
-use crate::parser_line_utils::{is_npc_id, parse_ts_ms, to_i64, unquote};
+use crate::parser_line_utils::{is_npc_id, parse_ts_ms, to_i64, unquote_str};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -75,14 +75,14 @@ impl DungeonTracker {
         self.boss_fight_started_at_ms = None;
     }
 
-    pub fn start(&mut self, ts: &str, parts: &[String]) {
+    pub fn start(&mut self, ts: &str, parts: &[&str]) {
         self.reset_scope();
-        let name = unquote(parts.get(2));
-        let id = to_i64(parts.get(3));
-        self.dungeon_data = load_dungeon_data(id, Some(&name));
-        let client_ts = parts.get(7).cloned();
+        let name = unquote_str(parts.get(2).copied());
+        let id = to_i64(parts.get(3).copied());
+        self.dungeon_data = load_dungeon_data(id, Some(name));
+        let client_ts = parts.get(7).copied();
         let time_correction_ms = parse_ts_ms(ts)
-            .zip(client_ts.as_deref().and_then(parse_ts_ms))
+            .zip(client_ts.and_then(parse_ts_ms))
             .map(|(server_ms, client_ms)| server_ms - client_ms)
             .unwrap_or(0);
         self.dungeon["startedAt"] = json!(ts);
@@ -91,32 +91,32 @@ impl DungeonTracker {
         self.dungeon["timeCorrectionClientTs"] = json!(client_ts);
         self.dungeon["name"] = json!(name);
         self.dungeon["id"] = json!(id);
-        self.dungeon["difficulty"] = json!(to_i64(parts.get(4)));
-        self.dungeon["affixes"] = json!(parts.get(5).cloned());
+        self.dungeon["difficulty"] = json!(to_i64(parts.get(4).copied()));
+        self.dungeon["affixes"] = json!(parts.get(5).copied());
         self.dungeon["data"] = self.dungeon_data.clone().unwrap_or(Value::Null);
     }
 
-    pub fn end(&mut self, ts: &str, parts: &[String]) {
-        let name = unquote(parts.get(2));
-        let id = to_i64(parts.get(3));
+    pub fn end(&mut self, ts: &str, parts: &[&str]) {
+        let name = unquote_str(parts.get(2).copied());
+        let id = to_i64(parts.get(3).copied());
         if self.dungeon_data.is_none() {
-            self.dungeon_data = load_dungeon_data(id, Some(&name));
+            self.dungeon_data = load_dungeon_data(id, Some(name));
         }
         self.dungeon["endedAt"] = json!(ts);
         self.dungeon["name"] = json!(name);
         self.dungeon["id"] = json!(id);
-        self.dungeon["difficulty"] = json!(to_i64(parts.get(4)));
-        self.dungeon["success"] = json!(parts.get(6).map(|value| value == "1").unwrap_or(false));
-        self.dungeon["durationMs"] = json!(to_i64(parts.get(7)));
-        self.dungeon["completionSeconds"] = json!(to_i64(parts.get(8)));
-        self.dungeon["deaths"] = json!(to_i64(parts.get(9)));
+        self.dungeon["difficulty"] = json!(to_i64(parts.get(4).copied()));
+        self.dungeon["success"] = json!(parts.get(6).map(|value| *value == "1").unwrap_or(false));
+        self.dungeon["durationMs"] = json!(to_i64(parts.get(7).copied()));
+        self.dungeon["completionSeconds"] = json!(to_i64(parts.get(8).copied()));
+        self.dungeon["deaths"] = json!(to_i64(parts.get(9).copied()));
         self.dungeon["data"] = self.dungeon_data.clone().unwrap_or(Value::Null);
     }
 
-    pub fn zone_change(&mut self, parts: &[String]) -> bool {
-        let name = unquote(parts.get(2));
-        let id = to_i64(parts.get(3));
-        let dungeon_data = load_dungeon_data(id, Some(&name));
+    pub fn zone_change(&mut self, parts: &[&str]) -> bool {
+        let name = unquote_str(parts.get(2).copied());
+        let id = to_i64(parts.get(3).copied());
+        let dungeon_data = load_dungeon_data(id, Some(name));
         let recognized_dungeon = dungeon_data.is_some();
         if recognized_dungeon {
             self.reset_scope();
@@ -124,7 +124,7 @@ impl DungeonTracker {
         self.dungeon_data = dungeon_data;
         self.dungeon["name"] = json!(name);
         self.dungeon["id"] = json!(id);
-        self.dungeon["difficulty"] = json!(to_i64(parts.get(4)));
+        self.dungeon["difficulty"] = json!(to_i64(parts.get(4).copied()));
         self.dungeon["data"] = self.dungeon_data.clone().unwrap_or(Value::Null);
         self.dungeon["completedPercent"] = json!(0);
         recognized_dungeon
@@ -253,8 +253,8 @@ impl DungeonTracker {
         ts: &str,
         npc_id: &str,
         npc_name: Option<&str>,
-        current_hp_raw: Option<&String>,
-        max_hp_raw: Option<&String>,
+        current_hp_raw: Option<&str>,
+        max_hp_raw: Option<&str>,
     ) {
         if !is_npc_id(npc_id) {
             return;
@@ -331,7 +331,7 @@ impl DungeonTracker {
         self.boss_fight_started_at_ms = None;
     }
 
-    pub fn note_boss_npc_in_line(&mut self, parts: &[String]) {
+    pub fn note_boss_npc_in_line(&mut self, parts: &[&str]) {
         if !self.boss_fight_active {
             return;
         }
@@ -345,8 +345,8 @@ impl DungeonTracker {
             if !self.is_boss_template_id(template_id) {
                 continue;
             }
-            self.boss_spawned_npc_ids.remove(value);
-            if let Some(npc) = self.current_pull.npc_map.get_mut(value) {
+            self.boss_spawned_npc_ids.remove(*value);
+            if let Some(npc) = self.current_pull.npc_map.get_mut(*value) {
                 npc.boss_spawned = false;
                 npc.boss_spawned_at = None;
             }

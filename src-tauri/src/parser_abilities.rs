@@ -1,7 +1,13 @@
 use crate::parser::{AbilityAccum, EncounterAccum, PlayerAccum};
-use crate::parser_line_utils::unquote;
+use crate::parser_line_utils::unquote_str;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum AbilityKey {
+    Id(i64),
+    Name(String),
+}
 
 pub fn actor_key(id: &str, name: Option<&str>) -> String {
     format!("{}::{}", id, name.unwrap_or("unknown"))
@@ -10,19 +16,19 @@ pub fn actor_key(id: &str, name: Option<&str>) -> String {
 pub fn add_ability(
     player: &mut PlayerAccum,
     ability_id: Option<i64>,
-    ability_name: Option<String>,
+    ability_name: Option<&str>,
     kind: &str,
     amount: f64,
     ts: Option<&str>,
 ) {
-    if ability_id.is_none() && ability_name.as_deref().unwrap_or("").is_empty() {
+    if ability_id.is_none() && ability_name.unwrap_or("").is_empty() {
         return;
     }
 
-    let key = ability_key(ability_id, ability_name.as_deref());
+    let key = ability_key(ability_id, ability_name);
     let ability = player.abilities.entry(key).or_insert_with(|| AbilityAccum {
         id: ability_id,
-        name: ability_name,
+        name: ability_name.map(str::to_string),
         ..AbilityAccum::default()
     });
 
@@ -50,7 +56,7 @@ pub fn add_encounter_ability(
     player_id: &str,
     player_name: &str,
     ability_id: Option<i64>,
-    ability_name: Option<String>,
+    ability_name: Option<&str>,
     kind: &str,
     amount: f64,
     ts: Option<&str>,
@@ -63,10 +69,10 @@ pub fn add_encounter_ability(
         encounter.abilities_player_order.push(player_key.clone());
     }
     let abilities = encounter.abilities_by_player.entry(player_key).or_default();
-    let key = ability_key(ability_id, ability_name.as_deref());
+    let key = ability_key(ability_id, ability_name);
     let ability = abilities.entry(key).or_insert_with(|| AbilityAccum {
         id: ability_id,
-        name: ability_name,
+        name: ability_name.map(str::to_string),
         ..AbilityAccum::default()
     });
     match kind {
@@ -88,11 +94,11 @@ pub fn add_encounter_ability(
     }
 }
 
-pub fn parse_encounter_name(raw: Option<&String>) -> Option<String> {
-    let value = unquote(raw);
+pub fn parse_encounter_name(raw: Option<&str>) -> Option<String> {
+    let value = unquote_str(raw);
     if value.trim().is_empty() {
         None
-    } else if let Ok(parsed) = serde_json::from_str::<Value>(&value) {
+    } else if let Ok(parsed) = serde_json::from_str::<Value>(value) {
         if let Some(items) = parsed.as_array() {
             Some(
                 items
@@ -111,7 +117,7 @@ pub fn parse_encounter_name(raw: Option<&String>) -> Option<String> {
             Some(parsed.to_string())
         }
     } else {
-        Some(value)
+        Some(value.to_string())
     }
 }
 
@@ -203,13 +209,12 @@ pub fn build_uses_per_boss(player: &PlayerAccum, encounters: &[EncounterAccum]) 
         .collect()
 }
 
-fn ability_key(id: Option<i64>, name: Option<&str>) -> String {
-    format!(
-        "{}::{}",
-        id.map(|id| id.to_string())
-            .unwrap_or_else(|| "unknown".to_string()),
-        name.unwrap_or("unknown")
-    )
+fn ability_key(id: Option<i64>, name: Option<&str>) -> AbilityKey {
+    if let Some(id) = id {
+        AbilityKey::Id(id)
+    } else {
+        AbilityKey::Name(name.unwrap_or("unknown").to_string())
+    }
 }
 
 fn ability_score(ability: &Value) -> f64 {

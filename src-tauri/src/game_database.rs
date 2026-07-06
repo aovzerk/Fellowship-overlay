@@ -16,7 +16,7 @@ pub fn load_dungeon_data(dungeon_id: Option<i64>, name: Option<&str>) -> Option<
         .or_else(|| name.and_then(load_dungeon_data_by_name))
 }
 
-pub fn extract_relics_from_parts(parts: &[String]) -> Vec<Value> {
+pub fn extract_relics_from_parts(parts: &[&str]) -> Vec<Value> {
     let relic_data = load_relic_data();
     let relics = relic_data
         .get("relics")
