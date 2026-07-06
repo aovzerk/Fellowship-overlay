@@ -24,6 +24,7 @@ import { parseTs } from './parser-line-utils';
 
 const MAX_RECENT_SKILL_ACTIVATIONS = 30;
 const MAX_SPIRIT_HISTORY = 120;
+const MAX_ABILITY_ACTIVATION_TIMESTAMPS = 50;
 
 type InternalPlayerState = Omit<PlayerState, 'abilities'> & {
   abilities: Map<string, AbilityStat>;
@@ -276,6 +277,7 @@ function ensureAbility(player: InternalPlayerState, abilityId: number | null, ab
       activations: 0,
       hits: 0,
       lastActivationTs: null,
+      activationTimestamps: [],
     });
   }
 
@@ -307,10 +309,22 @@ function ensureEncounterAbility(
       activations: 0,
       hits: 0,
       lastActivationTs: null,
+      activationTimestamps: [],
     });
   }
 
   return abilities?.get(abilityKey) || null;
+}
+
+function recordAbilityActivationTimestamp(stat: AbilityStat, ts: string | null | undefined): void {
+  if (!ts) return;
+  stat.lastActivationTs = ts;
+  const timestamps = Array.isArray(stat.activationTimestamps) ? stat.activationTimestamps : [];
+  timestamps.push(ts);
+  if (timestamps.length > MAX_ABILITY_ACTIVATION_TIMESTAMPS) {
+    timestamps.splice(0, timestamps.length - MAX_ABILITY_ACTIVATION_TIMESTAMPS);
+  }
+  stat.activationTimestamps = timestamps;
 }
 
 function addAbilityStat(
@@ -326,7 +340,7 @@ function addAbilityStat(
 
   if (type === 'activation') {
     stat.activations += 1;
-    if (ts) stat.lastActivationTs = ts;
+    recordAbilityActivationTimestamp(stat, ts);
     return;
   }
 
@@ -396,7 +410,7 @@ function addEncounterAbilityStat(
 
   if (type === 'activation') {
     stat.activations += 1;
-    if (ts) stat.lastActivationTs = ts;
+    recordAbilityActivationTimestamp(stat, ts);
     return;
   }
 
@@ -652,6 +666,13 @@ function sortAbilities(list: Iterable<AbilityStat>): AbilityStat[] {
 
 function serializeAbilityStat(ability: Partial<AbilityStat> | null | undefined): SerializedAbilityStat {
   const lastActivationTs = ability?.lastActivationTs || null;
+  const activationTimestamps = Array.isArray(ability?.activationTimestamps)
+    ? ability.activationTimestamps.filter((value): value is string => typeof value === 'string' && value.length > 0)
+    : [];
+  if (lastActivationTs && !activationTimestamps.includes(lastActivationTs)) {
+    activationTimestamps.push(lastActivationTs);
+  }
+
   return {
     id: ability?.id ?? null,
     name: ability?.name || null,
@@ -660,7 +681,7 @@ function serializeAbilityStat(ability: Partial<AbilityStat> | null | undefined):
     activations: Number(ability?.activations || 0),
     hits: Number(ability?.hits || 0),
     lastActivationTs,
-    activationTimestamps: lastActivationTs ? [lastActivationTs] : [],
+    activationTimestamps,
   };
 }
 

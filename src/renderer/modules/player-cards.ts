@@ -7,11 +7,27 @@
     originalCooldown?: number;
   };
 
+  type CooldownAccelerationEffect = {
+    abilityId: number;
+    durationMs: number;
+    speedBonus: number;
+  };
+
+  type CooldownAccelerationWindow = {
+    startMs: number;
+    endMs: number;
+    speedBonus: number;
+  };
+
   const PARTY_GROUP_KEY = 'party-group';
   const RELICS_ORDER_TOKEN = '__relics__';
   const TANK_CLASS_IDS = new Set([22, 13, 25]);
   const HEALER_CLASS_IDS = new Set([24, 14, 20]);
   const GUNDE_CLASS_ID = 9;
+  const COOLDOWN_ACCELERATION_EFFECTS: CooldownAccelerationEffect[] = [
+    { abilityId: 1558, durationMs: 3000, speedBonus: 8 },
+    { abilityId: 160, durationMs: 6000, speedBonus: 2 },
+  ];
 
   function updateIconNodes(container: HTMLElement, items: DisplayIcon[]): void {
     const existing = new Map<string, HTMLElement>();
@@ -180,6 +196,122 @@
     return tokens;
   }
 
+  function getAbilityActivationTimestampMsList(ability: SerializedAbilityStat | undefined): number[] {
+    const rawTimestamps = Array.isArray(ability?.activationTimestamps) && ability.activationTimestamps.length
+      ? ability.activationTimestamps
+      : (ability?.lastActivationTs ? [ability.lastActivationTs] : []);
+    const seen = new Set<number>();
+    const result: number[] = [];
+
+    rawTimestamps.forEach((ts) => {
+      const tsMs = Date.parse(String(ts || ''));
+      if (!Number.isFinite(tsMs) || seen.has(tsMs)) return;
+      seen.add(tsMs);
+      result.push(tsMs);
+    });
+
+    return result.sort((a, b) => a - b);
+  }
+
+  function buildCooldownAccelerationWindows(abilityMap: Map<string, SerializedAbilityStat>): CooldownAccelerationWindow[] {
+    const windows: CooldownAccelerationWindow[] = [];
+
+    COOLDOWN_ACCELERATION_EFFECTS.forEach((effect) => {
+      const ability = abilityMap.get(String(effect.abilityId));
+      getAbilityActivationTimestampMsList(ability).forEach((startMs) => {
+        windows.push({
+          startMs,
+          endMs: startMs + effect.durationMs,
+          speedBonus: effect.speedBonus,
+        });
+      });
+    });
+
+    return windows
+      .filter((window) => Number.isFinite(window.startMs) && Number.isFinite(window.endMs) && window.endMs > window.startMs && window.speedBonus > 0)
+      .sort((a, b) => a.startMs - b.startMs || a.endMs - b.endMs);
+  }
+
+  function getCooldownSpeedAt(timeMs: number, windows: CooldownAccelerationWindow[]): number {
+    return 1 + windows.reduce((sum, window) => (
+      window.startMs <= timeMs && timeMs < window.endMs ? sum + window.speedBonus : sum
+    ), 0);
+  }
+
+  function getNextCooldownSpeedBoundary(afterMs: number, windows: CooldownAccelerationWindow[]): number | null {
+    let nextBoundary: number | null = null;
+
+    windows.forEach((window) => {
+      [window.startMs, window.endMs].forEach((boundary) => {
+        if (boundary <= afterMs) return;
+        if (nextBoundary == null || boundary < nextBoundary) nextBoundary = boundary;
+      });
+    });
+
+    return nextBoundary;
+  }
+
+  function computeCooldownWorkMs(startMs: number, endMs: number, windows: CooldownAccelerationWindow[]): number {
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return 0;
+
+    let cursor = startMs;
+    let workMs = 0;
+
+    while (cursor < endMs) {
+      const nextBoundary = getNextCooldownSpeedBoundary(cursor, windows);
+      const segmentEndMs = Math.min(endMs, nextBoundary == null ? endMs : nextBoundary);
+      if (segmentEndMs <= cursor) break;
+      workMs += (segmentEndMs - cursor) * getCooldownSpeedAt(cursor, windows);
+      cursor = segmentEndMs;
+    }
+
+    return workMs;
+  }
+
+  function predictCooldownEndMs(nowMs: number, remainingWorkMs: number, windows: CooldownAccelerationWindow[]): number {
+    if (!Number.isFinite(nowMs) || !Number.isFinite(remainingWorkMs) || remainingWorkMs <= 0) return nowMs;
+
+    let cursor = nowMs;
+    let remaining = remainingWorkMs;
+
+    while (remaining > 0) {
+      const speed = Math.max(1, getCooldownSpeedAt(cursor, windows));
+      const nextBoundary = getNextCooldownSpeedBoundary(cursor, windows);
+      if (nextBoundary == null) return cursor + (remaining / speed);
+
+      const segmentDurationMs = Math.max(0, nextBoundary - cursor);
+      const segmentWorkMs = segmentDurationMs * speed;
+      if (segmentWorkMs >= remaining) return cursor + (remaining / speed);
+
+      remaining -= segmentWorkMs;
+      cursor = nextBoundary;
+    }
+
+    return cursor;
+  }
+
+  function computeAcceleratedCooldownState(
+    lastUsedMs: number,
+    cooldownMs: number,
+    nowMs: number,
+    windows: CooldownAccelerationWindow[],
+  ): { cooldownRemainingMs: number; cooldownEndsAtMs: number | null } {
+    if (!Number.isFinite(lastUsedMs) || !Number.isFinite(cooldownMs) || cooldownMs <= 0) {
+      return { cooldownRemainingMs: 0, cooldownEndsAtMs: null };
+    }
+
+    const relevantWindows = windows.filter((window) => window.endMs > lastUsedMs);
+    const completedWorkMs = computeCooldownWorkMs(lastUsedMs, nowMs, relevantWindows);
+    const remainingWorkMs = Math.max(0, cooldownMs - completedWorkMs);
+    if (remainingWorkMs <= 0) return { cooldownRemainingMs: 0, cooldownEndsAtMs: nowMs };
+
+    const cooldownEndsAtMs = predictCooldownEndMs(nowMs, remainingWorkMs, relevantWindows);
+    return {
+      cooldownRemainingMs: Math.max(0, cooldownEndsAtMs - nowMs),
+      cooldownEndsAtMs,
+    };
+  }
+
   function getSkillCooldownModifier(player: PlayerState): number {
     const greenStone = Number(player?.stones?.green || 0);
     if (greenStone >= 1500) return 0.88;
@@ -193,6 +325,7 @@
 
     const abilityList = Array.isArray(player.abilities) ? player.abilities : [];
     const abilityMap = new Map(abilityList.map((ability) => [String(Number(ability.id)), ability]));
+    const cooldownAccelerationWindows = buildCooldownAccelerationWindows(abilityMap);
     const now = nowMs;
     const cooldownModifier = getSkillCooldownModifier(player);
 
@@ -202,8 +335,12 @@
       const lastActivation = ability?.lastActivationTs || (activationTimestamps.length ? activationTimestamps[activationTimestamps.length - 1] : null);
       const lastUsedMs = lastActivation ? Date.parse(lastActivation) : NaN;
       const adjustedCooldownSeconds = Number(skill.cooldown || 0) * cooldownModifier;
-      const cooldownEndsAt = Number.isFinite(lastUsedMs) ? lastUsedMs + adjustedCooldownSeconds * 1000 : null;
-      const cooldownRemainingMs = cooldownEndsAt ? Math.max(0, cooldownEndsAt - now) : 0;
+      const adjustedCooldownMs = adjustedCooldownSeconds * 1000;
+      const acceleratedState = computeAcceleratedCooldownState(lastUsedMs, adjustedCooldownMs, now, cooldownAccelerationWindows);
+      const cooldownRemainingMs = Number.isFinite(lastUsedMs) ? acceleratedState.cooldownRemainingMs : 0;
+      const cooldownEndsAt = cooldownRemainingMs > 0 && acceleratedState.cooldownEndsAtMs != null
+        ? acceleratedState.cooldownEndsAtMs
+        : null;
 
       return {
         key: `skill-${player.classId}-${skill.id}`,

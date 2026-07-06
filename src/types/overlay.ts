@@ -184,6 +184,7 @@ export interface AbilityStat {
   activations: number;
   hits: number;
   lastActivationTs: string | null;
+  activationTimestamps?: string[];
 }
 
 export interface BuffUptimeEntry {
