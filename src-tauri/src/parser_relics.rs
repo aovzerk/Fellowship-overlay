@@ -59,9 +59,9 @@ pub fn compute_relic_cooldown_state(player: &PlayerAccum, now_ms: i64) -> Vec<Va
 
 fn relic_cooldown_modifier(player: &PlayerAccum) -> f64 {
     let white = stone_value(player, "white");
-    if white >= 2640.0 {
+    if white >= 1500.0 {
         0.76
-    } else if white >= 960.0 {
+    } else if white >= 450.0 {
         0.92
     } else {
         1.0
