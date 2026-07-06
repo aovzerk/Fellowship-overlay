@@ -247,6 +247,7 @@
       getPartyFrameFields,
       getPartyFrameColors,
       getPartyFrameAlignment,
+      getPartyFrameGrowthDirection,
       getPartySlotIndex,
       getSelectedSkillsByClass,
       getSkillCatalog,
@@ -259,6 +260,28 @@
     } = deps;
 
     let partyGroupEl: HTMLElement | null = null;
+    let lastAppliedPartyGrowthDirection: PartyFrameGrowthDirection | null = null;
+
+    function savePartyGroupCurrentPosition(group: HTMLElement): void {
+      const nextPositions = loadPositions();
+      nextPositions[PARTY_GROUP_KEY] = {
+        x: parseFloat(group.style.left || '0'),
+        y: parseFloat(group.style.top || '0'),
+      };
+      savePositions(nextPositions);
+    }
+
+    function preservePartyGroupAnchor(group: HTMLElement, previousRect: DOMRect, growthDirection: PartyFrameGrowthDirection): void {
+      if (!previousRect.width && !previousRect.height) return;
+      const nextRect = group.getBoundingClientRect();
+      const currentLeft = parseFloat(group.style.left || '0');
+      const deltaX = growthDirection === 'left'
+        ? previousRect.right - nextRect.right
+        : previousRect.left - nextRect.left;
+      if (!Number.isFinite(deltaX) || Math.abs(deltaX) < 0.5) return;
+      group.style.left = `${Math.max(0, currentLeft + deltaX)}px`;
+      savePartyGroupCurrentPosition(group);
+    }
 
     function ensurePartyGroup(): HTMLElement {
       if (partyGroupEl?.isConnected) return partyGroupEl;
@@ -290,12 +313,7 @@
       const onUp = (): void => {
         if (!dragging || !partyGroupEl) return;
         dragging = false;
-        const nextPositions = loadPositions();
-        nextPositions[PARTY_GROUP_KEY] = {
-          x: parseFloat(partyGroupEl.style.left || '0'),
-          y: parseFloat(partyGroupEl.style.top || '0'),
-        };
-        savePositions(nextPositions);
+        savePartyGroupCurrentPosition(partyGroupEl);
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
       };
@@ -320,10 +338,21 @@
     function updatePartyGroupLayout(): void {
       const group = ensurePartyGroup();
       const layoutDirection = getLayoutDirection();
+      const growthDirection = getPartyFrameGrowthDirection();
+      const previousRect = group.getBoundingClientRect();
+      const previousGrowthDirection = lastAppliedPartyGrowthDirection;
+
       group.classList.toggle('layout-horizontal', layoutDirection === 'horizontal');
       group.classList.toggle('layout-vertical', layoutDirection !== 'horizontal');
+      group.classList.toggle('party-grow-left', growthDirection === 'left');
+      group.classList.toggle('party-grow-right', growthDirection !== 'left');
       group.classList.toggle('drag-enabled', getOverlayLocked());
       group.style.setProperty('--party-gap', `${getFrameGap()}px`);
+
+      if (previousGrowthDirection && previousGrowthDirection !== growthDirection) {
+        preservePartyGroupAnchor(group, previousRect, growthDirection);
+      }
+      lastAppliedPartyGrowthDirection = growthDirection;
     }
 
     function createCard(player: PlayerState): HTMLElement {

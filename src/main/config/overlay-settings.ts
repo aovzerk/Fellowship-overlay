@@ -10,6 +10,7 @@ import type {
   OverlayPanelPositions,
   OverlaySettings,
   PartyFrameAlignment,
+  PartyFrameGrowthDirection,
   PartyFrameColors,
   PartyFrameFields,
   RecentSkillsGrowthDirection,
@@ -55,6 +56,7 @@ const DEFAULT_PARTY_FRAME_COLORS: PartyFrameColors = {
   relicTimer: '#ffffff',
 };
 const DEFAULT_PARTY_FRAME_ALIGNMENT: PartyFrameAlignment = 'left';
+const DEFAULT_PARTY_FRAME_GROWTH_DIRECTION: PartyFrameGrowthDirection = 'right';
 const DEFAULT_MENU_COLORS: MenuColors = {
   text: '#ffffff',
   title: '#ffffff',
@@ -250,6 +252,10 @@ function normalizePartyFrameAlignment(value: unknown): PartyFrameAlignment {
   return DEFAULT_PARTY_FRAME_ALIGNMENT;
 }
 
+function normalizePartyFrameGrowthDirection(value: unknown): PartyFrameGrowthDirection {
+  return String(value || '').toLowerCase() === 'left' ? 'left' : DEFAULT_PARTY_FRAME_GROWTH_DIRECTION;
+}
+
 function normalizeMenuColors(value: unknown): MenuColors {
   const source = asRecord(value);
   return {
@@ -339,6 +345,7 @@ function normalizeSettings(value: unknown): NormalizedOverlaySettings {
     partyFrameFields: normalizePartyFrameFields(source.partyFrameFields),
     partyFrameColors: normalizePartyFrameColors(source.partyFrameColors),
     partyFrameAlignment: normalizePartyFrameAlignment(source.partyFrameAlignment),
+    partyFrameGrowthDirection: normalizePartyFrameGrowthDirection(source.partyFrameGrowthDirection),
     menuColors: normalizeMenuColors(source.menuColors),
     recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
     recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),

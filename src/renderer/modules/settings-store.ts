@@ -16,6 +16,7 @@
     DEFAULT_PARTY_FRAME_COLORS,
     DEFAULT_PARTY_FRAME_FIELDS,
     DEFAULT_PARTY_FRAME_ALIGNMENT,
+    DEFAULT_PARTY_FRAME_GROWTH_DIRECTION,
     DEFAULT_MENU_COLORS,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
     DEFAULT_PULL_PANEL_POSITION,
@@ -169,6 +170,10 @@
     return DEFAULT_PARTY_FRAME_ALIGNMENT;
   }
 
+  function normalizePartyFrameGrowthDirection(value: unknown): PartyFrameGrowthDirection {
+    return String(value || '').toLowerCase() === 'left' ? 'left' : DEFAULT_PARTY_FRAME_GROWTH_DIRECTION;
+  }
+
   function normalizeMenuColors(value: unknown): MenuColors {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<MenuColors> : {};
     return {
@@ -241,6 +246,7 @@
       partyFrameFields: normalizePartyFrameFields(source.partyFrameFields),
       partyFrameColors: normalizePartyFrameColors(source.partyFrameColors),
       partyFrameAlignment: normalizePartyFrameAlignment(source.partyFrameAlignment),
+      partyFrameGrowthDirection: normalizePartyFrameGrowthDirection(source.partyFrameGrowthDirection),
       menuColors: normalizeMenuColors(source.menuColors),
       recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
       recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
@@ -311,6 +317,7 @@
       normalizePartyFrameFields,
       normalizePartyFrameColors,
       normalizePartyFrameAlignment,
+      normalizePartyFrameGrowthDirection,
       normalizeMenuColors,
       normalizePosition,
       normalizeRecentSkillsLimit,
@@ -351,6 +358,9 @@
       },
       loadPartyFrameAlignment() {
         return normalizePartyFrameAlignment(getOverlaySettings().partyFrameAlignment);
+      },
+      loadPartyFrameGrowthDirection() {
+        return normalizePartyFrameGrowthDirection(getOverlaySettings().partyFrameGrowthDirection);
       },
       loadMenuColors() {
         return normalizeMenuColors(getOverlaySettings().menuColors);
@@ -422,6 +432,9 @@
       },
       savePartyFrameAlignment(partyFrameAlignment: PartyFrameAlignment) {
         saveOverlaySettingsPatch({ partyFrameAlignment: normalizePartyFrameAlignment(partyFrameAlignment) });
+      },
+      savePartyFrameGrowthDirection(partyFrameGrowthDirection: PartyFrameGrowthDirection) {
+        saveOverlaySettingsPatch({ partyFrameGrowthDirection: normalizePartyFrameGrowthDirection(partyFrameGrowthDirection) });
       },
       saveMenuColors(menuColors: MenuColors) {
         saveOverlaySettingsPatch({ menuColors: normalizeMenuColors(menuColors) });

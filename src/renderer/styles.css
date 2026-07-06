@@ -260,14 +260,38 @@ button:hover {
   transform-origin: top left;
 }
 
+.party-group.party-grow-right {
+  transform: none;
+  transform-origin: top left;
+}
+
+.party-group.party-grow-left {
+  transform: translateX(-100%);
+  transform-origin: top right;
+}
+
 .party-group.layout-horizontal {
-  flex-direction: row;
   align-items: flex-start;
+}
+
+.party-group.layout-horizontal.party-grow-right {
+  flex-direction: row;
+}
+
+.party-group.layout-horizontal.party-grow-left {
+  flex-direction: row-reverse;
 }
 
 .party-group.layout-vertical {
   flex-direction: column;
+}
+
+.party-group.layout-vertical.party-grow-right {
   align-items: flex-start;
+}
+
+.party-group.layout-vertical.party-grow-left {
+  align-items: flex-end;
 }
 
 .party-group.drag-enabled {
