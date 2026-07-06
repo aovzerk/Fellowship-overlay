@@ -849,26 +849,19 @@ fn fit_window_to_current_monitor(window: &WebviewWindow) -> Result<(), String> {
 }
 
 fn configure_tray(app: &mut tauri::App) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "Show overlay", true, None::<&str>)?;
-    let hide = MenuItem::with_id(app, "hide", "Hide overlay", true, None::<&str>)?;
-    let toggle_lock = MenuItem::with_id(
-        app,
-        "toggle_lock",
-        "Toggle click-through (F8)",
-        true,
-        None::<&str>,
-    )?;
+    let toggle_visibility =
+        MenuItem::with_id(app, "toggle_visibility", "Show/Hide overlay", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show, &hide, &toggle_lock, &quit])?;
+    let menu = Menu::with_items(app, &[&toggle_visibility, &settings, &quit])?;
 
     let mut tray_builder = TrayIconBuilder::new()
         .tooltip("Fellowship Overlay")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => set_visible_from_app(app, true),
-            "hide" => set_visible_from_app(app, false),
-            "toggle_lock" => toggle_click_through_from_app(app),
+            "toggle_visibility" => toggle_visible_from_app(app),
+            "settings" => open_settings_window(app),
             "quit" => app.exit(0),
             _ => {}
         })
