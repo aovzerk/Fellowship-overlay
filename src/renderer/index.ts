@@ -42,6 +42,7 @@ const panelOpacitySlider = mustElement<HTMLInputElement>('panelOpacitySlider');
 const panelOpacityValueEl = mustElement<HTMLElement>('panelOpacityValue');
 const panelOpacityLabel = mustElement<HTMLElement>('panelOpacityLabel');
 const layoutDirectionSelect = mustElement<HTMLSelectElement>('layoutDirectionSelect');
+const partyFrameAlignmentSelect = mustElement<HTMLSelectElement>('partyFrameAlignmentSelect');
 const layoutDirectionLabel = mustElement<HTMLElement>('layoutDirectionLabel');
 const frameGapLabel = document.getElementById('frameGapLabel') as HTMLElement | null;
 const iconsPerRowLabel = document.getElementById('iconsPerRowLabel') as HTMLElement | null;
@@ -81,6 +82,7 @@ const showRecentSkillsToggleLabel = document.getElementById('showRecentSkillsTog
 const showBuffsButtonToggle = document.getElementById('showBuffsButtonToggle') as HTMLInputElement | null;
 const showBuffsButtonToggleLabel = document.getElementById('showBuffsButtonToggleLabel') as HTMLElement | null;
 const partyFrameFieldsTitle = mustElement<HTMLElement>('partyFrameFieldsTitle');
+const partyFrameAlignmentLabel = mustElement<HTMLElement>('partyFrameAlignmentLabel');
 const partyFieldPlayerNameToggle = mustElement<HTMLInputElement>('partyFieldPlayerNameToggle');
 const partyFieldChampionNameToggle = mustElement<HTMLInputElement>('partyFieldChampionNameToggle');
 const partyFieldSpiritToggle = mustElement<HTMLInputElement>('partyFieldSpiritToggle');
@@ -125,6 +127,7 @@ const {
   DEFAULT_FRAME_GAP,
   DEFAULT_ICONS_PER_ROW,
   DEFAULT_LAYOUT_DIRECTION,
+  DEFAULT_PARTY_FRAME_ALIGNMENT,
   DEFAULT_PANEL_OPACITY,
   DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
   DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION,
@@ -180,6 +183,7 @@ let panelOpacity = settingsController.loadPanelOpacity();
 let layoutDirection = settingsController.loadLayoutDirection();
 let partyFrameFields: PartyFrameFields = settingsController.loadPartyFrameFields();
 const partyFrameColors: PartyFrameColors = window.OverlayRendererConstants.DEFAULT_PARTY_FRAME_COLORS;
+let partyFrameAlignment: PartyFrameAlignment = settingsController.loadPartyFrameAlignment();
 let menuColors: MenuColors = settingsController.loadMenuColors();
 let hotkeys = settingsController.loadHotkeys();
 let currentLanguage: LanguageCode = 'en';
@@ -551,6 +555,7 @@ function applyAppearanceVariables(): void {
   applyMenuColorVariables();
   overlayRoot.dataset.layoutDirection = layoutDirection;
   overlayRoot.dataset.iconsPerRow = String(iconsPerRow);
+  overlayRoot.dataset.partyFrameAlignment = partyFrameAlignment;
 }
 
 function updateFrameGapUi(): void {
@@ -572,6 +577,10 @@ function updatePartyFrameFieldsUi(): void {
   partyFieldChampionNameToggle.checked = !!partyFrameFields.championName;
   partyFieldSpiritToggle.checked = !!partyFrameFields.spirit;
   partyFieldRelicsToggle.checked = !!partyFrameFields.relicsAndCooldowns;
+}
+
+function updatePartyFrameAlignmentUi(): void {
+  partyFrameAlignmentSelect.value = partyFrameAlignment;
 }
 
 function updateMenuColorsUi(): void {
@@ -661,6 +670,16 @@ function setPartyFrameField(field: keyof PartyFrameFields, enabled: boolean): vo
   });
   settingsController.savePartyFrameFields(partyFrameFields);
   updatePartyFrameFieldsUi();
+  rerenderPlayersIfNeeded();
+}
+
+function setPartyFrameAlignment(nextValue: unknown): void {
+  const normalized = settingsController.normalizePartyFrameAlignment(nextValue);
+  if (normalized === partyFrameAlignment) return;
+  partyFrameAlignment = normalized;
+  settingsController.savePartyFrameAlignment(partyFrameAlignment);
+  applyAppearanceVariables();
+  updatePartyFrameAlignmentUi();
   rerenderPlayersIfNeeded();
 }
 
@@ -1044,6 +1063,13 @@ function applyTranslations(): void {
   partyFieldChampionNameLabel.textContent = t('partyFieldChampionName');
   partyFieldSpiritLabel.textContent = t('partyFieldSpirit');
   partyFieldRelicsLabel.textContent = t('partyFieldRelics');
+  partyFrameAlignmentLabel.textContent = t('partyFrameAlignment');
+  const partyAlignmentLeftOption = partyFrameAlignmentSelect.querySelector<HTMLOptionElement>('option[value="left"]');
+  const partyAlignmentCenterOption = partyFrameAlignmentSelect.querySelector<HTMLOptionElement>('option[value="center"]');
+  const partyAlignmentRightOption = partyFrameAlignmentSelect.querySelector<HTMLOptionElement>('option[value="right"]');
+  if (partyAlignmentLeftOption) partyAlignmentLeftOption.textContent = t('alignmentLeft');
+  if (partyAlignmentCenterOption) partyAlignmentCenterOption.textContent = t('alignmentCenter');
+  if (partyAlignmentRightOption) partyAlignmentRightOption.textContent = t('alignmentRight');
   menuColorsTitle.textContent = t('menuColorsTitle');
   menuColorTextLabel.textContent = t('menuColorText');
   menuColorTitleLabel.textContent = t('menuColorTitle');
@@ -1054,6 +1080,7 @@ function applyTranslations(): void {
   menuColorBorderLabel.textContent = t('menuColorBorder');
   menuColorAccentLabel.textContent = t('menuColorAccent');
   updatePartyFrameFieldsUi();
+  updatePartyFrameAlignmentUi();
   updateMenuColorsUi();
   buffsBtn.textContent = t('buffs');
   buffsBtn.title = t('buffUptimeTitle');
@@ -1080,6 +1107,7 @@ async function openSettingsModal(): Promise<void> {
   updateIconsPerRowUi();
   updatePanelOpacityUi();
   updatePartyFrameFieldsUi();
+  updatePartyFrameAlignmentUi();
   updateMenuColorsUi();
   updateLayoutDirectionUi();
   updateRecentSkillsLayoutUi();
@@ -1122,6 +1150,7 @@ playerCardRenderer = createPlayerCardRenderer({
   getOverlayLocked: () => overlayLocked,
   getPartyFrameFields: () => partyFrameFields,
   getPartyFrameColors: () => partyFrameColors,
+  getPartyFrameAlignment: () => partyFrameAlignment,
   getPartySlotIndex,
   getPlayerLayoutKey,
   getSelectedSkillsByClass: () => selectedSkillsByClass,
@@ -1212,6 +1241,9 @@ partyFieldSpiritToggle.addEventListener('change', (event: Event) => {
 });
 partyFieldRelicsToggle.addEventListener('change', (event: Event) => {
   setPartyFrameField('relicsAndCooldowns', (event.currentTarget as HTMLInputElement).checked);
+});
+partyFrameAlignmentSelect.addEventListener('change', (event: Event) => {
+  setPartyFrameAlignment((event.currentTarget as HTMLSelectElement).value || DEFAULT_PARTY_FRAME_ALIGNMENT);
 });
 menuColorTextInput.addEventListener('input', (event: Event) => {
   setMenuColor('text', (event.currentTarget as HTMLInputElement).value);
@@ -1377,6 +1409,7 @@ updateFrameGapUi();
 updateIconsPerRowUi();
 updatePanelOpacityUi();
 updatePartyFrameFieldsUi();
+updatePartyFrameAlignmentUi();
 updateMenuColorsUi();
 updateLayoutDirectionUi();
 updateRecentSkillsLayoutUi();

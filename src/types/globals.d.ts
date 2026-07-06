@@ -40,6 +40,7 @@ type OverlayPanelPositions = import('./overlay').OverlayPanelPositions;
 type OverlayHotkeys = import('./overlay').OverlayHotkeys;
 type PartyFrameFields = import('./overlay').PartyFrameFields;
 type PartyFrameColors = import('./overlay').PartyFrameColors;
+type PartyFrameAlignment = import('./overlay').PartyFrameAlignment;
 type MenuColors = import('./overlay').MenuColors;
 type OverlaySettings = import('./overlay').OverlaySettings;
 type LogSourceInfo = import('./overlay').LogSourceInfo;

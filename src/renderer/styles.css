@@ -302,11 +302,47 @@ button:hover {
   gap: calc(8px * var(--card-scale));
 }
 
+.player-card.party-align-left .player-header {
+  text-align: left;
+}
+
+.player-card.party-align-center .player-header {
+  text-align: center;
+}
+
+.player-card.party-align-right .player-header {
+  text-align: right;
+}
+
+.player-card.party-align-left .player-info-row {
+  align-items: flex-start;
+}
+
+.player-card.party-align-center .player-info-row {
+  align-items: center;
+}
+
+.player-card.party-align-right .player-info-row {
+  align-items: flex-end;
+}
+
 .spirit-inline {
   display: flex;
   align-items: baseline;
   gap: calc(8px * var(--card-scale));
   text-transform: uppercase;
+}
+
+.player-card.party-align-left .spirit-inline {
+  justify-content: flex-start;
+}
+
+.player-card.party-align-center .spirit-inline {
+  justify-content: center;
+}
+
+.player-card.party-align-right .spirit-inline {
+  justify-content: flex-end;
 }
 
 .spirit-label {
@@ -333,6 +369,18 @@ button:hover {
   gap: calc(8px * var(--card-scale));
   align-items: center;
   justify-content: center;
+}
+
+.player-card.party-align-left .relics-block {
+  justify-content: flex-start;
+}
+
+.player-card.party-align-center .relics-block {
+  justify-content: center;
+}
+
+.player-card.party-align-right .relics-block {
+  justify-content: flex-end;
 }
 
 .relic-chip {

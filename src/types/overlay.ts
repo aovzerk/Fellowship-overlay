@@ -4,6 +4,7 @@ export type LayoutDirection = 'vertical' | 'horizontal';
 export type HotkeyAction = 'toggleInteraction' | 'pickLog' | 'toggleVisibility' | 'openSettings';
 export type RecentSkillsLayoutDirection = 'vertical' | 'horizontal';
 export type RecentSkillsGrowthDirection = 'left' | 'right' | 'up' | 'down';
+export type PartyFrameAlignment = 'left' | 'center' | 'right';
 
 export interface Point {
   x: number;
@@ -76,6 +77,7 @@ export interface OverlaySettings {
   iconsPerRow: number;
   partyFrameFields: PartyFrameFields;
   partyFrameColors: PartyFrameColors;
+  partyFrameAlignment: PartyFrameAlignment;
   menuColors: MenuColors;
   hotkeys: OverlayHotkeys;
   recentSkillsLayoutDirection: RecentSkillsLayoutDirection;
@@ -501,6 +503,7 @@ export interface RendererConstantsApi {
   DEFAULT_ICONS_PER_ROW: number;
   DEFAULT_PARTY_FRAME_FIELDS: PartyFrameFields;
   DEFAULT_PARTY_FRAME_COLORS: PartyFrameColors;
+  DEFAULT_PARTY_FRAME_ALIGNMENT: PartyFrameAlignment;
   DEFAULT_MENU_COLORS: MenuColors;
   DEFAULT_HOTKEYS: OverlayHotkeys;
   DEFAULT_RECENT_SKILLS_LAYOUT_DIRECTION: RecentSkillsLayoutDirection;
@@ -655,6 +658,7 @@ export interface OverlaySettingsController {
   normalizePanelOpacity(value: unknown): number;
   normalizePartyFrameFields(value: unknown): PartyFrameFields;
   normalizePartyFrameColors(value: unknown): PartyFrameColors;
+  normalizePartyFrameAlignment(value: unknown): PartyFrameAlignment;
   normalizeMenuColors(value: unknown): MenuColors;
   normalizePosition(value: unknown, fallback?: Point): Point;
   normalizeRecentSkillsLimit(value: unknown): number;
@@ -673,6 +677,7 @@ export interface OverlaySettingsController {
   loadPanelOpacity(): number;
   loadPartyFrameFields(): PartyFrameFields;
   loadPartyFrameColors(): PartyFrameColors;
+  loadPartyFrameAlignment(): PartyFrameAlignment;
   loadMenuColors(): MenuColors;
   loadHotkeys(): OverlayHotkeys;
   loadPositions(): PlayerPositions;
@@ -693,6 +698,7 @@ export interface OverlaySettingsController {
   savePanelOpacity(panelOpacity: number): void;
   savePartyFrameFields(partyFrameFields: PartyFrameFields): void;
   savePartyFrameColors(partyFrameColors: PartyFrameColors): void;
+  savePartyFrameAlignment(partyFrameAlignment: PartyFrameAlignment): void;
   saveMenuColors(menuColors: MenuColors): void;
   saveHotkeys(hotkeys: OverlayHotkeys): void;
   savePositions(positions: PlayerPositions): void;
@@ -763,6 +769,7 @@ export interface PlayerCardRendererDeps {
   getOverlayLocked(): boolean;
   getPartyFrameFields(): PartyFrameFields;
   getPartyFrameColors(): PartyFrameColors;
+  getPartyFrameAlignment(): PartyFrameAlignment;
   getPartySlotIndex(player: PlayerState, index?: number): number;
   getPlayerLayoutKey(slotIndex?: number): string;
   getSelectedSkillsByClass(): SkillSelectionMap;

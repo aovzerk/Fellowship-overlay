@@ -15,6 +15,7 @@
     DEFAULT_PANEL_OPACITY,
     DEFAULT_PARTY_FRAME_COLORS,
     DEFAULT_PARTY_FRAME_FIELDS,
+    DEFAULT_PARTY_FRAME_ALIGNMENT,
     DEFAULT_MENU_COLORS,
     DEFAULT_RECENT_SKILLS_GROWTH_DIRECTION,
     DEFAULT_PULL_PANEL_POSITION,
@@ -162,6 +163,12 @@
     };
   }
 
+  function normalizePartyFrameAlignment(value: unknown): PartyFrameAlignment {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized === 'center' || normalized === 'right') return normalized;
+    return DEFAULT_PARTY_FRAME_ALIGNMENT;
+  }
+
   function normalizeMenuColors(value: unknown): MenuColors {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Partial<MenuColors> : {};
     return {
@@ -233,6 +240,7 @@
       iconsPerRow: normalizeIconsPerRow(source.iconsPerRow),
       partyFrameFields: normalizePartyFrameFields(source.partyFrameFields),
       partyFrameColors: normalizePartyFrameColors(source.partyFrameColors),
+      partyFrameAlignment: normalizePartyFrameAlignment(source.partyFrameAlignment),
       menuColors: normalizeMenuColors(source.menuColors),
       recentSkillsLayoutDirection: normalizeRecentSkillsLayoutDirection(source.recentSkillsLayoutDirection),
       recentSkillsGrowthDirection: normalizeRecentSkillsGrowthDirection(source.recentSkillsGrowthDirection),
@@ -302,6 +310,7 @@
       normalizePanelOpacity,
       normalizePartyFrameFields,
       normalizePartyFrameColors,
+      normalizePartyFrameAlignment,
       normalizeMenuColors,
       normalizePosition,
       normalizeRecentSkillsLimit,
@@ -339,6 +348,9 @@
       },
       loadPartyFrameColors() {
         return normalizePartyFrameColors(getOverlaySettings().partyFrameColors);
+      },
+      loadPartyFrameAlignment() {
+        return normalizePartyFrameAlignment(getOverlaySettings().partyFrameAlignment);
       },
       loadMenuColors() {
         return normalizeMenuColors(getOverlaySettings().menuColors);
@@ -407,6 +419,9 @@
       },
       savePartyFrameColors(partyFrameColors: PartyFrameColors) {
         saveOverlaySettingsPatch({ partyFrameColors: normalizePartyFrameColors(partyFrameColors) });
+      },
+      savePartyFrameAlignment(partyFrameAlignment: PartyFrameAlignment) {
+        saveOverlaySettingsPatch({ partyFrameAlignment: normalizePartyFrameAlignment(partyFrameAlignment) });
       },
       saveMenuColors(menuColors: MenuColors) {
         saveOverlaySettingsPatch({ menuColors: normalizeMenuColors(menuColors) });
