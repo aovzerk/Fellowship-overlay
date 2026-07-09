@@ -97,6 +97,7 @@ export interface BrowserWindowLike {
 export interface TrayLike {
   setToolTip(text: string): void;
   popUpContextMenu(menu?: unknown): void;
+  setContextMenu(menu: unknown): void;
   on(event: string, listener: () => void): void;
 }
 
