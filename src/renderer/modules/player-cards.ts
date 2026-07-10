@@ -149,7 +149,9 @@
   }
 
   function getSpiritHighlight(player: PlayerState, spiritSnapshot: SpiritSnapshot | null): string {
-    if (isGundeClass(player)) return '';
+    // Gunde never logs SP; highlight only when the value comes from the
+    // emulation model (tauri). Without the model there is nothing to show.
+    if (isGundeClass(player) && !spiritSnapshot?.modeled) return '';
 
     const currentSpirit = Number(spiritSnapshot?.current || 0);
     const blueStone = Number(player?.stones?.blue || 0);
@@ -161,7 +163,7 @@
   }
 
   function formatSpiritTotal(player: PlayerState, spiritSnapshot: SpiritSnapshot | null, formatNumber: (value: unknown) => string): string {
-    if (isGundeClass(player)) {
+    if (isGundeClass(player) && !spiritSnapshot?.modeled) {
       const spiritMax = Number(spiritSnapshot?.max || getSpiritMaxByBlueStone(player?.stones?.blue));
       return `- / ${formatNumber(spiritMax)}`;
     }

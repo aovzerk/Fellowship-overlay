@@ -308,6 +308,7 @@ function processLine(state: ParserState, line: string): void {
       state.players.forEach((player) => {
         resetPlayerRelicCooldowns(player);
         player.spiritRegenPerSecond = 0;
+        player.spiritEmaRate = 0;
       });
       break;
     }
@@ -339,8 +340,11 @@ function processLine(state: ParserState, line: string): void {
         const spiritStatValue = extractSpiritStatFromCombatantInfo(parts[8]);
         if (spiritStatValue != null) {
           player.spiritStatValue = spiritStatValue;
-          player.spiritRegenPerSecond = 0.3 + (spiritStatValue / 100);
         }
+        // Base regen is a flat +1 SP / 3s tick, independent of the Spirit stat;
+        // the extra gain rate (procs, mob share) is estimated via EMA on samples.
+        player.spiritRegenPerSecond = 1 / 3;
+        player.spiritEmaRate = 0;
 
         if (state.collectingDungeonParty) {
           state.dungeonPartyIds.add(unitId);

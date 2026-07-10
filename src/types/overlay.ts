@@ -172,6 +172,8 @@ export interface SpiritSnapshot {
   max: number;
   abilityId: number | null;
   abilityName: string | null;
+  /** True when the value comes from the SP emulation model (Gunde) rather than a log sample. */
+  modeled?: boolean;
 }
 
 export interface SpiritResourceState {
@@ -262,6 +264,8 @@ export interface PlayerState {
   spiritHistory?: SpiritSnapshot[];
   spiritStatValue?: number | null;
   spiritRegenPerSecond?: number;
+  /** EMA of recent SP gain rate beyond the base 1/3 tick (procs + mob share), SP/s. */
+  spiritEmaRate?: number;
   relics: PlayerRelicState[];
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];

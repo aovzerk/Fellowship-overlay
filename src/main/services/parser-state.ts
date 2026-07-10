@@ -199,6 +199,7 @@ function ensurePlayer(state: ParserState, id: string, name: string | null | unde
       },
       spiritStatValue: null,
       spiritRegenPerSecond: 0,
+      spiritEmaRate: 0,
     });
   }
 
@@ -712,6 +713,36 @@ function extractSpiritFromResourceList(parts: string[]): { current: number; max:
   return null;
 }
 
+// Base SP regen is a flat +1 SP per 3.0s server tick (docs/spirit-model.md).
+// On top of it we keep an EMA of the player's recent extra gain rate
+// (Spirit Refund procs + shared mob SP) to extrapolate between log events
+// and to compensate the ~5-7s combat log delay.
+const SPIRIT_TICK_RATE = 1 / 3;
+const SPIRIT_EMA_TAU_SECONDS = 30;
+
+function updateSpiritGainEma(player: PlayerState, last: SpiritSnapshot | null, ts: string, current: number): void {
+  if (!last) return;
+  const lastTsMs = Date.parse(String(last.ts || ''));
+  const tsMs = Date.parse(ts);
+  if (!Number.isFinite(lastTsMs) || !Number.isFinite(tsMs)) return;
+
+  const dt = (tsMs - lastTsMs) / 1000;
+  const delta = current - Number(last.current || 0);
+  const ema = Number(player.spiritEmaRate || 0);
+
+  if (dt > 0 && dt <= 5 && delta >= -1) {
+    const extraRate = Math.max(0, Math.min(3, (delta - dt * SPIRIT_TICK_RATE) / dt));
+    const alpha = 1 - Math.exp(-dt / SPIRIT_EMA_TAU_SECONDS);
+    player.spiritEmaRate = ema + alpha * (extraRate - ema);
+  } else if (dt > 5) {
+    player.spiritEmaRate = ema * Math.exp(-(dt - 5) / (SPIRIT_EMA_TAU_SECONDS * 2));
+  } else {
+    return;
+  }
+
+  player.spiritRegenPerSecond = SPIRIT_TICK_RATE + Number(player.spiritEmaRate || 0);
+}
+
 function addSpiritSnapshot(
   player: PlayerState,
   ts: string,
@@ -723,6 +754,7 @@ function addSpiritSnapshot(
   const normalizedMax = Math.max(0, getPlayerSpiritMax(player) || max || 0);
   const normalizedCurrent = Math.max(0, Math.min(normalizedMax || max || 0, Number(current || 0)));
   const last = player.spirit || null;
+  updateSpiritGainEma(player, last, ts, normalizedCurrent);
   const history = Array.isArray(player.spiritHistory) ? player.spiritHistory : [];
   const snapshot: SpiritSnapshot = {
     ts,

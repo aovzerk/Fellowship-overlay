@@ -9,6 +9,7 @@ mod parser_line_utils;
 mod parser_relics;
 mod parser_spirit;
 mod settings;
+mod spirit_model;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

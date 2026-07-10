@@ -10,6 +10,7 @@ mod embedded_game_data {
 
 static RELIC_DATA_CACHE: OnceLock<Value> = OnceLock::new();
 static EMPOWERED_SCALING_CACHE: OnceLock<Value> = OnceLock::new();
+static SPIRIT_VALUES_CACHE: OnceLock<Value> = OnceLock::new();
 
 pub fn empowered_scaling_data() -> &'static Value {
     EMPOWERED_SCALING_CACHE.get_or_init(|| {
@@ -21,6 +22,33 @@ pub fn empowered_scaling_data() -> &'static Value {
         serde_json::from_str(embedded_game_data::EMPOWERED_SCALING_JSON)
             .unwrap_or_else(|_| serde_json::json!({}))
     })
+}
+
+fn spirit_values_data() -> &'static Value {
+    SPIRIT_VALUES_CACHE.get_or_init(|| {
+        for root in game_data_roots() {
+            if let Some(data) = read_json(root.join("catalogs").join("spirit-values.json")) {
+                return data;
+            }
+        }
+        serde_json::from_str(embedded_game_data::SPIRIT_VALUES_JSON)
+            .unwrap_or_else(|_| serde_json::json!({}))
+    })
+}
+
+/// Spirit Point value and kill score for an NPC template id.
+/// Source: docs/spirit-model.md — mobs grant SpiritPointValue to the party
+/// proportionally to HP removed; kill score > 0 marks roster-type mobs
+/// (used to tell boss summons apart during encounters).
+pub fn npc_spirit_values(template_id: i64) -> (f64, f64) {
+    let key = template_id.to_string();
+    let entry = spirit_values_data().get(key.as_str());
+    let Some(values) = entry.and_then(Value::as_array) else {
+        return (0.0, 0.0);
+    };
+    let spv = values.first().and_then(Value::as_f64).unwrap_or(0.0);
+    let kill_score = values.get(1).and_then(Value::as_f64).unwrap_or(0.0);
+    (spv, kill_score)
 }
 
 pub fn load_dungeon_data(dungeon_id: Option<i64>, name: Option<&str>) -> Option<Value> {

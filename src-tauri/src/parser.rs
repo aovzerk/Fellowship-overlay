@@ -15,9 +15,10 @@ use crate::parser_relics::{
     reset_player_relic_cooldowns,
 };
 use crate::parser_spirit::{
-    add_spirit, extract_spirit, parse_stones, update_spirit_from_bloodbound_ability,
+    add_spirit, emit_model_spirit, extract_spirit, parse_stones,
     update_spirit_from_rising_spirit_effect,
 };
+use crate::spirit_model::{SpiritModelShared, SpiritSim};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -68,8 +69,12 @@ pub(crate) struct PlayerAccum {
     pub(crate) relics: Vec<Value>,
     pub(crate) stones: Value,
     spirit_stat_value: Option<f64>,
-    spirit_regen_per_second: f64,
+    pub(crate) spirit_regen_per_second: f64,
+    /// EMA of recent SP gain rate beyond the base 1/3 tick (procs + mob share), SP/s.
+    pub(crate) spirit_ema_rate: f64,
     pub(crate) rising_spirit_stack: i64,
+    /// SP emulation model state (docs/spirit-model.md); drives Gunde display.
+    pub(crate) spirit_sim: SpiritSim,
     buff_uptimes: HashMap<String, BuffUptimeAccum>,
 }
 
@@ -108,6 +113,7 @@ struct ParserState {
     recent_skills: Vec<Value>,
     recent_skills_player_id: Option<String>,
     recent_skills_player_name: Option<String>,
+    spirit_shared: SpiritModelShared,
 }
 
 impl ParserState {
@@ -124,6 +130,7 @@ impl ParserState {
             recent_skills: Vec::new(),
             recent_skills_player_id: None,
             recent_skills_player_name: None,
+            spirit_shared: SpiritModelShared::default(),
         }
     }
 
@@ -137,6 +144,7 @@ impl ParserState {
         self.collecting_dungeon_party = false;
         self.encounters.clear();
         self.current_encounter_index = None;
+        self.spirit_shared.reset();
     }
 
     fn reset_dungeon_scope(&mut self) {
@@ -233,6 +241,39 @@ fn ensure_player<'a>(
 
 fn add_to_map_number(map: &mut HashMap<String, f64>, key: String, amount: f64) {
     *map.entry(key).or_insert(0.0) += amount;
+}
+
+/// Mob/boss SP is shared equally by the party as the NPC loses HP
+/// (docs/spirit-model.md). `hp_fraction = None` means the NPC died and the
+/// remainder is granted.
+fn distribute_mob_spirit(state: &mut ParserState, ts: &str, npc_id: &str, hp_fraction: Option<f64>) {
+    let party_size = state.party_player_ids.len().max(1);
+    let share = state
+        .spirit_shared
+        .observe_npc(npc_id, hp_fraction, party_size);
+    if share <= 0.0 {
+        return;
+    }
+    let Some(ts_ms) = parse_ts_ms(ts) else {
+        return;
+    };
+    let ids: Vec<String> = if state.party_player_ids.is_empty() {
+        state.players.keys().cloned().collect()
+    } else {
+        state.party_player_ids.clone()
+    };
+    for id in ids {
+        if let Some(player) = state.players.get_mut(&player_map_key(&id)) {
+            player.spirit_sim.advance(ts_ms);
+            player.spirit_sim.gain(share);
+            // Emit Gunde snapshots at >=1 SP granularity to avoid churn.
+            if player.spirit_sim.is_gunde
+                && (player.spirit_sim.sp - player.spirit_sim.last_emitted).abs() >= 1.0
+            {
+                emit_model_spirit(player, ts);
+            }
+        }
+    }
 }
 
 fn current_encounter_mut(
@@ -502,6 +543,7 @@ fn process_line(state: &mut ParserState, line: &str) {
             state.dungeon.end(ts, &parts);
             for player in state.players.values_mut() {
                 player.spirit_regen_per_second = 0.0;
+                player.spirit_ema_rate = 0.0;
                 reset_player_relic_cooldowns(player);
             }
         }
@@ -533,10 +575,28 @@ fn process_line(state: &mut ParserState, line: &str) {
                     .next_back()
                     .and_then(|value| value.trim().parse::<f64>().ok())
             });
-            player.spirit_regen_per_second = player
-                .spirit_stat_value
-                .map(|value| 0.3 + (value / 100.0))
+            // Base regen is a flat +1 SP / 3s tick, independent of the Spirit stat;
+            // the extra gain rate (procs, mob share) is estimated via EMA on samples.
+            player.spirit_regen_per_second = 1.0 / 3.0;
+            player.spirit_ema_rate = 0.0;
+            let blue_stone = player
+                .stones
+                .get("blue")
+                .and_then(Value::as_f64)
                 .unwrap_or(0.0);
+            let was_configured = player.spirit_sim.configured;
+            player.spirit_sim.configure(
+                class_id,
+                blue_stone,
+                parts.get(15).copied(),
+                parts.get(16).copied(),
+            );
+            if player.spirit_sim.is_gunde && !was_configured {
+                if let Some(ts_ms) = parse_ts_ms(ts) {
+                    player.spirit_sim.advance(ts_ms);
+                }
+                emit_model_spirit(player, ts);
+            }
             let _ = (class_name, class_color);
 
             if state.collecting_dungeon_party {
@@ -565,6 +625,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                 state.encounters.drain(0..excess);
             }
             state.current_encounter_index = state.encounters.len().checked_sub(1);
+            state.spirit_shared.in_encounter = true;
         }
         "ENCOUNTER_END" => {
             let encounter_id = to_i64(parts.get(2).copied());
@@ -589,6 +650,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                 last.success = Some(success);
             }
             state.current_encounter_index = None;
+            state.spirit_shared.in_encounter = false;
         }
         "ABILITY_ACTIVATED"
         | "ABILITY_CAST_START"
@@ -628,7 +690,15 @@ fn process_line(state: &mut ParserState, line: &str) {
                     Some(ts),
                 );
                 mark_relic_use(player, ability_id, ts);
-                update_spirit_from_bloodbound_ability(player, ts, ability_id, ability_name);
+                if let (Some(ability_id_value), Some(ts_ms)) = (ability_id, parse_ts_ms(ts)) {
+                    // VOG weapon gain, class ability gains, Gunde ult anchor.
+                    let changed = player
+                        .spirit_sim
+                        .on_ability_activated(ts_ms, ability_id_value);
+                    if changed && player.spirit_sim.is_gunde {
+                        emit_model_spirit(player, ts);
+                    }
+                }
                 if is_chickenize_ability(ability_id, ability_name) && is_npc_id(&target_id) {
                     state
                         .dungeon
@@ -652,6 +722,9 @@ fn process_line(state: &mut ParserState, line: &str) {
                 }
             }
             if let Some((current, max)) = extract_spirit(parts.get(15).copied()) {
+                if let Some(ts_ms) = parse_ts_ms(ts) {
+                    player.spirit_sim.sync(ts_ms, current);
+                }
                 add_spirit(player, ts, current, max, ability_id, Some(ability_name));
             }
         }
@@ -666,6 +739,9 @@ fn process_line(state: &mut ParserState, line: &str) {
             if source_id.starts_with("Player-") {
                 let player = ensure_player(&mut state.players, source_id, Some(source_name));
                 if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(
                         player,
                         ts,
@@ -679,6 +755,9 @@ fn process_line(state: &mut ParserState, line: &str) {
             if target_id.starts_with("Player-") {
                 let player = ensure_player(&mut state.players, target_id, Some(target_name));
                 if let Some((current, max)) = extract_spirit(parts.get(29).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
@@ -705,6 +784,16 @@ fn process_line(state: &mut ParserState, line: &str) {
                     parts.get(23).copied(),
                     parts.get(24).copied(),
                 );
+                let current_hp = to_f64(parts.get(23).copied());
+                let max_hp = to_f64(parts.get(24).copied());
+                if max_hp > 0.0 {
+                    distribute_mob_spirit(
+                        state,
+                        ts,
+                        target_id,
+                        Some((current_hp / max_hp).clamp(0.0, 1.0)),
+                    );
+                }
                 if source_id.starts_with("Player-")
                     && is_chickenize_ability(ability_id, ability_name)
                 {
@@ -755,6 +844,9 @@ fn process_line(state: &mut ParserState, line: &str) {
                     );
                 }
                 if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(
                         player,
                         ts,
@@ -769,6 +861,9 @@ fn process_line(state: &mut ParserState, line: &str) {
                 let player = ensure_player(&mut state.players, target_id, Some(target_name));
                 player.damage_taken += amount;
                 if let Some((current, max)) = extract_spirit(parts.get(29).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
@@ -810,6 +905,9 @@ fn process_line(state: &mut ParserState, line: &str) {
                     );
                 }
                 if let Some((current, max)) = extract_spirit(parts.get(22).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
@@ -874,12 +972,35 @@ fn process_line(state: &mut ParserState, line: &str) {
                     parts.get(9).copied(),
                 );
                 if let Some((current, max)) = extract_spirit(parts.get(17).copied()) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.spirit_sim.sync(ts_ms, current);
+                    }
                     add_spirit(player, ts, current, max, ability_id, Some(ability_name));
                 }
             }
         }
         "UNIT_DEATH" | "UNIT_DESTROYED" => {
             let dead_id = parts.get(2).copied().unwrap_or_default();
+            if event == "UNIT_DESTROYED" && dead_id.starts_with("Player-") {
+                // Player deaths are logged as UNIT_DESTROYED with the SP keep
+                // fraction (~0.75) in field 4 (docs/spirit-model.md).
+                let dead_name = unquote_str(parts.get(3).copied());
+                let keep = parts
+                    .get(4)
+                    .and_then(|value| value.trim().parse::<f64>().ok());
+                let player = ensure_player(&mut state.players, dead_id, Some(dead_name));
+                if let Some(ts_ms) = parse_ts_ms(ts) {
+                    player.spirit_sim.on_death(ts_ms, keep);
+                    if player.spirit_sim.is_gunde {
+                        emit_model_spirit(player, ts);
+                    }
+                }
+            }
+            if event == "UNIT_DEATH" && is_npc_id(&dead_id) {
+                // Real NPC kill: grant the remaining SP share. UNIT_DESTROYED
+                // for NPCs is a despawn (boss summons) and grants nothing.
+                distribute_mob_spirit(state, ts, dead_id, None);
+            }
             if event == "UNIT_DEATH" && dead_id.starts_with("Player-") {
                 let dead_name = unquote_str(parts.get(3).copied());
                 ensure_player(&mut state.players, dead_id, Some(dead_name)).deaths += 1;
@@ -1184,4 +1305,81 @@ mod tests {
         );
     }
 
+    /// Manual validation harness for the SP emulation model: replays a real
+    /// combat log and prints the model SP right before every Gunde ultimate
+    /// (should be >= ult cost when the model is healthy) plus final states.
+    /// Run: SPIRIT_LOG=<path> cargo test --release replay_spirit_model -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn replay_spirit_model() {
+        use std::io::{BufRead, BufReader};
+
+        let Some(path) = std::env::var_os("SPIRIT_LOG") else {
+            eprintln!("SPIRIT_LOG is not set, skipping");
+            return;
+        };
+        let file = File::open(&path).expect("open SPIRIT_LOG");
+        let mut reader = BufReader::new(file);
+        let mut state = ParserState::new();
+        let mut buffer = Vec::new();
+        let mut gunde_ults: Vec<(String, String, f64)> = Vec::new();
+
+        loop {
+            buffer.clear();
+            let Ok(read) = reader.read_until(b'\n', &mut buffer) else {
+                break;
+            };
+            if read == 0 {
+                break;
+            }
+            let line = String::from_utf8_lossy(&buffer);
+            let line = line.trim_end_matches(['\r', '\n']);
+
+            // Capture the model value right before a Gunde ult is processed.
+            {
+                let parts = split_log_line(line);
+                if parts.get(1) == Some(&"ABILITY_ACTIVATED")
+                    && to_i64(parts.get(4).copied())
+                        == Some(crate::spirit_model::GUNDE_ULT_ABILITY_ID)
+                {
+                    if let Some(player) = parts
+                        .get(2)
+                        .and_then(|id| state.players.get(&player_map_key(id)))
+                    {
+                        if player.spirit_sim.is_gunde {
+                            let mut sim = player.spirit_sim.clone();
+                            if let Some(ts_ms) = parse_ts_ms(parts[0]) {
+                                sim.advance(ts_ms);
+                            }
+                            gunde_ults.push((
+                                player.name.clone().unwrap_or_default(),
+                                parts[0].to_string(),
+                                sim.sp,
+                            ));
+                        }
+                    }
+                }
+            }
+
+            process_line(&mut state, line);
+        }
+
+        println!("--- Gunde ults: {}", gunde_ults.len());
+        for (name, ts, sp) in &gunde_ults {
+            println!("{name} {ts} modelSpBefore={sp:.1}");
+        }
+        println!("--- final players");
+        for player in state.players.values() {
+            println!(
+                "{} sim.sp={:.1} synced={} spirit={:?}",
+                player.name.as_deref().unwrap_or("?"),
+                player.spirit_sim.sp,
+                player.spirit_sim.synced,
+                player
+                    .spirit
+                    .as_ref()
+                    .map(|s| format!("{} (modeled={})", s["current"], s["modeled"])),
+            );
+        }
+    }
 }

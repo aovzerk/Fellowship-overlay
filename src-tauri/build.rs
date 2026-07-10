@@ -15,6 +15,9 @@ fn write_embedded_game_data() {
 
     let relics_json = fs::read_to_string(game_data_dir.join("catalogs").join("relics.json"))
         .unwrap_or_else(|_| "{}".to_string());
+    let spirit_values_json =
+        fs::read_to_string(game_data_dir.join("catalogs").join("spirit-values.json"))
+            .unwrap_or_else(|_| "{}".to_string());
     let empowered_scaling_json = fs::read_to_string(
         game_data_dir
             .join("catalogs")
@@ -55,6 +58,9 @@ fn write_embedded_game_data() {
     generated.push_str(";\n\n");
     generated.push_str("pub const EMPOWERED_SCALING_JSON: &str = ");
     generated.push_str(&format!("{empowered_scaling_json:?}"));
+    generated.push_str(";\n\n");
+    generated.push_str("pub const SPIRIT_VALUES_JSON: &str = ");
+    generated.push_str(&format!("{spirit_values_json:?}"));
     generated.push_str(";\n\n");
     generated.push_str("pub const DUNGEONS: &[EmbeddedDungeon] = &[\n");
     for (id, folder, raw) in dungeons {
