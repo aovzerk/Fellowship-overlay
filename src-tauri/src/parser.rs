@@ -1,4 +1,6 @@
-use crate::dungeon::{is_chickenize_ability, DungeonTracker};
+use crate::dungeon::{
+    is_chickenize_ability, is_empowered_victory_rush_effect, DungeonTracker,
+};
 use crate::game_database::extract_relics_from_parts;
 use crate::parser_abilities::{
     ability_to_json, actor_key, add_ability, add_encounter_ability, build_uses_per_boss, AbilityKey,
@@ -690,9 +692,12 @@ fn process_line(state: &mut ParserState, line: &str) {
             let ability_name = unquote_str(parts.get(7).copied());
 
             if is_npc_id(&target_id) {
-                state
-                    .dungeon
-                    .touch_current_pull(ts, target_id, Some(target_name));
+                state.dungeon.observe_current_pull_npc(
+                    ts,
+                    target_id,
+                    Some(target_name),
+                    parts.get(24).copied(),
+                );
                 state.dungeon.mark_npc_underflow_if_needed(
                     ts,
                     target_id,
@@ -710,9 +715,12 @@ fn process_line(state: &mut ParserState, line: &str) {
             }
             if is_npc_id(&source_id) {
                 let source_name = unquote_str(parts.get(3).copied());
-                state
-                    .dungeon
-                    .touch_current_pull(ts, source_id, Some(source_name));
+                state.dungeon.observe_current_pull_npc(
+                    ts,
+                    source_id,
+                    Some(source_name),
+                    parts.get(17).copied(),
+                );
             }
 
             if source_id.starts_with("Player-") {
@@ -814,15 +822,30 @@ fn process_line(state: &mut ParserState, line: &str) {
             let ability_id = to_i64(parts.get(6).copied());
             let ability_name = unquote_str(parts.get(7).copied());
 
+            if event != "EFFECT_REMOVED"
+                && is_npc_id(&source_id)
+                && target_id.starts_with("Player-")
+                && is_empowered_victory_rush_effect(ability_id)
+            {
+                state.dungeon.mark_empowered_victory_rush(
+                    ts,
+                    source_id,
+                    Some(source_name),
+                );
+            }
+
             if is_npc_id(&source_id) && target_id.starts_with("Player-") {
                 state
                     .dungeon
                     .touch_current_pull(ts, source_id, Some(source_name));
             }
             if is_npc_id(&target_id) && source_id.starts_with("Player-") {
-                state
-                    .dungeon
-                    .touch_current_pull(ts, target_id, Some(target_name));
+                state.dungeon.observe_current_pull_npc(
+                    ts,
+                    target_id,
+                    Some(target_name),
+                    parts.get(12).copied(),
+                );
                 if is_chickenize_ability(ability_id, ability_name) {
                     state
                         .dungeon
@@ -1121,4 +1144,44 @@ pub fn build_log_data_payload(file_path: &Path) -> Value {
 fn system_time_string() -> String {
     // Good enough for payload freshness; renderer does not parse this for game time.
     format!("{:?}", std::time::SystemTime::now())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn damage_and_victory_rush_events_feed_empowered_dungeon_progress() {
+        let mut state = ParserState::new();
+        process_line(
+            &mut state,
+            "2026-07-09T22:45:32.402+03:00|DUNGEON_START|\"Silken Hollow\"|24|60|[4,6,12,19]|0|2026-07-09T22:45:30.919+03:00|",
+        );
+        process_line(
+            &mut state,
+            "2026-07-09T22:47:40.000+03:00|ABILITY_DAMAGE|Player-1|\"Player\"|Npc-1013973248-132|\"Bully Basher\"|1|\"Hit\"|0|1|0|-1|0|1|Physical|Hit|100|100|0|0|0|0|[]|3157810|3157811|0|0|0|0|[]",
+        );
+
+        let parsed = finalize_state(&state);
+        let expected = 12.0 / 168.0 * 100.0;
+        assert!((parsed.data["currentPull"]["alivePercent"].as_f64().unwrap() - expected).abs() < 0.0001);
+        assert_eq!(parsed.data["currentPull"]["mobs"][0]["empowered"], json!(true));
+
+        process_line(
+            &mut state,
+            "2026-07-09T22:47:51.318+03:00|EFFECT_APPLIED|Npc-1013973248-132|\"Bully Basher\"|Player-1|\"Player\"|44|\"Empowered Minion: Victory Rush\"|40.000000|1|BUFF|100|100|0|0|0|0|[]|0|\"-\"|0",
+        );
+        process_line(
+            &mut state,
+            "2026-07-09T22:47:51.318+03:00|UNIT_DEATH|Npc-1013973248-132|\"Bully Basher\"|Player-1|\"Player\"|1|\"Hit\"|0|0",
+        );
+
+        let parsed = finalize_state(&state);
+        assert!((parsed.data["dungeon"]["completedPercent"].as_f64().unwrap() - expected).abs() < 0.0001);
+        assert_eq!(
+            parsed.data["currentPull"]["mobs"][0]["empoweredConfirmed"],
+            json!(true)
+        );
+    }
+
 }

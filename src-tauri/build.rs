@@ -15,6 +15,12 @@ fn write_embedded_game_data() {
 
     let relics_json = fs::read_to_string(game_data_dir.join("catalogs").join("relics.json"))
         .unwrap_or_else(|_| "{}".to_string());
+    let empowered_scaling_json = fs::read_to_string(
+        game_data_dir
+            .join("catalogs")
+            .join("empowered-scaling.json"),
+    )
+    .unwrap_or_else(|_| "{}".to_string());
     let mut dungeons = Vec::new();
     let dungeons_dir = game_data_dir.join("dungeons");
     if let Ok(entries) = fs::read_dir(&dungeons_dir) {
@@ -47,6 +53,9 @@ fn write_embedded_game_data() {
     generated.push_str("pub const RELICS_JSON: &str = ");
     generated.push_str(&format!("{relics_json:?}"));
     generated.push_str(";\n\n");
+    generated.push_str("pub const EMPOWERED_SCALING_JSON: &str = ");
+    generated.push_str(&format!("{empowered_scaling_json:?}"));
+    generated.push_str(";\n\n");
     generated.push_str("pub const DUNGEONS: &[EmbeddedDungeon] = &[\n");
     for (id, folder, raw) in dungeons {
         let id_expr = id.map_or_else(|| "None".to_string(), |value| format!("Some({value})"));
@@ -65,6 +74,13 @@ fn write_embedded_game_data() {
     println!(
         "cargo:rerun-if-changed={}",
         game_data_dir.join("catalogs").join("relics.json").display()
+    );
+    println!(
+        "cargo:rerun-if-changed={}",
+        game_data_dir
+            .join("catalogs")
+            .join("empowered-scaling.json")
+            .display()
     );
     rerun_if_directory_changes(&game_data_dir.join("dungeons"));
 }

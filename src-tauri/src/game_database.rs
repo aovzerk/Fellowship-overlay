@@ -9,6 +9,19 @@ mod embedded_game_data {
 }
 
 static RELIC_DATA_CACHE: OnceLock<Value> = OnceLock::new();
+static EMPOWERED_SCALING_CACHE: OnceLock<Value> = OnceLock::new();
+
+pub fn empowered_scaling_data() -> &'static Value {
+    EMPOWERED_SCALING_CACHE.get_or_init(|| {
+        for root in game_data_roots() {
+            if let Some(data) = read_json(root.join("catalogs").join("empowered-scaling.json")) {
+                return data;
+            }
+        }
+        serde_json::from_str(embedded_game_data::EMPOWERED_SCALING_JSON)
+            .unwrap_or_else(|_| serde_json::json!({}))
+    })
+}
 
 pub fn load_dungeon_data(dungeon_id: Option<i64>, name: Option<&str>) -> Option<Value> {
     dungeon_id

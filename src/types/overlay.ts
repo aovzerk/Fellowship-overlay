@@ -288,6 +288,10 @@ export interface NpcPercentMeta {
 
 export interface CurrentPullNpc extends NpcPercentMeta {
   unitId: string;
+  effectiveScore?: number;
+  maxHp?: number | null;
+  empowered?: boolean;
+  empoweredConfirmed?: boolean;
   firstSeenAt: string | null;
   lastSeenAt: string | null;
   deadAt: string | null;

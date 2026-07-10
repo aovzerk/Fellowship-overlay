@@ -1,4 +1,4 @@
-use crate::game_database::load_dungeon_data;
+use crate::game_database::{empowered_scaling_data, load_dungeon_data};
 use crate::parser_line_utils::{is_npc_id, parse_ts_ms, to_i64, unquote_str};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -7,6 +7,8 @@ const CURRENT_PULL_RESET_MS: i64 = 8000;
 const NPC_UNDERFLOW_FALLBACK_MS: i64 = 1500;
 const BOSS_SUMMON_MIN_DELAY_MS: i64 = 12000;
 const CHICKENIZE_RELIC_ID: i64 = 1478;
+const EMPOWERED_HP_RATIO_MIN: f64 = 1.5;
+const EMPOWERED_HP_RATIO_MAX: f64 = 2.6;
 
 #[derive(Clone)]
 struct CurrentPullNpc {
@@ -15,6 +17,9 @@ struct CurrentPullNpc {
     name: String,
     score: f64,
     percent: f64,
+    max_hp: Option<f64>,
+    empowered: bool,
+    empowered_confirmed: bool,
     first_seen_at: String,
     last_seen_at: String,
     dead_at: Option<String>,
@@ -43,6 +48,8 @@ pub struct DungeonTracker {
     counted_npc_deaths: HashSet<String>,
     chickenized_npc_ids: HashSet<String>,
     boss_spawned_npc_ids: HashSet<String>,
+    empowered_npc_ids: HashSet<String>,
+    empowered_affix_active: bool,
     npc_deaths: Vec<Value>,
     boss_fight_active: bool,
     boss_fight_started_at_ms: Option<i64>,
@@ -57,6 +64,8 @@ impl DungeonTracker {
             counted_npc_deaths: HashSet::new(),
             chickenized_npc_ids: HashSet::new(),
             boss_spawned_npc_ids: HashSet::new(),
+            empowered_npc_ids: HashSet::new(),
+            empowered_affix_active: false,
             npc_deaths: Vec::new(),
             boss_fight_active: false,
             boss_fight_started_at_ms: None,
@@ -70,6 +79,8 @@ impl DungeonTracker {
         self.counted_npc_deaths.clear();
         self.chickenized_npc_ids.clear();
         self.boss_spawned_npc_ids.clear();
+        self.empowered_npc_ids.clear();
+        self.empowered_affix_active = false;
         self.npc_deaths.clear();
         self.boss_fight_active = false;
         self.boss_fight_started_at_ms = None;
@@ -93,6 +104,10 @@ impl DungeonTracker {
         self.dungeon["id"] = json!(id);
         self.dungeon["difficulty"] = json!(to_i64(parts.get(4).copied()));
         self.dungeon["affixes"] = json!(parts.get(5).copied());
+        self.empowered_affix_active = parts
+            .get(5)
+            .map(|raw| affix_list_contains(raw, empowered_affix_id()))
+            .unwrap_or(false);
         self.dungeon["data"] = self.dungeon_data.clone().unwrap_or(Value::Null);
     }
 
@@ -176,6 +191,9 @@ impl DungeonTracker {
             if npc.boss_spawned_at.is_some() || self.boss_spawned_npc_ids.contains(npc_id) {
                 npc.boss_spawned = true;
             }
+            if self.empowered_npc_ids.contains(npc_id) {
+                npc.empowered = true;
+            }
             return;
         }
 
@@ -191,6 +209,9 @@ impl DungeonTracker {
                 name: meta.name.clone(),
                 score: meta.score,
                 percent: meta.percent,
+                max_hp: None,
+                empowered: self.empowered_npc_ids.contains(npc_id),
+                empowered_confirmed: false,
                 first_seen_at: ts.to_string(),
                 last_seen_at: ts.to_string(),
                 dead_at: None,
@@ -221,6 +242,55 @@ impl DungeonTracker {
         }
         if npc.boss_spawned_at.is_some() || self.boss_spawned_npc_ids.contains(npc_id) {
             npc.boss_spawned = true;
+        }
+        if self.empowered_npc_ids.contains(npc_id) {
+            npc.empowered = true;
+        }
+    }
+
+    pub fn observe_current_pull_npc(
+        &mut self,
+        ts: &str,
+        npc_id: &str,
+        npc_name: Option<&str>,
+        max_hp_raw: Option<&str>,
+    ) {
+        self.touch_current_pull(ts, npc_id, npc_name);
+        let max_hp = max_hp_raw
+            .and_then(|value| value.parse::<f64>().ok())
+            .filter(|value| value.is_finite() && *value > 0.0);
+        let Some(max_hp) = max_hp else {
+            return;
+        };
+        let template_id = extract_npc_template_id(npc_id);
+        let empowered = template_id
+            .map(|template_id| self.is_empowered_max_hp(template_id, max_hp))
+            .unwrap_or(false);
+        if empowered {
+            self.empowered_npc_ids.insert(npc_id.to_string());
+        }
+        if let Some(npc) = self.current_pull.npc_map.get_mut(npc_id) {
+            npc.max_hp = Some(max_hp);
+            if empowered {
+                npc.empowered = true;
+            }
+        }
+    }
+
+    pub fn mark_empowered_victory_rush(
+        &mut self,
+        ts: &str,
+        npc_id: &str,
+        npc_name: Option<&str>,
+    ) {
+        if !self.empowered_affix_active || !is_npc_id(npc_id) {
+            return;
+        }
+        self.empowered_npc_ids.insert(npc_id.to_string());
+        self.touch_current_pull(ts, npc_id, npc_name);
+        if let Some(npc) = self.current_pull.npc_map.get_mut(npc_id) {
+            npc.empowered = true;
+            npc.empowered_confirmed = true;
         }
     }
 
@@ -320,8 +390,10 @@ impl DungeonTracker {
         }
     }
 
-    pub fn encounter_start(&mut self, ts: &str, encounter_name: &str) {
-        self.boss_fight_active = self.is_boss_encounter_name(encounter_name);
+    pub fn encounter_start(&mut self, ts: &str, _encounter_name: &str) {
+        // ENCOUNTER_START is emitted for dungeon bosses. Matching its localized display
+        // name against the English dungeon data made boss summons count on RU clients.
+        self.boss_fight_active = self.dungeon_data.is_some() && !self.boss_template_ids().is_empty();
         self.boss_fight_started_at_ms = parse_ts_ms(ts);
     }
 
@@ -398,14 +470,23 @@ impl DungeonTracker {
                 let effective_percent = if mob.chickenized || mob.boss_spawned {
                     0.0
                 } else {
-                    mob.percent
+                    mob.percent * if mob.empowered { empowered_kill_score_multiplier() } else { 1.0 }
+                };
+                let effective_score = if mob.chickenized || mob.boss_spawned {
+                    0.0
+                } else {
+                    mob.score * if mob.empowered { empowered_kill_score_multiplier() } else { 1.0 }
                 };
                 json!({
                     "unitId": mob.unit_id,
                     "templateId": mob.template_id,
                     "name": mob.name,
                     "score": mob.score,
+                    "effectiveScore": effective_score,
                     "percent": mob.percent,
+                    "maxHp": mob.max_hp,
+                    "empowered": mob.empowered,
+                    "empoweredConfirmed": mob.empowered_confirmed,
                     "firstSeenAt": mob.first_seen_at,
                     "lastSeenAt": mob.last_seen_at,
                     "deadAt": mob.dead_at,
@@ -515,8 +596,29 @@ impl DungeonTracker {
                 !self.chickenized_npc_ids.contains(*npc_id)
                     && !self.boss_spawned_npc_ids.contains(*npc_id)
             })
-            .map(|npc_id| self.npc_percent_meta(npc_id, None).percent)
+            .map(|npc_id| {
+                let multiplier = if self.empowered_affix_active
+                    && self.empowered_npc_ids.contains(npc_id)
+                {
+                    empowered_kill_score_multiplier()
+                } else {
+                    1.0
+                };
+                self.npc_percent_meta(npc_id, None).percent * multiplier
+            })
             .sum()
+    }
+
+    fn is_empowered_max_hp(&self, template_id: i64, max_hp: f64) -> bool {
+        if !self.empowered_affix_active {
+            return false;
+        }
+        let difficulty = self.dungeon["difficulty"].as_i64();
+        let Some(expected_hp) = expected_normal_max_hp(template_id, difficulty) else {
+            return false;
+        };
+        let ratio = max_hp / expected_hp;
+        ratio >= EMPOWERED_HP_RATIO_MIN && ratio <= EMPOWERED_HP_RATIO_MAX
     }
 
     fn npc_percent_meta(&self, unit_id: &str, fallback_name: Option<&str>) -> NpcPercentMeta {
@@ -604,29 +706,6 @@ impl DungeonTracker {
         self.boss_template_ids().contains(&template_id)
     }
 
-    fn is_boss_encounter_name(&self, encounter_name: &str) -> bool {
-        let normalized_names: HashSet<String> = self
-            .boss_template_ids()
-            .into_iter()
-            .filter_map(|boss_id| {
-                self.dungeon_data
-                    .as_ref()
-                    .and_then(|data| data.get("mobs"))
-                    .and_then(|mobs| mobs.get(boss_id.to_string()))
-                    .and_then(|mob| mob.get("name"))
-                    .and_then(Value::as_str)
-                    .map(|name| name.trim().to_ascii_lowercase())
-            })
-            .filter(|name| !name.is_empty())
-            .collect();
-        if normalized_names.is_empty() {
-            return false;
-        }
-        encounter_name
-            .split(',')
-            .map(|name| name.trim().to_ascii_lowercase())
-            .any(|name| normalized_names.contains(&name))
-    }
 }
 
 struct NpcPercentMeta {
@@ -634,6 +713,53 @@ struct NpcPercentMeta {
     name: String,
     score: f64,
     percent: f64,
+}
+
+pub fn is_empowered_victory_rush_effect(ability_id: Option<i64>) -> bool {
+    ability_id == Some(empowered_victory_rush_effect_id())
+}
+
+fn empowered_affix_id() -> i64 {
+    empowered_scaling_data()
+        .get("empoweredAffixId")
+        .and_then(Value::as_i64)
+        .unwrap_or(12)
+}
+
+fn empowered_victory_rush_effect_id() -> i64 {
+    empowered_scaling_data()
+        .get("victoryRushEffectId")
+        .and_then(Value::as_i64)
+        .unwrap_or(44)
+}
+
+fn empowered_kill_score_multiplier() -> f64 {
+    empowered_scaling_data()
+        .get("empoweredKillScoreMultiplier")
+        .and_then(Value::as_f64)
+        .unwrap_or(3.0)
+}
+
+fn expected_normal_max_hp(template_id: i64, difficulty: Option<i64>) -> Option<f64> {
+    let difficulty = difficulty?;
+    let data = empowered_scaling_data();
+    let base_health = data.get("baseHealth")?.as_f64()?;
+    let difficulty_scale = data
+        .get("difficultyHealthScale")?
+        .get(difficulty.to_string())?
+        .as_f64()?;
+    let mob_scale = data
+        .get("mobBaseHealthMultiplier")?
+        .get(template_id.to_string())?
+        .as_f64()?;
+    let expected = base_health * difficulty_scale * mob_scale;
+    (expected.is_finite() && expected > 0.0).then_some(expected)
+}
+
+fn affix_list_contains(raw: &str, affix_id: i64) -> bool {
+    raw.split(|ch: char| !ch.is_ascii_digit() && ch != '-')
+        .filter_map(|value| value.parse::<i64>().ok())
+        .any(|value| value == affix_id)
 }
 
 pub fn is_chickenize_ability(ability_id: Option<i64>, ability_name: &str) -> bool {
@@ -680,4 +806,103 @@ where
         .filter(|mob| predicate(mob))
         .map(|mob| mob[field].as_f64().unwrap_or(0.0))
         .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TS: &str = "2026-07-09T22:45:32.402+03:00";
+
+    fn start_silken(affixes: &str) -> DungeonTracker {
+        let mut tracker = DungeonTracker::new();
+        tracker.start(
+            TS,
+            &[
+                TS,
+                "DUNGEON_START",
+                "\"Silken Hollow\"",
+                "24",
+                "60",
+                affixes,
+                "0",
+                TS,
+            ],
+        );
+        tracker
+    }
+
+    #[test]
+    fn empowered_max_hp_triples_current_pull_and_completed_percent() {
+        let mut tracker = start_silken("[4,6,12,19]");
+        let npc_id = "Npc-1013973248-132";
+        tracker.observe_current_pull_npc(TS, npc_id, Some("Bully Basher"), Some("3157811"));
+
+        let pull = tracker.current_pull_summary();
+        let expected = 12.0 / 168.0 * 100.0;
+        assert!((pull["alivePercent"].as_f64().unwrap() - expected).abs() < 0.0001);
+        assert_eq!(pull["mobs"][0]["empowered"], json!(true));
+        assert_eq!(pull["mobs"][0]["effectiveScore"], json!(12.0));
+
+        tracker.mark_current_pull_death(TS, npc_id, Some("Bully Basher"));
+        let completed = tracker.dungeon_json()["completedPercent"].as_f64().unwrap();
+        assert!((completed - expected).abs() < 0.0001);
+    }
+
+    #[test]
+    fn high_hp_is_not_empowered_without_affix() {
+        let mut tracker = start_silken("[4,6,19]");
+        tracker.observe_current_pull_npc(
+            TS,
+            "Npc-1013973248-132",
+            Some("Bully Basher"),
+            Some("3157811"),
+        );
+        let pull = tracker.current_pull_summary();
+        assert_eq!(pull["mobs"][0]["empowered"], json!(false));
+        assert_eq!(pull["mobs"][0]["effectiveScore"], json!(4.0));
+    }
+
+    #[test]
+    fn victory_rush_confirms_empowered_only_when_affix_is_active() {
+        let npc_id = "Npc-2487746976-266";
+        let mut tracker = start_silken("[4,6,12,19]");
+        tracker.mark_empowered_victory_rush(TS, npc_id, Some("Venomdrinker"));
+        let pull = tracker.current_pull_summary();
+        assert_eq!(pull["mobs"][0]["empowered"], json!(true));
+        assert_eq!(pull["mobs"][0]["empoweredConfirmed"], json!(true));
+
+        let mut no_affix = start_silken("[4,6,19]");
+        no_affix.mark_empowered_victory_rush(TS, npc_id, Some("Venomdrinker"));
+        assert!(no_affix.current_pull_summary()["mobs"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn localized_boss_encounter_excludes_late_summons() {
+        let mut tracker = start_silken("[4,6,12,19]");
+        tracker.encounter_start(
+            "2026-07-09T22:55:24.000+03:00",
+            "[\"Вексайра, Мать кошмаров\"]",
+        );
+        let summon_id = "Npc-2010121632-90";
+        tracker.observe_current_pull_npc(
+            "2026-07-09T22:55:45.456+03:00",
+            summon_id,
+            Some("Rotheart Recluse"),
+            Some("587964"),
+        );
+        let pull = tracker.current_pull_summary();
+        assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
+        assert_eq!(pull["mobs"][0]["effectiveScore"], json!(0.0));
+
+        tracker.mark_current_pull_death(
+            "2026-07-09T22:56:00.000+03:00",
+            summon_id,
+            Some("Rotheart Recluse"),
+        );
+        assert_eq!(tracker.dungeon_json()["completedPercent"], json!(0.0));
+    }
 }
