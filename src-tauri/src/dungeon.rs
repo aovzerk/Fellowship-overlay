@@ -1,4 +1,4 @@
-use crate::game_database::{empowered_scaling_data, load_dungeon_data};
+use crate::game_database::{empowered_scaling_data, load_dungeon_data, npc_spirit_values};
 use crate::parser_line_utils::{is_npc_id, parse_ts_ms, to_i64, unquote_str};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -21,6 +21,8 @@ struct CurrentPullNpc {
     score: f64,
     percent: f64,
     max_hp: Option<f64>,
+    current_hp: Option<f64>,
+    lowest_hp_fraction: f64,
     empowered: bool,
     empowered_confirmed: bool,
     first_seen_at: String,
@@ -219,6 +221,8 @@ impl DungeonTracker {
                 score: meta.score,
                 percent: meta.percent,
                 max_hp: None,
+                current_hp: None,
+                lowest_hp_fraction: 1.0,
                 empowered: self.empowered_npc_ids.contains(npc_id),
                 empowered_confirmed: false,
                 first_seen_at: ts.to_string(),
@@ -262,12 +266,16 @@ impl DungeonTracker {
         ts: &str,
         npc_id: &str,
         npc_name: Option<&str>,
+        current_hp_raw: Option<&str>,
         max_hp_raw: Option<&str>,
     ) {
         self.touch_current_pull(ts, npc_id, npc_name);
         let max_hp = max_hp_raw
             .and_then(|value| value.parse::<f64>().ok())
             .filter(|value| value.is_finite() && *value > 0.0);
+        let current_hp = current_hp_raw
+            .and_then(|value| value.parse::<f64>().ok())
+            .filter(|value| value.is_finite() && *value >= 0.0);
         let Some(max_hp) = max_hp else {
             return;
         };
@@ -280,6 +288,12 @@ impl DungeonTracker {
         }
         if let Some(npc) = self.current_pull.npc_map.get_mut(npc_id) {
             npc.max_hp = Some(max_hp);
+            if let Some(current_hp) = current_hp {
+                npc.current_hp = Some(current_hp);
+                npc.lowest_hp_fraction = npc
+                    .lowest_hp_fraction
+                    .min((current_hp / max_hp).clamp(0.0, 1.0));
+            }
             if empowered {
                 npc.empowered = true;
             }
@@ -476,6 +490,10 @@ impl DungeonTracker {
     }
 
     pub fn current_pull_summary(&self) -> Value {
+        self.current_pull_summary_for_party(1)
+    }
+
+    pub fn current_pull_summary_for_party(&self, party_size: usize) -> Value {
         if self.current_pull.npc_map.is_empty() {
             return json!({
                 "startedAt": null,
@@ -491,6 +509,7 @@ impl DungeonTracker {
                 "chickenizedOriginalPercent": 0,
                 "aliveChickenizedCount": 0,
                 "aliveChickenizedOriginalPercent": 0
+                ,"remainingSpirit": 0
             });
         }
 
@@ -510,6 +529,15 @@ impl DungeonTracker {
                 } else {
                     mob.score * if mob.empowered { empowered_kill_score_multiplier() } else { 1.0 }
                 };
+                let spirit_value = mob
+                    .template_id
+                    .map(|template_id| npc_spirit_values(template_id).0)
+                    .unwrap_or(0.0);
+                let remaining_spirit = if alive && !mob.chickenized && !mob.boss_spawned {
+                    spirit_value * mob.lowest_hp_fraction / party_size.max(1) as f64
+                } else {
+                    0.0
+                };
                 json!({
                     "unitId": mob.unit_id,
                     "templateId": mob.template_id,
@@ -518,6 +546,9 @@ impl DungeonTracker {
                     "effectiveScore": effective_score,
                     "percent": mob.percent,
                     "maxHp": mob.max_hp,
+                    "currentHp": mob.current_hp,
+                    "lowestHpFraction": mob.lowest_hp_fraction,
+                    "remainingSpirit": remaining_spirit,
                     "empowered": mob.empowered,
                     "empoweredConfirmed": mob.empowered_confirmed,
                     "firstSeenAt": mob.first_seen_at,
@@ -574,6 +605,7 @@ impl DungeonTracker {
         let alive_chickenized_original_percent = sum_field(&mobs, "percent", |mob| {
             mob["chickenized"].as_bool().unwrap_or(false) && mob["alive"].as_bool().unwrap_or(false)
         });
+        let remaining_spirit = sum_field(&mobs, "remainingSpirit", |_| true);
 
         json!({
             "startedAt": self.current_pull.started_at,
@@ -589,6 +621,7 @@ impl DungeonTracker {
             "chickenizedOriginalPercent": chickenized_original_percent,
             "aliveChickenizedCount": alive_chickenized_count,
             "aliveChickenizedOriginalPercent": alive_chickenized_original_percent
+            ,"remainingSpirit": remaining_spirit
         })
     }
 
@@ -877,7 +910,13 @@ mod tests {
     fn empowered_max_hp_triples_current_pull_and_completed_percent() {
         let mut tracker = start_silken("[4,6,12,19]");
         let npc_id = "Npc-1013973248-132";
-        tracker.observe_current_pull_npc(TS, npc_id, Some("Bully Basher"), Some("3157811"));
+        tracker.observe_current_pull_npc(
+            TS,
+            npc_id,
+            Some("Bully Basher"),
+            Some("3157811"),
+            Some("3157811"),
+        );
 
         let pull = tracker.current_pull_summary();
         let expected = 12.0 / 168.0 * 100.0;
@@ -897,6 +936,7 @@ mod tests {
             TS,
             "Npc-1013973248-132",
             Some("Bully Basher"),
+            Some("3157811"),
             Some("3157811"),
         );
         let pull = tracker.current_pull_summary();
@@ -934,6 +974,7 @@ mod tests {
             summon_id,
             Some("Rotheart Recluse"),
             Some("587964"),
+            Some("587964"),
         );
         let pull = tracker.current_pull_summary();
         assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
@@ -964,10 +1005,31 @@ mod tests {
             "Npc-2-161",
             Some("Ice Shardling"),
             Some("74969"),
+            Some("74969"),
         );
 
         let pull = tracker.current_pull_summary();
         assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
         assert_eq!(pull["alivePercent"], json!(0.0));
+    }
+
+    #[test]
+    fn remaining_pull_spirit_uses_hp_fraction_and_party_size() {
+        let mut tracker = DungeonTracker::new();
+        tracker.start(
+            TS,
+            &[TS, "DUNGEON_START", "\"Cithrel's Fall\"", "7", "19", "[4,6]", "0", TS],
+        );
+        tracker.observe_current_pull_npc(
+            TS,
+            "Npc-1-161",
+            Some("Ice Shardling"),
+            Some("37484.5"),
+            Some("74969"),
+        );
+
+        let pull = tracker.current_pull_summary_for_party(4);
+        let remaining = pull["remainingSpirit"].as_f64().unwrap();
+        assert!((remaining - 0.125).abs() < 0.0001);
     }
 }

@@ -125,6 +125,7 @@
     const mobs = Array.isArray(currentPull?.mobs) ? currentPull.mobs : [];
     const alivePercent = Number(currentPull?.alivePercent || 0);
     const projectedAlivePercent = Number(currentPull?.uncountedAlivePercent ?? currentPull?.alivePercent ?? 0);
+    const remainingSpirit = Number(currentPull?.remainingSpirit || 0);
     const completedPercent = Math.min(100, Math.max(0, Number(dungeon?.completedPercent || 0)));
     const dungeonEnded = Boolean(dungeon?.endedAt);
     const projectedTotalPercent = Math.min(100, dungeonEnded ? completedPercent : (completedPercent + projectedAlivePercent));
@@ -154,12 +155,16 @@
       ? ''
       : `<div class="pull-stat"><span>${escapeHtml(translate('pullAlive'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, alivePercent))}%</strong></div>`;
     const totalLine = `<div class="pull-stat"><span>${escapeHtml(dungeonEnded ? translate('pullTotal') : translate('pullProjected'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, projectedTotalPercent))}%</strong></div>`;
+    const spiritLine = dungeonEnded
+      ? ''
+      : `<div class="pull-stat"><span>${escapeHtml(translate('pullSpirit'))}</span><strong>${escapeHtml(formatPercent(currentLanguage, remainingSpirit))}</strong></div>`;
     pullInfoEl.innerHTML = `
       <div class="pull-title pull-drag-handle">${escapeHtml(dungeonTitle)}</div>
       <div class="pull-stats">
         ${completedLine}
         ${aliveLine}
         ${totalLine}
+        ${spiritLine}
       </div>
       ${chickenizedLine}
     `;

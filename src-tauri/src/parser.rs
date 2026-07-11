@@ -779,6 +779,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     ts,
                     target_id,
                     Some(target_name),
+                    parts.get(23).copied(),
                     parts.get(24).copied(),
                 );
                 state.dungeon.mark_npc_underflow_if_needed(
@@ -812,6 +813,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     ts,
                     source_id,
                     Some(source_name),
+                    parts.get(16).copied(),
                     parts.get(17).copied(),
                 );
             }
@@ -946,6 +948,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     ts,
                     target_id,
                     Some(target_name),
+                    parts.get(11).copied(),
                     parts.get(12).copied(),
                 );
                 if is_chickenize_ability(ability_id, ability_name) {
@@ -1137,7 +1140,7 @@ fn finalize_state(state: &ParserState) -> ParsedLog {
         "partyPlayerIds": state.party_player_ids,
         "encounters": encounters.iter().map(encounter_to_json).collect::<Vec<_>>(),
         "npcDeaths": state.dungeon.npc_deaths_json(),
-        "currentPull": state.dungeon.current_pull_summary(),
+        "currentPull": state.dungeon.current_pull_summary_for_party(state.party_player_ids.len()),
         "counters": state.counters
     });
 

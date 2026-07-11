@@ -296,6 +296,9 @@ export interface CurrentPullNpc extends NpcPercentMeta {
   unitId: string;
   effectiveScore?: number;
   maxHp?: number | null;
+  currentHp?: number | null;
+  lowestHpFraction?: number;
+  remainingSpirit?: number;
   empowered?: boolean;
   empoweredConfirmed?: boolean;
   firstSeenAt: string | null;
@@ -329,6 +332,7 @@ export interface CurrentPullSummary {
   aliveChickenizedCount?: number;
   chickenizedOriginalPercent?: number;
   aliveChickenizedOriginalPercent?: number;
+  remainingSpirit?: number;
   mobs: CurrentPullNpc[];
 }
 
