@@ -125,9 +125,9 @@
     const mobs = Array.isArray(currentPull?.mobs) ? currentPull.mobs : [];
     const alivePercent = Number(currentPull?.alivePercent || 0);
     const projectedAlivePercent = Number(currentPull?.uncountedAlivePercent ?? currentPull?.alivePercent ?? 0);
-    const completedPercent = Number(dungeon?.completedPercent || 0);
+    const completedPercent = Math.min(100, Math.max(0, Number(dungeon?.completedPercent || 0)));
     const dungeonEnded = Boolean(dungeon?.endedAt);
-    const projectedTotalPercent = dungeonEnded ? completedPercent : (completedPercent + projectedAlivePercent);
+    const projectedTotalPercent = Math.min(100, dungeonEnded ? completedPercent : (completedPercent + projectedAlivePercent));
     const chickenizedCount = Number(currentPull?.chickenizedCount || 0);
     const chickenizedOriginalPercent = Number(currentPull?.chickenizedOriginalPercent || 0);
     const aliveChickenizedCount = Number(currentPull?.aliveChickenizedCount || 0);
