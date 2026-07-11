@@ -329,10 +329,6 @@ impl DungeonTracker {
         self.chickenized_npc_ids.insert(npc_id.to_string());
     }
 
-    pub fn mark_current_pull_death(&mut self, ts: &str, npc_id: &str, npc_name: Option<&str>) {
-        self.mark_current_pull_death_with_progress(ts, npc_id, npc_name, None);
-    }
-
     pub fn mark_current_pull_death_with_progress(
         &mut self,
         ts: &str,
@@ -487,10 +483,6 @@ impl DungeonTracker {
 
     pub fn npc_deaths_json(&self) -> Value {
         json!(self.npc_deaths)
-    }
-
-    pub fn current_pull_summary(&self) -> Value {
-        self.current_pull_summary_for_party(1)
     }
 
     pub fn current_pull_summary_for_party(&self, party_size: usize) -> Value {
@@ -918,13 +910,13 @@ mod tests {
             Some("3157811"),
         );
 
-        let pull = tracker.current_pull_summary();
+        let pull = tracker.current_pull_summary_for_party(1);
         let expected = 12.0 / 168.0 * 100.0;
         assert!((pull["alivePercent"].as_f64().unwrap() - expected).abs() < 0.0001);
         assert_eq!(pull["mobs"][0]["empowered"], json!(true));
         assert_eq!(pull["mobs"][0]["effectiveScore"], json!(12.0));
 
-        tracker.mark_current_pull_death(TS, npc_id, Some("Bully Basher"));
+        tracker.mark_current_pull_death_with_progress(TS, npc_id, Some("Bully Basher"), None);
         let completed = tracker.dungeon_json()["completedPercent"].as_f64().unwrap();
         assert!((completed - expected).abs() < 0.0001);
     }
@@ -939,7 +931,7 @@ mod tests {
             Some("3157811"),
             Some("3157811"),
         );
-        let pull = tracker.current_pull_summary();
+        let pull = tracker.current_pull_summary_for_party(1);
         assert_eq!(pull["mobs"][0]["empowered"], json!(false));
         assert_eq!(pull["mobs"][0]["effectiveScore"], json!(4.0));
     }
@@ -949,13 +941,13 @@ mod tests {
         let npc_id = "Npc-2487746976-266";
         let mut tracker = start_silken("[4,6,12,19]");
         tracker.mark_empowered_victory_rush(TS, npc_id, Some("Venomdrinker"));
-        let pull = tracker.current_pull_summary();
+        let pull = tracker.current_pull_summary_for_party(1);
         assert_eq!(pull["mobs"][0]["empowered"], json!(true));
         assert_eq!(pull["mobs"][0]["empoweredConfirmed"], json!(true));
 
         let mut no_affix = start_silken("[4,6,19]");
         no_affix.mark_empowered_victory_rush(TS, npc_id, Some("Venomdrinker"));
-        assert!(no_affix.current_pull_summary()["mobs"]
+        assert!(no_affix.current_pull_summary_for_party(1)["mobs"]
             .as_array()
             .unwrap()
             .is_empty());
@@ -976,14 +968,15 @@ mod tests {
             Some("587964"),
             Some("587964"),
         );
-        let pull = tracker.current_pull_summary();
+        let pull = tracker.current_pull_summary_for_party(1);
         assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
         assert_eq!(pull["mobs"][0]["effectiveScore"], json!(0.0));
 
-        tracker.mark_current_pull_death(
+        tracker.mark_current_pull_death_with_progress(
             "2026-07-09T22:56:00.000+03:00",
             summon_id,
             Some("Rotheart Recluse"),
+            None,
         );
         assert_eq!(tracker.dungeon_json()["completedPercent"], json!(0.0));
     }
@@ -995,10 +988,11 @@ mod tests {
             TS,
             &[TS, "DUNGEON_START", "\"Cithrel's Fall\"", "7", "19", "[4,6]", "0", TS],
         );
-        tracker.mark_current_pull_death(
+        tracker.mark_current_pull_death_with_progress(
             "2026-07-09T22:45:32.500+03:00",
             "Npc-1-160",
             Some("Spellbound Golem"),
+            None,
         );
         tracker.observe_current_pull_npc(
             "2026-07-09T22:45:33.100+03:00",
@@ -1008,7 +1002,7 @@ mod tests {
             Some("74969"),
         );
 
-        let pull = tracker.current_pull_summary();
+        let pull = tracker.current_pull_summary_for_party(1);
         assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
         assert_eq!(pull["alivePercent"], json!(0.0));
     }
