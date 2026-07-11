@@ -19,9 +19,14 @@ pub const SPIRIT_TICK_RATE: f64 = 1.0 / 3.0;
 
 pub const GUNDE_CLASS_ID: i64 = 9;
 pub const GUNDE_ULT_ABILITY_ID: i64 = 2296;
-const GUNDE_HERALD_BLESSING_ID: i64 = 43;
-const HERALD_START_SP: [f64; 5] = [0.0, 12.0, 20.0, 30.0, 50.0];
 const VOG_TRAIT_ID: i64 = 47;
+/// COMBATANT_INFO field 15 lists equipped blessings as (id, tier).
+/// Blessing ids come in per-class blocks of 15 with The Herald at offset 14:
+/// Elarion 14, Ardeos 29, Gunde 44, Tariq 59, Meiko 104, Sylvie 119,
+/// Rime 134, Xavian 149. Verified against measured dungeon starts of five
+/// players (incl. an Ardeos respec 29: tier 2 -> 4 shifting start 70 -> 100).
+const GUNDE_HERALD_BLESSING_ID: i64 = 44;
+const HERALD_START_SP: [f64; 5] = [0.0, 12.0, 20.0, 30.0, 50.0];
 
 /// Weapon ability id -> default cooldown seconds (gear data: Weapons FSLID -> Cooldown).
 const WEAPON_COOLDOWNS: &[(i64, f64)] = &[
@@ -151,6 +156,8 @@ impl SpiritSim {
             .any(|(id, _)| *id == VOG_TRAIT_ID);
         self.is_gunde = class_id == Some(GUNDE_CLASS_ID);
 
+        // Dungeon start SP from The Herald blessing; the ultimate anchor
+        // corrects the model at the first ult if this reads wrong.
         if self.is_gunde && !self.configured {
             let herald_tier = parse_pair_list(blessings_raw)
                 .iter()
