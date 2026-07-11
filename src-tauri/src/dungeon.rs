@@ -6,6 +6,9 @@ use std::collections::{HashMap, HashSet};
 const CURRENT_PULL_RESET_MS: i64 = 8000;
 const NPC_UNDERFLOW_FALLBACK_MS: i64 = 1500;
 const BOSS_SUMMON_MIN_DELAY_MS: i64 = 12000;
+const DEATH_SUMMON_WINDOW_MS: i64 = 3000;
+const SPELLBOUND_GOLEM_TEMPLATE_ID: i64 = 160;
+const ICE_SHARDLING_TEMPLATE_ID: i64 = 161;
 const CHICKENIZE_RELIC_ID: i64 = 1478;
 const EMPOWERED_HP_RATIO_MIN: f64 = 1.5;
 const EMPOWERED_HP_RATIO_MAX: f64 = 2.6;
@@ -50,6 +53,8 @@ pub struct DungeonTracker {
     boss_spawned_npc_ids: HashSet<String>,
     empowered_npc_ids: HashSet<String>,
     empowered_affix_active: bool,
+    last_reported_progress: Option<f64>,
+    last_spellbound_golem_death_ms: Option<i64>,
     npc_deaths: Vec<Value>,
     boss_fight_active: bool,
     boss_fight_started_at_ms: Option<i64>,
@@ -66,6 +71,8 @@ impl DungeonTracker {
             boss_spawned_npc_ids: HashSet::new(),
             empowered_npc_ids: HashSet::new(),
             empowered_affix_active: false,
+            last_reported_progress: None,
+            last_spellbound_golem_death_ms: None,
             npc_deaths: Vec::new(),
             boss_fight_active: false,
             boss_fight_started_at_ms: None,
@@ -81,6 +88,8 @@ impl DungeonTracker {
         self.boss_spawned_npc_ids.clear();
         self.empowered_npc_ids.clear();
         self.empowered_affix_active = false;
+        self.last_reported_progress = None;
+        self.last_spellbound_golem_death_ms = None;
         self.npc_deaths.clear();
         self.boss_fight_active = false;
         self.boss_fight_started_at_ms = None;
@@ -307,6 +316,16 @@ impl DungeonTracker {
     }
 
     pub fn mark_current_pull_death(&mut self, ts: &str, npc_id: &str, npc_name: Option<&str>) {
+        self.mark_current_pull_death_with_progress(ts, npc_id, npc_name, None);
+    }
+
+    pub fn mark_current_pull_death_with_progress(
+        &mut self,
+        ts: &str,
+        npc_id: &str,
+        npc_name: Option<&str>,
+        reported_progress_raw: Option<&str>,
+    ) {
         if !is_npc_id(npc_id) {
             return;
         }
@@ -315,7 +334,21 @@ impl DungeonTracker {
             npc.dead_at = Some(ts.to_string());
             npc.dead_at_ms = parse_ts_ms(ts);
         }
-        self.register_npc_death(ts, npc_id, npc_name);
+        if extract_npc_template_id(npc_id) == Some(SPELLBOUND_GOLEM_TEMPLATE_ID) {
+            self.last_spellbound_golem_death_ms = parse_ts_ms(ts);
+        }
+        let counts_for_progress = reported_progress_raw
+            .and_then(|value| value.parse::<f64>().ok())
+            .filter(|value| value.is_finite() && (0.0..=1.0).contains(value))
+            .map(|progress| {
+                let previous = self.last_reported_progress.unwrap_or(0.0);
+                self.last_reported_progress = Some(progress);
+                progress > previous
+            })
+            .unwrap_or(true);
+        if counts_for_progress {
+            self.register_npc_death(ts, npc_id, npc_name);
+        }
     }
 
     pub fn mark_npc_underflow_if_needed(
@@ -685,6 +718,14 @@ impl DungeonTracker {
         let Some(template_id) = template_id else {
             return false;
         };
+        if template_id == ICE_SHARDLING_TEMPLATE_ID
+            && self
+                .last_spellbound_golem_death_ms
+                .map(|death_ms| (0..=DEATH_SUMMON_WINDOW_MS).contains(&(ts_ms - death_ms)))
+                .unwrap_or(false)
+        {
+            return true;
+        }
         if !self.boss_fight_active || self.is_boss_template_id(template_id) {
             return false;
         }
@@ -904,5 +945,29 @@ mod tests {
             Some("Rotheart Recluse"),
         );
         assert_eq!(tracker.dungeon_json()["completedPercent"], json!(0.0));
+    }
+
+    #[test]
+    fn shardlings_spawned_by_spellbound_golem_are_excluded_immediately() {
+        let mut tracker = DungeonTracker::new();
+        tracker.start(
+            TS,
+            &[TS, "DUNGEON_START", "\"Cithrel's Fall\"", "7", "19", "[4,6]", "0", TS],
+        );
+        tracker.mark_current_pull_death(
+            "2026-07-09T22:45:32.500+03:00",
+            "Npc-1-160",
+            Some("Spellbound Golem"),
+        );
+        tracker.observe_current_pull_npc(
+            "2026-07-09T22:45:33.100+03:00",
+            "Npc-2-161",
+            Some("Ice Shardling"),
+            Some("74969"),
+        );
+
+        let pull = tracker.current_pull_summary();
+        assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
+        assert_eq!(pull["alivePercent"], json!(0.0));
     }
 }

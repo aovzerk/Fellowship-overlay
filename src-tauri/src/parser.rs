@@ -1008,11 +1008,16 @@ fn process_line(state: &mut ParserState, line: &str) {
             if event == "UNIT_DEATH" && dead_id.starts_with("Player-") {
                 let dead_name = unquote_str(parts.get(3).copied());
                 ensure_player(&mut state.players, dead_id, Some(dead_name)).deaths += 1;
-            } else if is_npc_id(&dead_id) {
+            } else if event == "UNIT_DEATH" && is_npc_id(&dead_id) {
                 let dead_name = unquote_str(parts.get(3).copied());
                 state
                     .dungeon
-                    .mark_current_pull_death(ts, dead_id, Some(dead_name));
+                    .mark_current_pull_death_with_progress(
+                        ts,
+                        dead_id,
+                        Some(dead_name),
+                        parts.get(9).copied(),
+                    );
                 if let Some(encounter) =
                     current_encounter_mut(&mut state.encounters, state.current_encounter_index)
                 {
@@ -1298,7 +1303,7 @@ mod tests {
         );
         process_line(
             &mut state,
-            "2026-07-09T22:47:51.318+03:00|UNIT_DEATH|Npc-1013973248-132|\"Bully Basher\"|Player-1|\"Player\"|1|\"Hit\"|0|0",
+            "2026-07-09T22:47:51.318+03:00|UNIT_DEATH|Npc-1013973248-132|\"Bully Basher\"|Player-1|\"Player\"|1|\"Hit\"|0|0.071429",
         );
 
         let parsed = finalize_state(&state);
@@ -1307,6 +1312,28 @@ mod tests {
             parsed.data["currentPull"]["mobs"][0]["empoweredConfirmed"],
             json!(true)
         );
+    }
+
+    #[test]
+    fn zero_progress_unit_death_is_excluded_from_kill_count() {
+        let mut state = ParserState::new();
+        process_line(
+            &mut state,
+            "2026-07-11T12:45:45.769+03:00|DUNGEON_START|\"Cithrel's Fall\"|7|19|[4,6]|0|2026-07-11T12:45:42.034+03:00|",
+        );
+        process_line(
+            &mut state,
+            "2026-07-11T12:46:21.903+03:00|UNIT_DEATH|Npc-4200072000-161|\"Ice Shardling\"|Player-1|\"Player\"|1|\"Hit\"|0|0.005319",
+        );
+        process_line(
+            &mut state,
+            "2026-07-11T12:47:34.270+03:00|UNIT_DEATH|Npc-595592672-161|\"Ice Shardling\"|Player-1|\"Player\"|1|\"Hit\"|0|0.005319",
+        );
+
+        let parsed = finalize_state(&state);
+        let expected = 1.0 / 188.0 * 100.0;
+        assert!((parsed.data["dungeon"]["completedPercent"].as_f64().unwrap() - expected).abs() < 0.0001);
+        assert_eq!(parsed.data["npcDeaths"].as_array().unwrap().len(), 1);
     }
 
     /// Manual validation harness for the SP emulation model: replays a real
