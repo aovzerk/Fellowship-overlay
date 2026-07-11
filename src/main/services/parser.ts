@@ -309,6 +309,7 @@ function processLine(state: ParserState, line: string): void {
         resetPlayerRelicCooldowns(player);
         player.spiritRegenPerSecond = 0;
         player.spiritEmaRate = 0;
+        player.spiritRegenPaused = true;
       });
       break;
     }
@@ -345,6 +346,7 @@ function processLine(state: ParserState, line: string): void {
         // the extra gain rate (procs, mob share) is estimated via EMA on samples.
         player.spiritRegenPerSecond = 1 / 3;
         player.spiritEmaRate = 0;
+        player.spiritRegenPaused = false;
 
         if (state.collectingDungeonParty) {
           state.dungeonPartyIds.add(unitId);

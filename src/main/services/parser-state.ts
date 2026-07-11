@@ -721,6 +721,14 @@ const SPIRIT_TICK_RATE = 1 / 3;
 const SPIRIT_EMA_TAU_SECONDS = 30;
 
 function updateSpiritGainEma(player: PlayerState, last: SpiritSnapshot | null, ts: string, current: number): void {
+  // After DUNGEON_END the displayed value must freeze: stray buff-tick
+  // samples in town would otherwise re-arm the extrapolation rate and the
+  // renderer would drift everyone to the cap.
+  if (player.spiritRegenPaused) {
+    player.spiritRegenPerSecond = 0;
+    player.spiritEmaRate = 0;
+    return;
+  }
   if (!last) return;
   const lastTsMs = Date.parse(String(last.ts || ''));
   const tsMs = Date.parse(ts);

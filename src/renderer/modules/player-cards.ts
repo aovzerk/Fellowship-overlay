@@ -119,7 +119,10 @@
       };
     }
 
-    const elapsedMs = Math.max(0, nowMs - snapshotTsMs);
+    // Safety horizon: never extrapolate further than the log delay plus a
+    // short lookahead — a stalled log (town, AFK) must not drift to the cap.
+    const MAX_SPIRIT_EXTRAPOLATION_MS = 30_000;
+    const elapsedMs = Math.min(MAX_SPIRIT_EXTRAPOLATION_MS, Math.max(0, nowMs - snapshotTsMs));
     if (!elapsedMs) {
       return {
         ...spiritSnapshot,

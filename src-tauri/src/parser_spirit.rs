@@ -12,6 +12,14 @@ const SPIRIT_TICK_RATE: f64 = 1.0 / 3.0;
 const SPIRIT_EMA_TAU_SECONDS: f64 = 30.0;
 
 fn update_spirit_gain_ema(player: &mut PlayerAccum, ts: &str, current: f64) {
+    // After DUNGEON_END the displayed value must freeze: stray buff-tick
+    // samples in town would otherwise re-arm the extrapolation rate and the
+    // renderer would drift everyone to the cap.
+    if player.spirit_regen_paused {
+        player.spirit_regen_per_second = 0.0;
+        player.spirit_ema_rate = 0.0;
+        return;
+    }
     let Some(last) = player.spirit.as_ref() else {
         return;
     };

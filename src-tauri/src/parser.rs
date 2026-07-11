@@ -72,6 +72,8 @@ pub(crate) struct PlayerAccum {
     pub(crate) spirit_regen_per_second: f64,
     /// EMA of recent SP gain rate beyond the base 1/3 tick (procs + mob share), SP/s.
     pub(crate) spirit_ema_rate: f64,
+    /// Set after DUNGEON_END so town samples do not re-arm the extrapolation.
+    pub(crate) spirit_regen_paused: bool,
     pub(crate) rising_spirit_stack: i64,
     /// SP emulation model state (docs/spirit-model.md); drives Gunde display.
     pub(crate) spirit_sim: SpiritSim,
@@ -544,6 +546,7 @@ fn process_line(state: &mut ParserState, line: &str) {
             for player in state.players.values_mut() {
                 player.spirit_regen_per_second = 0.0;
                 player.spirit_ema_rate = 0.0;
+                player.spirit_regen_paused = true;
                 reset_player_relic_cooldowns(player);
             }
         }
@@ -579,6 +582,7 @@ fn process_line(state: &mut ParserState, line: &str) {
             // the extra gain rate (procs, mob share) is estimated via EMA on samples.
             player.spirit_regen_per_second = 1.0 / 3.0;
             player.spirit_ema_rate = 0.0;
+            player.spirit_regen_paused = false;
             let blue_stone = player
                 .stones
                 .get("blue")

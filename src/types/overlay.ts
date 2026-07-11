@@ -266,6 +266,8 @@ export interface PlayerState {
   spiritRegenPerSecond?: number;
   /** EMA of recent SP gain rate beyond the base 1/3 tick (procs + mob share), SP/s. */
   spiritEmaRate?: number;
+  /** Set after DUNGEON_END so town samples do not re-arm the extrapolation. */
+  spiritRegenPaused?: boolean;
   relics: PlayerRelicState[];
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];
