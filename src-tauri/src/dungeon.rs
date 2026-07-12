@@ -51,6 +51,7 @@ pub struct DungeonTracker {
     dungeon_data: Option<Value>,
     current_pull: CurrentPullState,
     counted_npc_deaths: HashSet<String>,
+    dead_npc_ids: HashSet<String>,
     chickenized_npc_ids: HashSet<String>,
     boss_spawned_npc_ids: HashSet<String>,
     empowered_npc_ids: HashSet<String>,
@@ -69,6 +70,7 @@ impl DungeonTracker {
             dungeon_data: None,
             current_pull: CurrentPullState::default(),
             counted_npc_deaths: HashSet::new(),
+            dead_npc_ids: HashSet::new(),
             chickenized_npc_ids: HashSet::new(),
             boss_spawned_npc_ids: HashSet::new(),
             empowered_npc_ids: HashSet::new(),
@@ -86,6 +88,7 @@ impl DungeonTracker {
         self.dungeon_data = None;
         self.current_pull = CurrentPullState::default();
         self.counted_npc_deaths.clear();
+        self.dead_npc_ids.clear();
         self.chickenized_npc_ids.clear();
         self.boss_spawned_npc_ids.clear();
         self.empowered_npc_ids.clear();
@@ -158,6 +161,9 @@ impl DungeonTracker {
 
     pub fn touch_current_pull(&mut self, ts: &str, npc_id: &str, npc_name: Option<&str>) {
         if !is_npc_id(npc_id) {
+            return;
+        }
+        if self.dead_npc_ids.contains(npc_id) {
             return;
         }
         let Some(ts_ms) = parse_ts_ms(ts) else {
@@ -344,6 +350,7 @@ impl DungeonTracker {
             npc.dead_at = Some(ts.to_string());
             npc.dead_at_ms = parse_ts_ms(ts);
         }
+        self.dead_npc_ids.insert(npc_id.to_string());
         if extract_npc_template_id(npc_id) == Some(SPELLBOUND_GOLEM_TEMPLATE_ID) {
             self.last_spellbound_golem_death_ms = parse_ts_ms(ts);
         }
@@ -429,6 +436,7 @@ impl DungeonTracker {
                 npc.suspected_dead_at = None;
                 npc.suspected_dead_at_ms = None;
             }
+            self.dead_npc_ids.insert(npc_id.clone());
             self.register_npc_death(&death_ts, &npc_id, Some(&npc_name));
         }
     }
@@ -1025,5 +1033,39 @@ mod tests {
         let pull = tracker.current_pull_summary_for_party(4);
         let remaining = pull["remainingSpirit"].as_f64().unwrap();
         assert!((remaining - 0.125).abs() < 0.0001);
+    }
+
+    #[test]
+    fn late_events_do_not_readd_dead_npc_as_alive() {
+        let mut tracker = DungeonTracker::new();
+        tracker.start(
+            TS,
+            &[TS, "DUNGEON_START", "\"Godfall Quarry\"", "25", "54", "[4,6]", "0", TS],
+        );
+        let npc_id = "Npc-3348627904-136";
+        tracker.observe_current_pull_npc(
+            "2026-07-12T10:54:41.700+03:00",
+            npc_id,
+            Some("Skittershard"),
+            Some("1"),
+            Some("100"),
+        );
+        tracker.mark_current_pull_death_with_progress(
+            "2026-07-12T10:54:41.772+03:00",
+            npc_id,
+            Some("Skittershard"),
+            Some("0.1"),
+        );
+
+        tracker.touch_current_pull(
+            "2026-07-12T10:54:43.006+03:00",
+            npc_id,
+            Some("Skittershard"),
+        );
+
+        let pull = tracker.current_pull_summary_for_party(4);
+        assert_eq!(pull["aliveCount"], json!(0));
+        assert_eq!(pull["alivePercent"], json!(0.0));
+        assert_eq!(pull["remainingSpirit"], json!(0.0));
     }
 }
