@@ -1015,12 +1015,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                 let dead_name = unquote_str(parts.get(3).copied());
                 state
                     .dungeon
-                    .mark_current_pull_death_with_progress(
-                        ts,
-                        dead_id,
-                        Some(dead_name),
-                        parts.get(9).copied(),
-                    );
+                    .mark_current_pull_death(ts, dead_id, Some(dead_name));
                 if let Some(encounter) =
                     current_encounter_mut(&mut state.encounters, state.current_encounter_index)
                 {
@@ -1318,25 +1313,25 @@ mod tests {
     }
 
     #[test]
-    fn zero_progress_unit_death_is_excluded_from_kill_count() {
+    fn unit_death_trailing_value_does_not_filter_kill_count() {
         let mut state = ParserState::new();
         process_line(
             &mut state,
-            "2026-07-11T12:45:45.769+03:00|DUNGEON_START|\"Cithrel's Fall\"|7|19|[4,6]|0|2026-07-11T12:45:42.034+03:00|",
+            "2026-07-12T13:42:25.988+03:00|DUNGEON_START|\"Urrak Markets\"|21|53|[4,6,12,19]|0|2026-07-12T13:42:22.233+03:00|",
         );
         process_line(
             &mut state,
-            "2026-07-11T12:46:21.903+03:00|UNIT_DEATH|Npc-4200072000-161|\"Ice Shardling\"|Player-1|\"Player\"|1|\"Hit\"|0|0.005319",
+            "2026-07-12T13:43:01.899+03:00|UNIT_DEATH|Npc-1-192|\"Initiate\"|Player-1|\"Player\"|1|\"Hit\"|0|0.500000",
         );
         process_line(
             &mut state,
-            "2026-07-11T12:47:34.270+03:00|UNIT_DEATH|Npc-595592672-161|\"Ice Shardling\"|Player-1|\"Player\"|1|\"Hit\"|0|0.005319",
+            "2026-07-12T13:43:02.136+03:00|UNIT_DEATH|Npc-2-192|\"Initiate\"|Player-1|\"Player\"|1|\"Hit\"|0|0.500000",
         );
 
         let parsed = finalize_state(&state);
-        let expected = 1.0 / 188.0 * 100.0;
+        let expected = 2.0 / 160.0 * 100.0;
         assert!((parsed.data["dungeon"]["completedPercent"].as_f64().unwrap() - expected).abs() < 0.0001);
-        assert_eq!(parsed.data["npcDeaths"].as_array().unwrap().len(), 1);
+        assert_eq!(parsed.data["npcDeaths"].as_array().unwrap().len(), 2);
     }
 
     /// Manual validation harness for the SP emulation model: replays a real

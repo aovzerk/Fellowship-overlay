@@ -56,7 +56,6 @@ pub struct DungeonTracker {
     boss_spawned_npc_ids: HashSet<String>,
     empowered_npc_ids: HashSet<String>,
     empowered_affix_active: bool,
-    last_reported_progress: Option<f64>,
     last_spellbound_golem_death_ms: Option<i64>,
     npc_deaths: Vec<Value>,
     boss_fight_active: bool,
@@ -75,7 +74,6 @@ impl DungeonTracker {
             boss_spawned_npc_ids: HashSet::new(),
             empowered_npc_ids: HashSet::new(),
             empowered_affix_active: false,
-            last_reported_progress: None,
             last_spellbound_golem_death_ms: None,
             npc_deaths: Vec::new(),
             boss_fight_active: false,
@@ -93,7 +91,6 @@ impl DungeonTracker {
         self.boss_spawned_npc_ids.clear();
         self.empowered_npc_ids.clear();
         self.empowered_affix_active = false;
-        self.last_reported_progress = None;
         self.last_spellbound_golem_death_ms = None;
         self.npc_deaths.clear();
         self.boss_fight_active = false;
@@ -335,13 +332,7 @@ impl DungeonTracker {
         self.chickenized_npc_ids.insert(npc_id.to_string());
     }
 
-    pub fn mark_current_pull_death_with_progress(
-        &mut self,
-        ts: &str,
-        npc_id: &str,
-        npc_name: Option<&str>,
-        reported_progress_raw: Option<&str>,
-    ) {
+    pub fn mark_current_pull_death(&mut self, ts: &str, npc_id: &str, npc_name: Option<&str>) {
         if !is_npc_id(npc_id) {
             return;
         }
@@ -354,18 +345,7 @@ impl DungeonTracker {
         if extract_npc_template_id(npc_id) == Some(SPELLBOUND_GOLEM_TEMPLATE_ID) {
             self.last_spellbound_golem_death_ms = parse_ts_ms(ts);
         }
-        let counts_for_progress = reported_progress_raw
-            .and_then(|value| value.parse::<f64>().ok())
-            .filter(|value| value.is_finite() && (0.0..=1.0).contains(value))
-            .map(|progress| {
-                let previous = self.last_reported_progress.unwrap_or(0.0);
-                self.last_reported_progress = Some(progress);
-                progress > previous
-            })
-            .unwrap_or(true);
-        if counts_for_progress {
-            self.register_npc_death(ts, npc_id, npc_name);
-        }
+        self.register_npc_death(ts, npc_id, npc_name);
     }
 
     pub fn mark_npc_underflow_if_needed(
@@ -924,7 +904,7 @@ mod tests {
         assert_eq!(pull["mobs"][0]["empowered"], json!(true));
         assert_eq!(pull["mobs"][0]["effectiveScore"], json!(12.0));
 
-        tracker.mark_current_pull_death_with_progress(TS, npc_id, Some("Bully Basher"), None);
+        tracker.mark_current_pull_death(TS, npc_id, Some("Bully Basher"));
         let completed = tracker.dungeon_json()["completedPercent"].as_f64().unwrap();
         assert!((completed - expected).abs() < 0.0001);
     }
@@ -980,11 +960,10 @@ mod tests {
         assert_eq!(pull["mobs"][0]["bossSpawned"], json!(true));
         assert_eq!(pull["mobs"][0]["effectiveScore"], json!(0.0));
 
-        tracker.mark_current_pull_death_with_progress(
+        tracker.mark_current_pull_death(
             "2026-07-09T22:56:00.000+03:00",
             summon_id,
             Some("Rotheart Recluse"),
-            None,
         );
         assert_eq!(tracker.dungeon_json()["completedPercent"], json!(0.0));
     }
@@ -996,11 +975,10 @@ mod tests {
             TS,
             &[TS, "DUNGEON_START", "\"Cithrel's Fall\"", "7", "19", "[4,6]", "0", TS],
         );
-        tracker.mark_current_pull_death_with_progress(
+        tracker.mark_current_pull_death(
             "2026-07-09T22:45:32.500+03:00",
             "Npc-1-160",
             Some("Spellbound Golem"),
-            None,
         );
         tracker.observe_current_pull_npc(
             "2026-07-09T22:45:33.100+03:00",
@@ -1050,11 +1028,10 @@ mod tests {
             Some("1"),
             Some("100"),
         );
-        tracker.mark_current_pull_death_with_progress(
+        tracker.mark_current_pull_death(
             "2026-07-12T10:54:41.772+03:00",
             npc_id,
             Some("Skittershard"),
-            Some("0.1"),
         );
 
         tracker.touch_current_pull(
