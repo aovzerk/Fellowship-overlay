@@ -10,6 +10,7 @@ mod parser_relics;
 mod parser_spirit;
 mod settings;
 mod spirit_model;
+mod sylvie_shrooms;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

@@ -178,14 +178,14 @@ pub fn update_spirit_from_rising_spirit_effect(
     ability_id: Option<i64>,
     ability_name: &str,
     stack_raw: Option<&str>,
-) {
+) -> i64 {
     if !is_rising_spirit_refund(ability_id, ability_name) {
-        return;
+        return 0;
     }
 
     if event == "EFFECT_REMOVED" {
         player.rising_spirit_stack = 0;
-        return;
+        return 0;
     }
 
     let stack = stack_raw
@@ -202,7 +202,7 @@ pub fn update_spirit_from_rising_spirit_effect(
 
     player.rising_spirit_stack = stack;
     if procs <= 0 {
-        return;
+        return 0;
     }
 
     if let Some(ts_ms) = parse_ts_ms(ts) {
@@ -211,6 +211,7 @@ pub fn update_spirit_from_rising_spirit_effect(
             emit_model_spirit(player, ts);
         }
     }
+    procs
 }
 
 fn player_spirit_max(player: &PlayerAccum) -> f64 {

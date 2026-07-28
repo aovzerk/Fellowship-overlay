@@ -19,6 +19,7 @@ use crate::parser_spirit::{
     update_spirit_from_rising_spirit_effect,
 };
 use crate::spirit_model::{SpiritModelShared, SpiritSim};
+use crate::sylvie_shrooms::{SylvieShroomTracker, SHROOMSPLOSION_DAMAGE_EFFECT_ID};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -77,6 +78,7 @@ pub(crate) struct PlayerAccum {
     pub(crate) rising_spirit_stack: i64,
     /// SP emulation model state (docs/spirit-model.md); drives Gunde display.
     pub(crate) spirit_sim: SpiritSim,
+    pub(crate) shrooms: SylvieShroomTracker,
     buff_uptimes: HashMap<String, BuffUptimeAccum>,
 }
 
@@ -150,6 +152,9 @@ impl ParserState {
     }
 
     fn reset_dungeon_scope(&mut self) {
+        for player in self.players.values_mut() {
+            player.shrooms.reset();
+        }
         self.reset_parser_scope();
         self.dungeon.reset_scope();
     }
@@ -569,6 +574,7 @@ fn process_line(state: &mut ParserState, line: &str) {
             let (class_id, class_name, class_color) = class_info(class_id);
             player.class_id = class_id;
             player.name = Some(name.to_string());
+            player.shrooms.configure(class_id, parts.get(11).copied());
             player.stones = parse_stones(parts.get(10).copied());
             player.relics = extract_relics_from_parts(&parts);
             mark_combatant_info_buffs(player, ts, parts.get(13).copied());
@@ -672,6 +678,10 @@ fn process_line(state: &mut ParserState, line: &str) {
             let ability_name = unquote_str(parts.get(5).copied());
             let target_id = parts.get(7).copied().unwrap_or_default();
             let target_name = unquote_str(parts.get(8).copied());
+            let encounter = state
+                .current_encounter_index
+                .and_then(|index| state.encounters.get(index))
+                .map(|encounter| (encounter.id, encounter.name.clone()));
             let player = ensure_player(&mut state.players, source_id, Some(source_name));
             if event == "ABILITY_ACTIVATED" {
                 let is_equipped_relic = is_equipped_relic_ability(player, ability_id);
@@ -695,6 +705,17 @@ fn process_line(state: &mut ParserState, line: &str) {
                 );
                 mark_relic_use(player, ability_id, ts);
                 if let (Some(ability_id_value), Some(ts_ms)) = (ability_id, parse_ts_ms(ts)) {
+                    player.shrooms.on_ability_activated(
+                        ts,
+                        ts_ms,
+                        ability_id_value,
+                        target_id,
+                        target_name,
+                        encounter.as_ref().and_then(|(id, _)| *id),
+                        encounter
+                            .as_ref()
+                            .and_then(|(_, name)| name.as_deref()),
+                    );
                     // VOG weapon gain, class ability gains, Gunde ult anchor.
                     let changed = player
                         .spirit_sim
@@ -821,6 +842,11 @@ fn process_line(state: &mut ParserState, line: &str) {
             if source_id.starts_with("Player-") {
                 let source_name = unquote_str(parts.get(3).copied());
                 let player = ensure_player(&mut state.players, source_id, Some(source_name));
+                if ability_id == Some(SHROOMSPLOSION_DAMAGE_EFFECT_ID) {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.shrooms.on_shroomsplosion_damage(ts_ms, target_id);
+                    }
+                }
                 player.damage_done += amount;
                 add_ability(
                     player,
@@ -970,7 +996,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     parts.get(10).copied(),
                     parts.get(9).copied(),
                 );
-                update_spirit_from_rising_spirit_effect(
+                let refund_procs = update_spirit_from_rising_spirit_effect(
                     player,
                     event,
                     ts,
@@ -978,6 +1004,11 @@ fn process_line(state: &mut ParserState, line: &str) {
                     ability_name,
                     parts.get(9).copied(),
                 );
+                if refund_procs > 0 {
+                    if let Some(ts_ms) = parse_ts_ms(ts) {
+                        player.shrooms.on_spirit_refund(ts_ms, refund_procs as usize);
+                    }
+                }
                 if let Some((current, max)) = extract_spirit(parts.get(17).copied()) {
                     if let Some(ts_ms) = parse_ts_ms(ts) {
                         player.spirit_sim.sync(ts_ms, current);
@@ -1108,6 +1139,7 @@ fn finalize_state(state: &ParserState) -> ParsedLog {
                 "stones": player.stones,
                 "spiritStatValue": player.spirit_stat_value,
                 "spiritRegenPerSecond": player.spirit_regen_per_second,
+                "shrooms": player.shrooms.to_json_at(cooldown_now_ms),
                 "usesPerBoss": build_uses_per_boss(&player, &encounters),
                 "buffUptimes": build_player_buff_uptimes(&player, buff_now_ms, buff_window_duration_ms)
             })
@@ -1332,6 +1364,121 @@ mod tests {
         let expected = 2.0 / 160.0 * 100.0;
         assert!((parsed.data["dungeon"]["completedPercent"].as_f64().unwrap() - expected).abs() < 0.0001);
         assert_eq!(parsed.data["npcDeaths"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn dungeon_start_clears_sylvie_shroom_state() {
+        let mut state = ParserState::new();
+        let player = ensure_player(&mut state.players, "Player-1", Some("Sylvie"));
+        player
+            .shrooms
+            .configure(Some(14), Some("[(5216,360,[])]"));
+        player.shrooms.on_spirit_refund(0, 1);
+        assert_eq!(player.shrooms.to_json_at(0)["activeVines"], json!(1));
+
+        process_line(
+            &mut state,
+            "2026-07-07T21:33:29.572+03:00|DUNGEON_START|\"Wyrmheart\"|8|56|[4,6,27,15,16]|0|2026-07-07T21:33:28.295+03:00|",
+        );
+
+        assert!(state.players.is_empty());
+    }
+
+    /// Replays a real log and prints predicted mature Boomshrooms versus the
+    /// Shroomsplosion damage rows that hit the cast target.
+    /// Run: SYLVIE_SHROOM_LOG=<path> cargo test replay_sylvie_shrooms -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn replay_sylvie_shrooms() {
+        use std::io::{BufRead, BufReader};
+
+        let Some(path) = std::env::var_os("SYLVIE_SHROOM_LOG") else {
+            eprintln!("SYLVIE_SHROOM_LOG is not set, skipping");
+            return;
+        };
+        let file = File::open(&path).expect("open SYLVIE_SHROOM_LOG");
+        let reader = BufReader::new(file);
+        let mut state = ParserState::new();
+        let mut captured: Vec<(String, Value)> = Vec::new();
+        let mut captured_keys = HashSet::new();
+        for line in reader.lines() {
+            let line = line.expect("read combat log line");
+            let parts = split_log_line(&line);
+            if matches!(
+                parts.get(1).copied(),
+                Some("DUNGEON_START" | "DUNGEON_END" | "ZONE_CHANGE")
+            ) {
+                capture_shroom_launches(
+                    &state,
+                    &mut captured,
+                    &mut captured_keys,
+                );
+            }
+            process_line(&mut state, &line);
+        }
+
+        capture_shroom_launches(&state, &mut captured, &mut captured_keys);
+        let mut boss_totals: HashMap<String, (usize, usize, usize)> = HashMap::new();
+        for (player_name, launch) in &captured {
+            println!(
+                "{} {} encounter={} target={} predicted={} sources={} targetHits={} aoeHits={}",
+                player_name,
+                launch["ts"].as_str().unwrap_or("?"),
+                launch["encounterName"].as_str().unwrap_or("-"),
+                launch["targetName"].as_str().unwrap_or("?"),
+                launch["predictedShrooms"],
+                launch["predictedBySource"],
+                launch["targetHits"],
+                launch["aoeHits"]
+            );
+            let encounter_name = launch["encounterName"].as_str();
+            let target_name = launch["targetName"].as_str();
+            if encounter_name.is_some() && encounter_name == target_name {
+                let entry = boss_totals
+                    .entry(encounter_name.unwrap_or("?").to_string())
+                    .or_default();
+                entry.0 += 1;
+                entry.1 += launch["predictedShrooms"].as_u64().unwrap_or_default() as usize;
+                entry.2 += launch["targetHits"].as_u64().unwrap_or_default() as usize;
+            }
+        }
+        println!("--- boss target totals");
+        let mut boss_totals = boss_totals.into_iter().collect::<Vec<_>>();
+        boss_totals.sort_by(|left, right| left.0.cmp(&right.0));
+        for (boss, (launches, predicted, target_hits)) in boss_totals {
+            println!(
+                "{boss}: launches={launches} predicted={predicted} targetHits={target_hits} delta={}",
+                target_hits as i64 - predicted as i64
+            );
+        }
+    }
+
+    fn capture_shroom_launches(
+        state: &ParserState,
+        captured: &mut Vec<(String, Value)>,
+        captured_keys: &mut HashSet<String>,
+    ) {
+        let now_ms = state
+            .latest_log_ts
+            .as_deref()
+            .and_then(parse_ts_ms)
+            .unwrap_or_default();
+        for player in state.players.values() {
+            let shrooms = player.shrooms.to_json_at(now_ms);
+            for launch in shrooms["launches"].as_array().into_iter().flatten() {
+                let key = format!(
+                    "{}:{}",
+                    player.id,
+                    launch["ts"].as_str().unwrap_or_default()
+                );
+                if captured_keys.insert(key) {
+                    captured.push((
+                        player.name.clone().unwrap_or_else(|| "?".to_string()),
+                        launch.clone(),
+                    ));
+                }
+            }
+        }
     }
 
     /// Manual validation harness for the SP emulation model: replays a real

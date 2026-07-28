@@ -249,6 +249,26 @@ export interface UsesPerBossEntry {
   abilities: SerializedAbilityStat[];
 }
 
+export interface SylvieShroomTimelineEntry {
+  matureAtMs: number;
+  expiresAtMs: number;
+  source?: string;
+}
+
+export interface SylvieShroomState {
+  fresh: number;
+  medium: number;
+  expiring: number;
+  mature: number;
+  budding: number;
+  upcoming?: number;
+  activeVines: number;
+  activeLifePetals: number;
+  activeHeartBlooms: number;
+  hasMadGardenersShawl: boolean;
+  timeline?: SylvieShroomTimelineEntry[];
+}
+
 export interface PlayerState {
   id: string;
   name: string | null;
@@ -268,6 +288,7 @@ export interface PlayerState {
   spiritEmaRate?: number;
   /** Set after DUNGEON_END so town samples do not re-arm the extrapolation. */
   spiritRegenPaused?: boolean;
+  shrooms?: SylvieShroomState | null;
   relics: PlayerRelicState[];
   stones: PlayerStones;
   combatAbilities?: SerializedAbilityStat[];

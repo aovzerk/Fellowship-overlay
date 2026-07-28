@@ -24,10 +24,51 @@
   const TANK_CLASS_IDS = new Set([22, 13, 25]);
   const HEALER_CLASS_IDS = new Set([24, 14, 20]);
   const GUNDE_CLASS_ID = 9;
+  const SYLVIE_CLASS_ID = 14;
   const COOLDOWN_ACCELERATION_EFFECTS: CooldownAccelerationEffect[] = [
     { abilityId: 1558, durationMs: 3000, speedBonus: 8 },
     { abilityId: 160, durationMs: 6000, speedBonus: 2 },
   ];
+
+  function isSylvieClass(player: PlayerState): boolean {
+    return Number(player?.classId) === SYLVIE_CLASS_ID
+      || String(player?.className || '').trim().toLowerCase() === 'sylvie';
+  }
+
+  function getDisplayedShrooms(player: PlayerState, nowMs: number): {
+    fresh: number;
+    medium: number;
+    expiring: number;
+    upcoming: number;
+  } {
+    const timeline = Array.isArray(player.shrooms?.timeline) ? player.shrooms.timeline : [];
+    if (!timeline.length) {
+      return {
+        fresh: Math.max(0, Number(player.shrooms?.fresh || 0)),
+        medium: Math.max(0, Number(player.shrooms?.medium || 0)),
+        expiring: Math.max(0, Number(player.shrooms?.expiring || 0)),
+        upcoming: Math.max(0, Number(player.shrooms?.upcoming || 0)),
+      };
+    }
+    let fresh = 0;
+    let medium = 0;
+    let expiring = 0;
+    let upcoming = 0;
+    timeline.forEach((entry) => {
+      const matureAtMs = Number(entry?.matureAtMs);
+      const expiresAtMs = Number(entry?.expiresAtMs);
+      if (!Number.isFinite(matureAtMs) || !Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) return;
+      if (matureAtMs > nowMs) {
+        upcoming += 1;
+        return;
+      }
+      const remainingMs = expiresAtMs - nowMs;
+      if (remainingMs >= 30_000) fresh += 1;
+      else if (remainingMs >= 10_000) medium += 1;
+      else expiring += 1;
+    });
+    return { fresh, medium, expiring, upcoming };
+  }
 
   function updateIconNodes(container: HTMLElement, items: DisplayIcon[]): void {
     const existing = new Map<string, HTMLElement>();
@@ -513,6 +554,18 @@
             <span class="spirit-label">${escapeHtml(t('spirit'))}</span>
             <span class="spirit-total">-</span>
           </div>
+          <div class="shrooms-inline hidden">
+            <img
+              class="shrooms-icon"
+              src="${escapeHtml(toAssetSrc('game-data/heroes/14_Sylvie/1073_shroomsplosion.jpg'))}"
+              alt=""
+              title="${escapeHtml(t('shrooms'))}"
+            />
+            <span class="shrooms-fresh">0</span>
+            <span class="shrooms-medium">0</span>
+            <span class="shrooms-expiring">0</span>
+            <span class="shrooms-upcoming">(0)</span>
+          </div>
           <div class="relics-block"></div>
         </div>
       `;
@@ -556,8 +609,14 @@
       const playerClass = card.querySelector<HTMLElement>('.player-class');
       const spiritInline = card.querySelector<HTMLElement>('.spirit-inline');
       const spiritEl = card.querySelector<HTMLElement>('.spirit-total');
+      const shroomsInline = card.querySelector<HTMLElement>('.shrooms-inline');
+      const shroomsFresh = card.querySelector<HTMLElement>('.shrooms-fresh');
+      const shroomsMedium = card.querySelector<HTMLElement>('.shrooms-medium');
+      const shroomsExpiring = card.querySelector<HTMLElement>('.shrooms-expiring');
+      const shroomsUpcoming = card.querySelector<HTMLElement>('.shrooms-upcoming');
       const relicsBlock = card.querySelector<HTMLElement>('.relics-block');
-      if (!playerHeader || !playerInfoRow || !playerName || !playerClass || !spiritInline || !spiritEl || !relicsBlock) return;
+      if (!playerHeader || !playerInfoRow || !playerName || !playerClass || !spiritInline || !spiritEl
+        || !shroomsInline || !shroomsFresh || !shroomsMedium || !shroomsExpiring || !shroomsUpcoming || !relicsBlock) return;
 
       card.classList.remove('party-align-left', 'party-align-center', 'party-align-right');
       card.classList.add(`party-align-${partyFrameAlignment}`);
@@ -576,6 +635,13 @@
       const spiritHighlightClass = getSpiritHighlight(player, displaySpirit);
       if (spiritHighlightClass) spiritEl.classList.add(spiritHighlightClass);
       spiritInline.classList.toggle('hidden', !partyFrameFields.spirit);
+      const showShrooms = isSylvieClass(player);
+      const shrooms = getDisplayedShrooms(player, effectiveNowMs);
+      shroomsFresh.textContent = formatNumber(shrooms.fresh);
+      shroomsMedium.textContent = formatNumber(shrooms.medium);
+      shroomsExpiring.textContent = formatNumber(shrooms.expiring);
+      shroomsUpcoming.textContent = `(${formatNumber(shrooms.upcoming)})`;
+      shroomsInline.classList.toggle('hidden', !showShrooms);
       const { iconSize, iconGap } = getScaledMetrics(getCardScale());
       const columnCount = Math.max(1, Math.min(getIconsPerRow(), visibleIconCount || 0));
       const rowCount = Math.max(1, Math.ceil((visibleIconCount || 0) / columnCount));
@@ -589,7 +655,7 @@
           ? '0 auto'
           : '0';
       relicsBlock.classList.toggle('hidden', !partyFrameFields.relicsAndCooldowns);
-      playerInfoRow.classList.toggle('hidden', !partyFrameFields.spirit && !partyFrameFields.relicsAndCooldowns);
+      playerInfoRow.classList.toggle('hidden', !partyFrameFields.spirit && !partyFrameFields.relicsAndCooldowns && !showShrooms);
       updateIconNodes(relicsBlock, partyFrameFields.relicsAndCooldowns ? displayIcons : []);
     }
 

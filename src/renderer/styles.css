@@ -350,30 +350,49 @@ button:hover {
   align-items: flex-end;
 }
 
-.spirit-inline {
+.spirit-inline,
+.shrooms-inline {
   display: flex;
   align-items: baseline;
   gap: calc(8px * var(--card-scale));
   text-transform: uppercase;
 }
 
-.player-card.party-align-left .spirit-inline {
+.player-card.party-align-left .spirit-inline,
+.player-card.party-align-left .shrooms-inline {
   justify-content: flex-start;
 }
 
-.player-card.party-align-center .spirit-inline {
+.player-card.party-align-center .spirit-inline,
+.player-card.party-align-center .shrooms-inline {
   justify-content: center;
 }
 
-.player-card.party-align-right .spirit-inline {
+.player-card.party-align-right .spirit-inline,
+.player-card.party-align-right .shrooms-inline {
   justify-content: flex-end;
 }
 
-.spirit-label {
+.spirit-label,
+.shrooms-label {
   font-size: calc(13px * var(--card-scale));
   opacity: 0.75;
   letter-spacing: 1px;
   font-weight: 700;
+}
+
+.shrooms-inline {
+  gap: calc(4px * var(--card-scale));
+  white-space: nowrap;
+}
+
+.shrooms-icon {
+  width: calc(18px * var(--card-scale));
+  height: calc(18px * var(--card-scale));
+  border-radius: calc(4px * var(--card-scale));
+  object-fit: cover;
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .spirit-total {
@@ -385,6 +404,42 @@ button:hover {
 .spirit-glow-blue {
   color: #46ebff;
   text-shadow: 0 0 10px rgba(70, 235, 255, 0.95), 0 0 18px rgba(70, 235, 255, 0.55);
+}
+
+.shrooms-fresh,
+.shrooms-medium,
+.shrooms-expiring,
+.shrooms-upcoming {
+  font-size: calc(16px * var(--card-scale));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.shrooms-fresh,
+.shrooms-medium,
+.shrooms-expiring {
+  min-width: 2ch;
+}
+
+.shrooms-upcoming {
+  min-width: 4ch;
+}
+
+.shrooms-fresh {
+  color: #55e68a;
+}
+
+.shrooms-medium {
+  color: #f1c84b;
+}
+
+.shrooms-expiring {
+  color: #ff5d6c;
+}
+
+.shrooms-upcoming {
+  color: #9ca3af;
 }
 
 .relics-block {
