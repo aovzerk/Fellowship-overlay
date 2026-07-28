@@ -61,12 +61,20 @@ impl SylvieShroomTracker {
     }
 
     pub(crate) fn reset(&mut self) {
+        self.clear_active_state();
+        self.launches.clear();
+    }
+
+    pub(crate) fn on_death(&mut self) {
+        self.clear_active_state();
+    }
+
+    fn clear_active_state(&mut self) {
         self.active_vines.clear();
         self.active_life_petals.clear();
         self.active_heart_blooms.clear();
         self.budding_shrooms.clear();
         self.mature_shrooms.clear();
-        self.launches.clear();
     }
 
     pub(crate) fn on_ability_activated(
@@ -455,5 +463,25 @@ mod tests {
         assert_eq!(state["budding"], json!(0));
         assert_eq!(state["mature"], json!(0));
         assert_eq!(state["launches"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn death_clears_current_shrooms_and_sources() {
+        let mut tracker = SylvieShroomTracker::default();
+        tracker.configure(Some(SYLVIE_CLASS_ID), Some("[(5216,360,[])]"));
+        tracker.add_vines(0, 4, "test");
+        tracker.add_budding(1_000, 2, "test");
+        tracker.active_life_petals.push(20_000);
+        tracker.active_heart_blooms.push(20_000);
+
+        tracker.on_death();
+
+        let state = tracker.to_json_at(60_000);
+        assert_eq!(state["activeVines"], json!(0));
+        assert_eq!(state["activeLifePetals"], json!(0));
+        assert_eq!(state["activeHeartBlooms"], json!(0));
+        assert_eq!(state["budding"], json!(0));
+        assert_eq!(state["mature"], json!(0));
+        assert_eq!(state["upcoming"], json!(0));
     }
 }

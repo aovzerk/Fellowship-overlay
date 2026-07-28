@@ -1027,6 +1027,7 @@ fn process_line(state: &mut ParserState, line: &str) {
                     .get(4)
                     .and_then(|value| value.trim().parse::<f64>().ok());
                 let player = ensure_player(&mut state.players, dead_id, Some(dead_name));
+                player.shrooms.on_death();
                 if let Some(ts_ms) = parse_ts_ms(ts) {
                     player.spirit_sim.on_death(ts_ms, keep);
                     if player.spirit_sim.is_gunde {
@@ -1382,6 +1383,30 @@ mod tests {
         );
 
         assert!(state.players.is_empty());
+    }
+
+    #[test]
+    fn player_death_clears_sylvie_shroom_state() {
+        let mut state = ParserState::new();
+        let player = ensure_player(&mut state.players, "Player-1", Some("Sylvie"));
+        player
+            .shrooms
+            .configure(Some(14), Some("[(5216,360,[])]"));
+        player.shrooms.on_spirit_refund(0, 1);
+        assert_eq!(player.shrooms.to_json_at(0)["activeVines"], json!(1));
+
+        process_line(
+            &mut state,
+            "2026-07-07T21:33:29.572+03:00|UNIT_DESTROYED|Player-1|\"Sylvie\"|0.75|",
+        );
+
+        let shrooms = state.players["Player-1"]
+            .shrooms
+            .to_json_at(parse_ts_ms("2026-07-07T21:33:29.572+03:00").unwrap());
+        assert_eq!(shrooms["activeVines"], json!(0));
+        assert_eq!(shrooms["budding"], json!(0));
+        assert_eq!(shrooms["mature"], json!(0));
+        assert_eq!(shrooms["upcoming"], json!(0));
     }
 
     /// Replays a real log and prints predicted mature Boomshrooms versus the
